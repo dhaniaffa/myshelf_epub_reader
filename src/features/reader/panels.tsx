@@ -506,15 +506,25 @@ export const Panels: React.FC<PanelsProps> = ({
                       </span>
                     </div>
 
-                    <blockquote className="text-on-surface border-outline-variant line-clamp-3 border-l-2 pl-2 text-xs leading-relaxed italic">
+                    <blockquote
+                      className="text-on-surface line-clamp-3 border-l-2 pl-2.5 text-xs leading-relaxed italic"
+                      style={{ borderLeftColor: colorConfig.border }}
+                    >
                       "{ann.text}"
                     </blockquote>
                   </div>
 
                   {/* Note text if any */}
                   {ann.note && (
-                    <div className="bg-surface-container-high text-on-surface flex items-start gap-2 rounded-xl p-2.5 text-xs leading-relaxed">
-                      <MessageSquare size={13} className="text-primary mt-0.5 shrink-0" />
+                    <div
+                      className="bg-surface-container-high text-on-surface flex items-start gap-2 rounded-xl border-l-2 p-2.5 text-xs leading-relaxed"
+                      style={{ borderLeftColor: colorConfig.border }}
+                    >
+                      <MessageSquare
+                        size={13}
+                        className="mt-0.5 shrink-0"
+                        style={{ color: colorConfig.border }}
+                      />
                       <div className="flex-1 whitespace-pre-wrap">{ann.note}</div>
                     </div>
                   )}

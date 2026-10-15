@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 
 import { Button, IconButton } from '@/components/ui';
+import { useCoverUrl } from '@/lib/cover';
 import { db } from '@/lib/db';
 import { formatFileSize, readMetadata } from '@/lib/epub';
 import { navigate } from '@/lib/route';
@@ -32,32 +33,11 @@ export const BookListItem: React.FC<BookListItemProps> = ({
   onDeleteRequest,
   onShowDetails,
 }) => {
-  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const coverUrl = useCoverUrl(book.cover);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useClickOutside(menuRef, () => setMenuOpen(false), menuOpen);
-
-  useEffect(() => {
-    let active = true;
-    if (book.cover) {
-      const url = URL.createObjectURL(book.cover);
-      Promise.resolve().then(() => {
-        if (active) setCoverUrl(url);
-      });
-      return () => {
-        active = false;
-        URL.revokeObjectURL(url);
-      };
-    } else {
-      Promise.resolve().then(() => {
-        if (active) setCoverUrl(null);
-      });
-      return () => {
-        active = false;
-      };
-    }
-  }, [book.cover]);
 
   // Backfill publishedYear & fileSize for existing books if not stored
   useEffect(() => {

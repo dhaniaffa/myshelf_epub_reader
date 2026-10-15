@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 
 import { Button, Dialog } from '@/components/ui';
+import { useCoverUrl } from '@/lib/cover';
 import { db } from '@/lib/db';
 import { formatFileSize, readFullMetadata } from '@/lib/epub';
 import { readFullPdfMetadata } from '@/lib/pdf';
@@ -36,23 +37,9 @@ interface BookDetailsContentProps {
 }
 
 const BookDetailsContent: React.FC<BookDetailsContentProps> = ({ book, onClose }) => {
-  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const coverUrl = useCoverUrl(book.cover);
   const [extraMeta, setExtraMeta] = useState<FullBookMetadata | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    let active = true;
-    if (book.cover) {
-      const url = URL.createObjectURL(book.cover);
-      Promise.resolve().then(() => {
-        if (active) setCoverUrl(url);
-      });
-      return () => {
-        active = false;
-        URL.revokeObjectURL(url);
-      };
-    }
-  }, [book.cover]);
 
   // Load complete metadata from EPUB file
   useEffect(() => {

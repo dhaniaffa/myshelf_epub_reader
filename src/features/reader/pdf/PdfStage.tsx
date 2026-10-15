@@ -107,15 +107,21 @@ export const PdfStage: React.FC<PdfStageProps> = ({
       const globalX = e.clientX;
       const windowWidth = window.innerWidth;
       const isMobile = windowWidth < 768;
-      const leftThreshold = isMobile ? 0.28 : 0.22;
-      const rightThreshold = isMobile ? 0.72 : 0.78;
+      const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
-      if (globalX < windowWidth * leftThreshold) {
-        onScrollPrev();
-        return;
-      } else if (globalX > windowWidth * rightThreshold) {
-        onScrollNext();
-        return;
+      // On mobile / touch screens, disable left/right click navigation zones
+      // so tapping on words to select or copy text never accidentally flips pages.
+      if (!isTouch && !isMobile) {
+        const leftThreshold = 0.22;
+        const rightThreshold = 0.78;
+
+        if (globalX < windowWidth * leftThreshold) {
+          onScrollPrev();
+          return;
+        } else if (globalX > windowWidth * rightThreshold) {
+          onScrollNext();
+          return;
+        }
       }
     }
 

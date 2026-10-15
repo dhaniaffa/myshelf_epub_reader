@@ -206,12 +206,12 @@ export const Sheet: React.FC<SheetProps> = ({ open, onClose, title, children, fo
       />
 
       {/* Mobile: Bottom Sheet | Desktop: Side Sheet */}
-      <div className="bg-surface-container border-outline-variant/30 animate-slide-up fixed inset-x-0 bottom-0 flex h-auto max-h-[85vh] flex-col rounded-t-[28px] border-t shadow-2xl transition-transform md:inset-x-auto md:top-0 md:right-0 md:bottom-0 md:h-full md:max-h-full md:w-105 md:rounded-t-none md:rounded-l-[28px] md:border-t-0 md:border-l lg:w-115">
+      <div className="bg-surface-container border-outline-variant/30 animate-slide-up fixed inset-x-0 bottom-0 flex h-[82vh] max-h-[85vh] flex-col rounded-t-[28px] border-t shadow-2xl transition-transform md:inset-x-auto md:top-0 md:right-0 md:bottom-0 md:h-full md:max-h-full md:w-105 md:rounded-t-none md:rounded-l-[28px] md:border-t-0 md:border-l lg:w-115">
         {/* Mobile drag handle */}
-        <div className="bg-outline-variant mx-auto my-2 h-1 w-10 rounded-full md:hidden" />
+        <div className="bg-outline-variant mx-auto my-2 h-1 w-10 shrink-0 rounded-full md:hidden" />
 
         {/* Sheet Header */}
-        <div className="border-outline-variant/20 flex items-center justify-between border-b px-6 py-3">
+        <div className="border-outline-variant/20 flex shrink-0 items-center justify-between border-b px-4 py-3 sm:px-6">
           <div className="text-on-surface text-base font-semibold">{title}</div>
           <IconButton size="sm" onClick={onClose} aria-label="Tutup Panel">
             <X size={18} />
@@ -219,7 +219,7 @@ export const Sheet: React.FC<SheetProps> = ({ open, onClose, title, children, fo
         </div>
 
         {/* Sheet Body */}
-        <div className="flex-1 space-y-4 overflow-y-auto p-6">{children}</div>
+        <div className="flex-1 min-h-0 space-y-4 overflow-y-auto p-4 sm:p-6">{children}</div>
 
         {/* Sheet Footer */}
         {footer && (

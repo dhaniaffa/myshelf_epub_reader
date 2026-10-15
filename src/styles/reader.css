@@ -297,18 +297,22 @@ img:hover {
 
 .highlight-yellow {
   fill: var(--reader-hl-yellow) !important;
+  background-color: var(--reader-hl-yellow) !important;
 }
 
 .highlight-green {
   fill: var(--reader-hl-green) !important;
+  background-color: var(--reader-hl-green) !important;
 }
 
 .highlight-blue {
   fill: var(--reader-hl-blue) !important;
+  background-color: var(--reader-hl-blue) !important;
 }
 
 .highlight-pink {
   fill: var(--reader-hl-pink) !important;
+  background-color: var(--reader-hl-pink) !important;
 }
 
 code,

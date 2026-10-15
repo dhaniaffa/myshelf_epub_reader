@@ -288,8 +288,18 @@ export function setupIframeListeners({
     const windowWidth = window.innerWidth;
     const isPaginated = settingsRef.current.flowMode === 'paginated';
     const isMobile = windowWidth < 768;
-    const leftThreshold = isMobile ? 0.28 : 0.22;
-    const rightThreshold = isMobile ? 0.72 : 0.78;
+    const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+    // On mobile / touch screens, disable left/right click navigation zones
+    // so tapping on words to select or copy text never accidentally flips pages.
+    // Page turning on mobile is handled reliably via swipe gestures.
+    if (isTouch || isMobile) {
+      window.dispatchEvent(new CustomEvent(READER_EVENTS.toggleBars));
+      return;
+    }
+
+    const leftThreshold = 0.22;
+    const rightThreshold = 0.78;
 
     const isLeftZone =
       globalX < windowWidth * leftThreshold ||

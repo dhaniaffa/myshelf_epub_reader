@@ -136,14 +136,27 @@ export async function readMetadata(buffer: ArrayBuffer): Promise<ExtractedMetada
         new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000)),
       ]);
       if (coverUrl) {
+        let rawBlob: Blob | null = null;
         const controller = new AbortController();
         const fetchTimer = setTimeout(() => controller.abort(), 3000);
         try {
           const response = await fetch(coverUrl, { signal: controller.signal });
-          const rawBlob = await response.blob();
-          coverBlob = await resizeCoverBlob(rawBlob, 360);
+          rawBlob = await response.blob();
+        } catch {
+          // Fallback to archive direct extraction (e.g. WebKitGTK blob fetch restriction)
+          if (book.archive?.getBlob) {
+            try {
+              rawBlob = await book.archive.getBlob(coverUrl);
+            } catch {
+              // ignore
+            }
+          }
         } finally {
           clearTimeout(fetchTimer);
+        }
+
+        if (rawBlob) {
+          coverBlob = await resizeCoverBlob(rawBlob, 360);
         }
       }
     } catch {
@@ -193,9 +206,22 @@ export async function readFullMetadata(buffer: ArrayBuffer): Promise<FullBookMet
     try {
       const coverUrl = await book.coverUrl();
       if (coverUrl) {
-        const response = await fetch(coverUrl);
-        const rawBlob = await response.blob();
-        coverBlob = await resizeCoverBlob(rawBlob, 400);
+        let rawBlob: Blob | null = null;
+        try {
+          const response = await fetch(coverUrl);
+          rawBlob = await response.blob();
+        } catch {
+          if (book.archive?.getBlob) {
+            try {
+              rawBlob = await book.archive.getBlob(coverUrl);
+            } catch {
+              // ignore
+            }
+          }
+        }
+        if (rawBlob) {
+          coverBlob = await resizeCoverBlob(rawBlob, 400);
+        }
       }
     } catch {
       coverBlob = null;

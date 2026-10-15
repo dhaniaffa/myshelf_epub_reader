@@ -12,6 +12,7 @@ import {
 
 import { db } from '@/lib/db';
 import { formatFileSize, readMetadata } from '@/lib/epub';
+import { useCoverUrl } from '@/lib/cover';
 import { navigate } from '@/lib/route';
 import { useClickOutside } from '@/lib/useClickOutside';
 import { toast } from '@/store/toast';
@@ -25,32 +26,11 @@ interface BookCardProps {
 }
 
 export const BookCard: React.FC<BookCardProps> = ({ book, onDeleteRequest, onShowDetails }) => {
-  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const coverUrl = useCoverUrl(book.cover);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useClickOutside(menuRef, () => setMenuOpen(false), menuOpen);
-
-  useEffect(() => {
-    let active = true;
-    if (book.cover) {
-      const url = URL.createObjectURL(book.cover);
-      Promise.resolve().then(() => {
-        if (active) setCoverUrl(url);
-      });
-      return () => {
-        active = false;
-        URL.revokeObjectURL(url);
-      };
-    } else {
-      Promise.resolve().then(() => {
-        if (active) setCoverUrl(null);
-      });
-      return () => {
-        active = false;
-      };
-    }
-  }, [book.cover]);
 
   // Backfill publishedYear & fileSize for existing books if not stored
   useEffect(() => {

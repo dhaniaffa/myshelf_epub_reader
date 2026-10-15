@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { BookOpen, Calendar, Clock, HardDrive, Play, Sparkles, User } from 'lucide-react';
 
 import { Button } from '@/components/ui';
+import { useCoverUrl } from '@/lib/cover';
 import { formatFileSize } from '@/lib/epub';
 import { navigate } from '@/lib/route';
 
@@ -12,28 +13,7 @@ interface HeroCardProps {
 }
 
 export const HeroCard: React.FC<HeroCardProps> = ({ book }) => {
-  const [coverUrl, setCoverUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    if (book.cover) {
-      const url = URL.createObjectURL(book.cover);
-      Promise.resolve().then(() => {
-        if (active) setCoverUrl(url);
-      });
-      return () => {
-        active = false;
-        URL.revokeObjectURL(url);
-      };
-    } else {
-      Promise.resolve().then(() => {
-        if (active) setCoverUrl(null);
-      });
-      return () => {
-        active = false;
-      };
-    }
-  }, [book.cover]);
+  const coverUrl = useCoverUrl(book.cover);
 
   const progressPercent = Math.round((book.progress || 0) * 100);
 

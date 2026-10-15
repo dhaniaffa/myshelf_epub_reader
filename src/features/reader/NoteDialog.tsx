@@ -35,11 +35,15 @@ const NoteDialogInner: React.FC<{
   };
 
   const colors: HighlightColor[] = ['yellow', 'green', 'blue', 'pink'];
+  const activeColorConfig = HIGHLIGHT_COLORS[color] || HIGHLIGHT_COLORS.yellow;
 
   return (
     <div className="space-y-4 py-1">
-      {/* Quote preview */}
-      <div className="bg-surface-container border-primary text-on-surface max-h-32 overflow-y-auto rounded-2xl border-l-4 p-3.5 text-xs leading-relaxed italic">
+      {/* Quote preview with dynamic highlight color accent */}
+      <div
+        className="bg-surface-container text-on-surface max-h-32 overflow-y-auto rounded-2xl border-l-4 p-3.5 text-xs leading-relaxed italic transition-colors"
+        style={{ borderLeftColor: activeColorConfig.border }}
+      >
         "{quoteText}"
       </div>
 
@@ -56,7 +60,7 @@ const NoteDialogInner: React.FC<{
               onClick={() => setColor(c)}
               className={`h-8 w-8 cursor-pointer rounded-full border-2 transition-transform ${
                 color === c
-                  ? 'border-primary scale-115 shadow-sm'
+                  ? 'border-primary ring-primary/40 scale-115 shadow-sm ring-2'
                   : 'border-transparent opacity-70 hover:opacity-100'
               }`}
               style={{ backgroundColor: HIGHLIGHT_COLORS[c].border }}
@@ -127,6 +131,7 @@ export const NoteDialog: React.FC<NoteDialogProps> = ({
       maxWidth="md"
     >
       <NoteDialogInner
+        key={`${quoteText}-${initialColor}-${initialNote}-${isExisting}`}
         quoteText={quoteText}
         initialNote={initialNote}
         initialColor={initialColor}
