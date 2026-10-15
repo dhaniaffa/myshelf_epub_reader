@@ -1,0 +1,221 @@
+/* ==========================================================================
+   Offline Reading Fonts (@font-face)
+   ========================================================================== */
+@font-face {
+  font-family: 'Literata';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/literata/literata-latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Literata';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/literata/literata-latin-700-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Literata';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/literata/literata-latin-400-italic.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Atkinson Hyperlegible';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/atkinson-hyperegible/atkinson-hyperlegible-latin-400-normal.woff2')
+    format('woff2');
+}
+
+@font-face {
+  font-family: 'Atkinson Hyperlegible';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/atkinson-hyperegible/atkinson-hyperlegible-latin-700-normal.woff2')
+    format('woff2');
+}
+
+@font-face {
+  font-family: 'Atkinson Hyperlegible';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/atkinson-hyperegible/atkinson-hyperlegible-latin-400-italic.woff2')
+    format('woff2');
+}
+
+@font-face {
+  font-family: 'OpenDyslexic';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/opendyslexic/opendyslexic-latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'OpenDyslexic';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/opendyslexic/opendyslexic-latin-700-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'OpenDyslexic';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/opendyslexic/opendyslexic-latin-400-italic.woff2') format('woff2');
+}
+
+/* Inter */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/inter/inter-latin-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/inter/inter-latin-400-italic.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/inter/inter-latin-700-normal.woff2') format('woff2');
+}
+
+/* Lexend */
+@font-face {
+  font-family: 'Lexend';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/lexend/lexend-latin-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Lexend';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/lexend/lexend-latin-700-normal.woff2') format('woff2');
+}
+
+/* Lora */
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/lora/lora-latin-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/lora/lora-latin-400-italic.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/lora/lora-latin-700-normal.woff2') format('woff2');
+}
+
+/* Merriweather */
+@font-face {
+  font-family: 'Merriweather';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/merriweather/merriweather-latin-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Merriweather';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/merriweather/merriweather-latin-400-italic.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Merriweather';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/merriweather/merriweather-latin-700-normal.woff2') format('woff2');
+}
+
+/* Source Serif 4 */
+@font-face {
+  font-family: 'Source Serif 4';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/source-serif-4/source-serif-4-latin-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Source Serif 4';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/source-serif-4/source-serif-4-latin-400-italic.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Source Serif 4';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/source-serif-4/source-serif-4-latin-700-normal.woff2') format('woff2');
+}
+
+.font-literata {
+  font-family: 'Literata', Georgia, serif;
+}
+
+.font-atkinson {
+  font-family: 'Atkinson Hyperlegible', system-ui, sans-serif;
+}
+
+.font-opendyslexic {
+  font-family: 'OpenDyslexic', sans-serif;
+}
+
+.font-inter {
+  font-family:
+    'Inter',
+    system-ui,
+    -apple-system,
+    sans-serif;
+}
+
+.font-lexend {
+  font-family: 'Lexend', system-ui, sans-serif;
+}
+
+.font-lora {
+  font-family: 'Lora', Georgia, serif;
+}
+
+.font-merriweather {
+  font-family: 'Merriweather', Georgia, serif;
+}
+
+.font-source-serif-4 {
+  font-family: 'Source Serif 4', Georgia, serif;
+}

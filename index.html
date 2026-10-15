@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#F1F5F0" id="meta-theme-color" />
+    <meta
+      name="description"
+      content="%APP_FULL_NAME% — Pembaca EPUB & PDF local-first: buku tersimpan di perangkat, bisa dibaca offline."
+    />
+    <title>%APP_NAME% — %APP_SUBTITLE%</title>
+    <script>
+      (function () {
+        try {
+          const stored = localStorage.getItem('%STORAGE_KEY_SETTINGS%');
+          let theme = 'light';
+          if (stored) {
+            const data = JSON.parse(stored);
+            if (data.state && data.state.theme) {
+              theme = data.state.theme;
+            }
+          }
+          if (theme === 'auto') {
+            theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          }
+          document.documentElement.setAttribute('data-theme', theme);
+          const metaTheme = document.getElementById('meta-theme-color');
+          if (metaTheme) {
+            const colors = {
+              light: '#F1F5F0',
+              sepia: '#FBF6EC',
+              dark: '#171B18',
+              paper: '#F5F3EE',
+              cloud: '#F7F8FA',
+              rose: '#F8F3F1',
+              charcoal: '#202124',
+              slate: '#18212B',
+              oled: '#101010',
+              midnight: '#191816',
+            };
+            metaTheme.content = colors[theme] || '#F1F5F0';
+          }
+        } catch (e) {
+          console.error('Error pre-loading theme', e);
+        }
+      })();
+    </script>
+  </head>
+  <body class="bg-surface text-on-surface min-h-screen font-sans antialiased select-none">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

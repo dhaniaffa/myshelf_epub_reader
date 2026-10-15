@@ -1,0 +1,1488 @@
+@layer base {
+  :root,
+  [data-theme='light'] {
+    --color-surface: #f1f5f0;
+    --color-surface-dim: #e6ece5;
+    --color-surface-bright: #ffffff;
+    --color-surface-container-lowest: #ffffff;
+    --color-surface-container-low: #ebf0ea;
+    --color-surface-container: #e1eae1;
+    --color-surface-container-high: #d8e2d8;
+    --color-surface-container-highest: #d0dcd0;
+
+    --color-on-surface: #283b31;
+    --color-on-surface-variant: #607565;
+    --color-outline: #607565;
+    --color-outline-variant: #c4d3c6;
+
+    --color-primary: #477a58;
+    --color-on-primary: #ffffff;
+    --color-primary-container: #c9e2d0;
+    --color-on-primary-container: #0d2a18;
+
+    --color-secondary: #536356;
+    --color-on-secondary: #ffffff;
+    --color-secondary-container: #d6e8d8;
+    --color-on-secondary-container: #102015;
+
+    --color-tertiary: #3d6473;
+    --color-on-tertiary: #ffffff;
+    --color-tertiary-container: #c1e9fb;
+    --color-on-tertiary-container: #001f29;
+
+    --color-error: #ba1a1a;
+    --color-on-error: #ffffff;
+    --color-error-container: #ffdad6;
+    --color-on-error-container: #410002;
+
+    /* Book content reader colors */
+    --book-bg: #f1f5f0;
+    --book-fg: #283b31;
+    --book-selection: rgba(71, 122, 88, 0.25);
+  }
+
+  [data-theme='sepia'] {
+    --color-surface: #fbf6ec;
+    --color-surface-dim: #f3ecd9;
+    --color-surface-bright: #fffdf9;
+    --color-surface-container-lowest: #ffffff;
+    --color-surface-container-low: #f6eeda;
+    --color-surface-container: #efe4d1;
+    --color-surface-container-high: #e7d9c3;
+    --color-surface-container-highest: #dfcdb5;
+
+    --color-on-surface: #46392b;
+    --color-on-surface-variant: #806d57;
+    --color-outline: #806d57;
+    --color-outline-variant: #d6c5b1;
+
+    --color-primary: #a66b3f;
+    --color-on-primary: #ffffff;
+    --color-primary-container: #f8deca;
+    --color-on-primary-container: #371e08;
+
+    --color-secondary: #725b44;
+    --color-on-secondary: #ffffff;
+    --color-secondary-container: #f6dec6;
+    --color-on-secondary-container: #2a1a0a;
+
+    --color-tertiary: #655e38;
+    --color-on-tertiary: #ffffff;
+    --color-tertiary-container: #ece3b0;
+    --color-on-tertiary-container: #1f1b00;
+
+    --color-error: #ba1a1a;
+    --color-on-error: #ffffff;
+    --color-error-container: #ffdad6;
+    --color-on-error-container: #410002;
+
+    /* Book content reader colors */
+    --book-bg: #fbf6ec;
+    --book-fg: #46392b;
+    --book-selection: rgba(166, 107, 63, 0.25);
+  }
+
+  [data-theme='dark'] {
+    --color-surface: #171b18;
+    --color-surface-dim: #131614;
+    --color-surface-bright: #38433b;
+    --color-surface-container-lowest: #0e120f;
+    --color-surface-container-low: #1c221d;
+    --color-surface-container: #222b24;
+    --color-surface-container-high: #2a352c;
+    --color-surface-container-highest: #334036;
+
+    --color-on-surface: #dde7dc;
+    --color-on-surface-variant: #a4b7a3;
+    --color-outline: #728471;
+    --color-outline-variant: #39483c;
+
+    --color-primary: #91b68b;
+    --color-on-primary: #113217;
+    --color-primary-container: #26492b;
+    --color-on-primary-container: #c9eac4;
+
+    --color-secondary: #a9bca8;
+    --color-on-secondary: #1b2b1b;
+    --color-secondary-container: #304331;
+    --color-on-secondary-container: #c7dcc6;
+
+    --color-tertiary: #a5cde0;
+    --color-on-tertiary: #063544;
+    --color-tertiary-container: #234c5b;
+    --color-on-tertiary-container: #c1e9fb;
+
+    --color-error: #ffb4ab;
+    --color-on-error: #690005;
+    --color-error-container: #93000a;
+    --color-on-error-container: #ffdad6;
+
+    /* Book content reader colors */
+    --book-bg: #171b18;
+    --book-fg: #dde7dc;
+    --book-selection: rgba(145, 182, 139, 0.25);
+  }
+
+  /* 1. Paper Ivory */
+  [data-theme='paper'] {
+    --color-surface: #f5f3ee;
+    --color-surface-dim: #ebe7dd;
+    --color-surface-bright: #ffffff;
+    --color-surface-container-lowest: #ffffff;
+    --color-surface-container-low: #f0ede5;
+    --color-surface-container: #eae6dd;
+    --color-surface-container-high: #e2ddd3;
+    --color-surface-container-highest: #dad5ca;
+
+    --color-on-surface: #34332f;
+    --color-on-surface-variant: #777269;
+    --color-outline: #777269;
+    --color-outline-variant: #cdc8bc;
+
+    --color-primary: #967548;
+    --color-on-primary: #ffffff;
+    --color-primary-container: #f4e4d1;
+    --color-on-primary-container: #36250e;
+
+    --color-secondary: #6b6254;
+    --color-on-secondary: #ffffff;
+    --color-secondary-container: #efe4d6;
+    --color-on-secondary-container: #241d12;
+
+    --color-tertiary: #526362;
+    --color-on-tertiary: #ffffff;
+    --color-tertiary-container: #d5e7e6;
+    --color-on-tertiary-container: #101f1f;
+
+    --color-error: #ba1a1a;
+    --color-on-error: #ffffff;
+    --color-error-container: #ffdad6;
+    --color-on-error-container: #410002;
+
+    --book-bg: #f5f3ee;
+    --book-fg: #34332f;
+    --book-selection: rgba(150, 117, 72, 0.25);
+  }
+
+  /* 2. Soft Cloud */
+  [data-theme='cloud'] {
+    --color-surface: #f7f8fa;
+    --color-surface-dim: #edf1f5;
+    --color-surface-bright: #ffffff;
+    --color-surface-container-lowest: #ffffff;
+    --color-surface-container-low: #f1f4f8;
+    --color-surface-container: #e9edf1;
+    --color-surface-container-high: #e0e6ec;
+    --color-surface-container-highest: #d7dee6;
+
+    --color-on-surface: #263238;
+    --color-on-surface-variant: #64727d;
+    --color-outline: #64727d;
+    --color-outline-variant: #c2cad2;
+
+    --color-primary: #426a8c;
+    --color-on-primary: #ffffff;
+    --color-primary-container: #d3e4f4;
+    --color-on-primary-container: #0c253c;
+
+    --color-secondary: #51606d;
+    --color-on-secondary: #ffffff;
+    --color-secondary-container: #d7e3ee;
+    --color-on-secondary-container: #101d27;
+
+    --color-tertiary: #605973;
+    --color-on-tertiary: #ffffff;
+    --color-tertiary-container: #e4ddf5;
+    --color-on-tertiary-container: #1d172d;
+
+    --color-error: #ba1a1a;
+    --color-on-error: #ffffff;
+    --color-error-container: #ffdad6;
+    --color-on-error-container: #410002;
+
+    --book-bg: #f7f8fa;
+    --book-fg: #263238;
+    --book-selection: rgba(66, 106, 140, 0.25);
+  }
+
+  /* 7. Rose Paper */
+  [data-theme='rose'] {
+    --color-surface: #f8f3f1;
+    --color-surface-dim: #efe4e1;
+    --color-surface-bright: #ffffff;
+    --color-surface-container-lowest: #ffffff;
+    --color-surface-container-low: #f4eae7;
+    --color-surface-container: #efdfda;
+    --color-surface-container-high: #e7d5cf;
+    --color-surface-container-highest: #dfc9c2;
+
+    --color-on-surface: #493735;
+    --color-on-surface-variant: #806763;
+    --color-outline: #806763;
+    --color-outline-variant: #d5c2be;
+
+    --color-primary: #a65e61;
+    --color-on-primary: #ffffff;
+    --color-primary-container: #fbdadb;
+    --color-on-primary-container: #3e1618;
+
+    --color-secondary: #745a5b;
+    --color-on-secondary: #ffffff;
+    --color-secondary-container: #f9dcde;
+    --color-on-secondary-container: #2a1718;
+
+    --color-tertiary: #6f5e4b;
+    --color-on-tertiary: #ffffff;
+    --color-tertiary-container: #f6e2cd;
+    --color-on-tertiary-container: #281b0d;
+
+    --color-error: #ba1a1a;
+    --color-on-error: #ffffff;
+    --color-error-container: #ffdad6;
+    --color-on-error-container: #410002;
+
+    --book-bg: #f8f3f1;
+    --book-fg: #493735;
+    --book-selection: rgba(166, 94, 97, 0.25);
+  }
+
+  /* 10. Soft Charcoal */
+  [data-theme='charcoal'] {
+    --color-surface: #202124;
+    --color-surface-dim: #1b1c1e;
+    --color-surface-bright: #434448;
+    --color-surface-container-lowest: #141517;
+    --color-surface-container-low: #25262a;
+    --color-surface-container: #2b2d31;
+    --color-surface-container-high: #34363c;
+    --color-surface-container-highest: #3f4249;
+
+    --color-on-surface: #e4e5e7;
+    --color-on-surface-variant: #a8abb2;
+    --color-outline: #797c84;
+    --color-outline-variant: #3f4249;
+
+    --color-primary: #9bafe5;
+    --color-on-primary: #122557;
+    --color-primary-container: #283b6e;
+    --color-on-primary-container: #d1deff;
+
+    --color-secondary: #b7c3df;
+    --color-on-secondary: #222e45;
+    --color-secondary-container: #37445d;
+    --color-on-secondary-container: #d4e1fd;
+
+    --color-tertiary: #d0bddf;
+    --color-on-tertiary: #342742;
+    --color-tertiary-container: #4a3e59;
+    --color-on-tertiary-container: #ebdcf9;
+
+    --color-error: #ffb4ab;
+    --color-on-error: #690005;
+    --color-error-container: #93000a;
+    --color-on-error-container: #ffdad6;
+
+    --book-bg: #202124;
+    --book-fg: #e4e5e7;
+    --book-selection: rgba(155, 175, 229, 0.25);
+  }
+
+  /* 11. Deep Slate */
+  [data-theme='slate'] {
+    --color-surface: #18212b;
+    --color-surface-dim: #141c25;
+    --color-surface-bright: #3d4a59;
+    --color-surface-container-lowest: #0e151d;
+    --color-surface-container-low: #1d2733;
+    --color-surface-container: #222e3a;
+    --color-surface-container-high: #2b3847;
+    --color-surface-container-highest: #364455;
+
+    --color-on-surface: #e3eaf2;
+    --color-on-surface-variant: #a4b3c4;
+    --color-outline: #728294;
+    --color-outline-variant: #384656;
+
+    --color-primary: #78b8c9;
+    --color-on-primary: #0f2e36;
+    --color-primary-container: #234d58;
+    --color-on-primary-container: #bae9f6;
+
+    --color-secondary: #adc5d4;
+    --color-on-secondary: #19313e;
+    --color-secondary-container: #304856;
+    --color-on-secondary-container: #c8e3f4;
+
+    --color-tertiary: #c2bfdd;
+    --color-on-tertiary: #2c2a44;
+    --color-tertiary-container: #42405c;
+    --color-on-tertiary-container: #dfddf9;
+
+    --color-error: #ffb4ab;
+    --color-on-error: #690005;
+    --color-error-container: #93000a;
+    --color-on-error-container: #ffdad6;
+
+    --book-bg: #18212b;
+    --book-fg: #e3eaf2;
+    --book-selection: rgba(120, 184, 201, 0.25);
+  }
+
+  /* 12. OLED Night */
+  [data-theme='oled'] {
+    --color-surface: #101010;
+    --color-surface-dim: #0b0b0b;
+    --color-surface-bright: #353535;
+    --color-surface-container-lowest: #000000;
+    --color-surface-container-low: #161616;
+    --color-surface-container: #1c1c1c;
+    --color-surface-container-high: #262626;
+    --color-surface-container-highest: #313131;
+
+    --color-on-surface: #e6e6e6;
+    --color-on-surface-variant: #999999;
+    --color-outline: #737373;
+    --color-outline-variant: #383838;
+
+    --color-primary: #a5c8a0;
+    --color-on-primary: #153215;
+    --color-primary-container: #284727;
+    --color-on-primary-container: #d1eed0;
+
+    --color-secondary: #c0c8bc;
+    --color-on-secondary: #2c3229;
+    --color-secondary-container: #40473d;
+    --color-on-secondary-container: #dcdeb9;
+
+    --color-tertiary: #a6c8ce;
+    --color-on-tertiary: #143339;
+    --color-tertiary-container: #2b494f;
+    --color-on-tertiary-container: #c8eaf0;
+
+    --color-error: #ffb4ab;
+    --color-on-error: #690005;
+    --color-error-container: #93000a;
+    --color-on-error-container: #ffdad6;
+
+    --book-bg: #101010;
+    --book-fg: #e6e6e6;
+    --book-selection: rgba(165, 200, 160, 0.25);
+  }
+
+  /* 9. Warm Midnight */
+  [data-theme='midnight'] {
+    --color-surface: #191816;
+    --color-surface-dim: #131210;
+    --color-surface-bright: #3e3b36;
+    --color-surface-container-lowest: #0c0b0a;
+    --color-surface-container-low: #1f1e1b;
+    --color-surface-container: #24221f;
+    --color-surface-container-high: #2f2c27;
+    --color-surface-container-highest: #3a3631;
+
+    --color-on-surface: #e8e1d5;
+    --color-on-surface-variant: #b8aea0;
+    --color-outline: #847c70;
+    --color-outline-variant: #433f38;
+
+    --color-primary: #d6ad76;
+    --color-on-primary: #382708;
+    --color-primary-container: #533e1a;
+    --color-on-primary-container: #f6ddbe;
+
+    --color-secondary: #cbbfa9;
+    --color-on-secondary: #332b1e;
+    --color-secondary-container: #4b4132;
+    --color-on-secondary-container: #e7deca;
+
+    --color-tertiary: #d4b9b8;
+    --color-on-tertiary: #392727;
+    --color-tertiary-container: #533b3c;
+    --color-on-tertiary-container: #f4dbdc;
+
+    --color-error: #ffb4ab;
+    --color-on-error: #690005;
+    --color-error-container: #93000a;
+    --color-on-error-container: #ffdad6;
+
+    --book-bg: #191816;
+    --book-fg: #e8e1d5;
+    --book-selection: rgba(214, 173, 118, 0.25);
+  }
+
+  /* 3. Warm Parchment */
+  [data-theme='parchment'] {
+    --color-surface: #fbf6ec;
+    --color-surface-dim: #f3ecd9;
+    --color-surface-bright: #fffdf9;
+    --color-surface-container-lowest: #ffffff;
+    --color-surface-container-low: #f6eeda;
+    --color-surface-container: #efe4d1;
+    --color-surface-container-high: #e7d9c3;
+    --color-surface-container-highest: #dfcdb5;
+
+    --color-on-surface: #46392b;
+    --color-on-surface-variant: #806d57;
+    --color-outline: #806d57;
+    --color-outline-variant: #d6c5b1;
+
+    --color-primary: #a66b3f;
+    --color-on-primary: #ffffff;
+    --color-primary-container: #f8deca;
+    --color-on-primary-container: #371e08;
+
+    --color-secondary: #725b44;
+    --color-on-secondary: #ffffff;
+    --color-secondary-container: #f6dec6;
+    --color-on-secondary-container: #2a1a0a;
+
+    --color-tertiary: #655e38;
+    --color-on-tertiary: #ffffff;
+    --color-tertiary-container: #ece3b0;
+    --color-on-tertiary-container: #1f1b00;
+
+    --color-error: #ba1a1a;
+    --color-on-error: #ffffff;
+    --color-error-container: #ffdad6;
+    --color-on-error-container: #410002;
+
+    --book-bg: #fbf6ec;
+    --book-fg: #46392b;
+    --book-selection: rgba(166, 107, 63, 0.25);
+  }
+
+  /* 5. Misty Blue */
+  [data-theme='misty'] {
+    --color-surface: #f1f5fc;
+    --color-surface-dim: #e5ecf6;
+    --color-surface-bright: #ffffff;
+    --color-surface-container-lowest: #ffffff;
+    --color-surface-container-low: #ebf1fa;
+    --color-surface-container: #dfe8f6;
+    --color-surface-container-high: #d4e0f0;
+    --color-surface-container-highest: #cad7e9;
+
+    --color-on-surface: #27364d;
+    --color-on-surface-variant: #62748c;
+    --color-outline: #62748c;
+    --color-outline-variant: #c2d0e4;
+
+    --color-primary: #456ea8;
+    --color-on-primary: #ffffff;
+    --color-primary-container: #d7e4fb;
+    --color-on-primary-container: #0c2344;
+
+    --color-secondary: #52637d;
+    --color-on-secondary: #ffffff;
+    --color-secondary-container: #dae4f6;
+    --color-on-secondary-container: #111d30;
+
+    --color-tertiary: #695b78;
+    --color-on-tertiary: #ffffff;
+    --color-tertiary-container: #ebdff9;
+    --color-on-tertiary-container: #231831;
+
+    --color-error: #ba1a1a;
+    --color-on-error: #ffffff;
+    --color-error-container: #ffdad6;
+    --color-on-error-container: #410002;
+
+    --book-bg: #f1f5fc;
+    --book-fg: #27364d;
+    --book-selection: rgba(69, 110, 168, 0.25);
+  }
+
+  /* 6. Lavender Mist */
+  [data-theme='lavender'] {
+    --color-surface: #f7f3fa;
+    --color-surface-dim: #efe8f4;
+    --color-surface-bright: #ffffff;
+    --color-surface-container-lowest: #ffffff;
+    --color-surface-container-low: #f3edf7;
+    --color-surface-container: #eae1f2;
+    --color-surface-container-high: #e1d6eb;
+    --color-surface-container-highest: #d7cbe3;
+
+    --color-on-surface: #40344f;
+    --color-on-surface-variant: #786b89;
+    --color-outline: #786b89;
+    --color-outline-variant: #d1c5de;
+
+    --color-primary: #8064a5;
+    --color-on-primary: #ffffff;
+    --color-primary-container: #eeddfb;
+    --color-on-primary-container: #2f174b;
+
+    --color-secondary: #6b5b7e;
+    --color-on-secondary: #ffffff;
+    --color-secondary-container: #efdffa;
+    --color-on-secondary-container: #241834;
+
+    --color-tertiary: #7a5868;
+    --color-on-tertiary: #ffffff;
+    --color-tertiary-container: #f8dae8;
+    --color-on-tertiary-container: #2e1523;
+
+    --color-error: #ba1a1a;
+    --color-on-error: #ffffff;
+    --color-error-container: #ffdad6;
+    --color-on-error-container: #410002;
+
+    --book-bg: #f7f3fa;
+    --book-fg: #40344f;
+    --book-selection: rgba(128, 100, 165, 0.25);
+  }
+
+  /* 8. Neutral Gray */
+  [data-theme='neutral'] {
+    --color-surface: #f3f4f6;
+    --color-surface-dim: #e9eaef;
+    --color-surface-bright: #ffffff;
+    --color-surface-container-lowest: #ffffff;
+    --color-surface-container-low: #eceef2;
+    --color-surface-container: #e5e7eb;
+    --color-surface-container-high: #dcdfe4;
+    --color-surface-container-highest: #d2d6dc;
+
+    --color-on-surface: #292d35;
+    --color-on-surface-variant: #626a76;
+    --color-outline: #626a76;
+    --color-outline-variant: #c4c8d0;
+
+    --color-primary: #505f75;
+    --color-on-primary: #ffffff;
+    --color-primary-container: #dbe3ee;
+    --color-on-primary-container: #111e30;
+
+    --color-secondary: #5c626c;
+    --color-on-secondary: #ffffff;
+    --color-secondary-container: #e1e4ea;
+    --color-on-secondary-container: #191e25;
+
+    --color-tertiary: #656157;
+    --color-on-tertiary: #ffffff;
+    --color-tertiary-container: #e7e3d8;
+    --color-on-tertiary-container: #201d16;
+
+    --color-error: #ba1a1a;
+    --color-on-error: #ffffff;
+    --color-error-container: #ffdad6;
+    --color-on-error-container: #410002;
+
+    --book-bg: #f3f4f6;
+    --book-fg: #292d35;
+    --book-selection: rgba(80, 95, 117, 0.25);
+  }
+
+  /* 13. Sepia Dark */
+  [data-theme='sepia-dark'] {
+    --color-surface: #27211d;
+    --color-surface-dim: #1f1916;
+    --color-surface-bright: #4d413a;
+    --color-surface-container-lowest: #14100d;
+    --color-surface-container-low: #2d2622;
+    --color-surface-container: #352c25;
+    --color-surface-container-high: #40362e;
+    --color-surface-container-highest: #4d4137;
+
+    --color-on-surface: #e8d9c5;
+    --color-on-surface-variant: #b8a58f;
+    --color-outline: #897864;
+    --color-outline-variant: #4d4034;
+
+    --color-primary: #c69c6d;
+    --color-on-primary: #34220b;
+    --color-primary-container: #4f381d;
+    --color-on-primary-container: #ecd1b3;
+
+    --color-secondary: #bfac94;
+    --color-on-secondary: #2c2317;
+    --color-secondary-container: #44392b;
+    --color-on-secondary-container: #dccbb5;
+
+    --color-tertiary: #b4b695;
+    --color-on-tertiary: #252814;
+    --color-tertiary-container: #3b3f25;
+    --color-on-tertiary-container: #d3d5b7;
+
+    --color-error: #ffb4ab;
+    --color-on-error: #690005;
+    --color-error-container: #93000a;
+    --color-on-error-container: #ffdad6;
+
+    --book-bg: #27211d;
+    --book-fg: #e8d9c5;
+    --book-selection: rgba(198, 156, 109, 0.25);
+  }
+
+  /* 15. Midnight Lavender */
+  [data-theme='midnight-lavender'] {
+    --color-surface: #1d1b24;
+    --color-surface-dim: #17151d;
+    --color-surface-bright: #413c4e;
+    --color-surface-container-lowest: #100e14;
+    --color-surface-container-low: #23202c;
+    --color-surface-container: #2b2636;
+    --color-surface-container-high: #353042;
+    --color-surface-container-highest: #403a50;
+
+    --color-on-surface: #e7e1f0;
+    --color-on-surface-variant: #b5abc8;
+    --color-outline: #857b9a;
+    --color-outline-variant: #453e55;
+
+    --color-primary: #b49ad8;
+    --color-on-primary: #271544;
+    --color-primary-container: #422967;
+    --color-on-primary-container: #e4d5f8;
+
+    --color-secondary: #bfb4d2;
+    --color-on-secondary: #2a213b;
+    --color-secondary-container: #423755;
+    --color-on-secondary-container: #dfd5f2;
+
+    --color-tertiary: #d4a9be;
+    --color-on-tertiary: #3a1b2c;
+    --color-tertiary-container: #552f43;
+    --color-on-tertiary-container: #f6cee1;
+
+    --color-error: #ffb4ab;
+    --color-on-error: #690005;
+    --color-error-container: #93000a;
+    --color-on-error-container: #ffdad6;
+
+    --book-bg: #1d1b24;
+    --book-fg: #e7e1f0;
+    --book-selection: rgba(180, 154, 216, 0.25);
+  }
+
+  /* 16. Graphite Blue */
+  [data-theme='graphite-blue'] {
+    --color-surface: #1e2026;
+    --color-surface-dim: #18191e;
+    --color-surface-bright: #424652;
+    --color-surface-container-lowest: #111216;
+    --color-surface-container-low: #23262e;
+    --color-surface-container: #292d36;
+    --color-surface-container-high: #333843;
+    --color-surface-container-highest: #3e4452;
+
+    --color-on-surface: #e5e7ed;
+    --color-on-surface-variant: #a8b0c0;
+    --color-outline: #778092;
+    --color-outline-variant: #3f4554;
+
+    --color-primary: #86a8e7;
+    --color-on-primary: #0f2552;
+    --color-primary-container: #233c71;
+    --color-on-primary-container: #d1e1fd;
+
+    --color-secondary: #b1bed7;
+    --color-on-secondary: #1d2a40;
+    --color-secondary-container: #34425a;
+    --color-on-secondary-container: #cfdbf3;
+
+    --color-tertiary: #a6c3ce;
+    --color-on-tertiary: #132f3a;
+    --color-tertiary-container: #2b4651;
+    --color-on-tertiary-container: #c8e5f0;
+
+    --color-error: #ffb4ab;
+    --color-on-error: #690005;
+    --color-error-container: #93000a;
+    --color-on-error-container: #ffdad6;
+
+    --book-bg: #1e2026;
+    --book-fg: #e5e7ed;
+    --book-selection: rgba(134, 168, 231, 0.25);
+  }
+
+  /* 17. Mint Breeze */
+  [data-theme='mint'] {
+    --color-surface: #f0f7f5;
+    --color-surface-dim: #e2ece9;
+    --color-surface-bright: #ffffff;
+    --color-surface-container-lowest: #ffffff;
+    --color-surface-container-low: #e9f2ef;
+    --color-surface-container: #ddebe7;
+    --color-surface-container-high: #d2e2dd;
+    --color-surface-container-highest: #c7d9d3;
+
+    --color-on-surface: #24383a;
+    --color-on-surface-variant: #5e7774;
+    --color-outline: #5e7774;
+    --color-outline-variant: #bccec9;
+
+    --color-primary: #2f7d75;
+    --color-on-primary: #ffffff;
+    --color-primary-container: #c8ede7;
+    --color-on-primary-container: #052926;
+
+    --color-secondary: #4c6a66;
+    --color-on-secondary: #ffffff;
+    --color-secondary-container: #ceeae5;
+    --color-on-secondary-container: #0d2320;
+
+    --color-tertiary: #526374;
+    --color-on-tertiary: #ffffff;
+    --color-tertiary-container: #d5e4f8;
+    --color-on-tertiary-container: #0e1f2f;
+
+    --color-error: #ba1a1a;
+    --color-on-error: #ffffff;
+    --color-error-container: #ffdad6;
+    --color-on-error-container: #410002;
+
+    --book-bg: #f0f7f5;
+    --book-fg: #24383a;
+    --book-selection: rgba(47, 125, 117, 0.25);
+  }
+
+  /* 18. Peach Cream */
+  [data-theme='peach'] {
+    --color-surface: #fcf4ee;
+    --color-surface-dim: #f2e5dc;
+    --color-surface-bright: #ffffff;
+    --color-surface-container-lowest: #ffffff;
+    --color-surface-container-low: #f8ebe2;
+    --color-surface-container: #f4e2d6;
+    --color-surface-container-high: #ebd8cb;
+    --color-surface-container-highest: #e1cec0;
+
+    --color-on-surface: #44332d;
+    --color-on-surface-variant: #85695d;
+    --color-outline: #85695d;
+    --color-outline-variant: #d9c3b6;
+
+    --color-primary: #c0694a;
+    --color-on-primary: #ffffff;
+    --color-primary-container: #fedecc;
+    --color-on-primary-container: #3c1608;
+
+    --color-secondary: #795b50;
+    --color-on-secondary: #ffffff;
+    --color-secondary-container: #fbddd1;
+    --color-on-secondary-container: #2f1911;
+
+    --color-tertiary: #715e44;
+    --color-on-tertiary: #ffffff;
+    --color-tertiary-container: #fce1be;
+    --color-on-tertiary-container: #2a1c08;
+
+    --color-error: #ba1a1a;
+    --color-on-error: #ffffff;
+    --color-error-container: #ffdad6;
+    --color-on-error-container: #410002;
+
+    --book-bg: #fcf4ee;
+    --book-fg: #44332d;
+    --book-selection: rgba(192, 105, 74, 0.25);
+  }
+
+  /* 19. Stone Sand */
+  [data-theme='sand'] {
+    --color-surface: #f4f1ec;
+    --color-surface-dim: #eae6df;
+    --color-surface-bright: #ffffff;
+    --color-surface-container-lowest: #ffffff;
+    --color-surface-container-low: #efebe5;
+    --color-surface-container: #e5e0d7;
+    --color-surface-container-high: #dbd6cd;
+    --color-surface-container-highest: #d0ccc2;
+
+    --color-on-surface: #33312d;
+    --color-on-surface-variant: #6f6b63;
+    --color-outline: #6f6b63;
+    --color-outline-variant: #c8c3b9;
+
+    --color-primary: #7a7f5a;
+    --color-on-primary: #ffffff;
+    --color-primary-container: #e2e8c2;
+    --color-on-primary-container: #21260b;
+
+    --color-secondary: #656755;
+    --color-on-secondary: #ffffff;
+    --color-secondary-container: #e7e9d5;
+    --color-on-secondary-container: #202214;
+
+    --color-tertiary: #506660;
+    --color-on-tertiary: #ffffff;
+    --color-tertiary-container: #d3ebe4;
+    --color-on-tertiary-container: #0d201c;
+
+    --color-error: #ba1a1a;
+    --color-on-error: #ffffff;
+    --color-error-container: #ffdad6;
+    --color-on-error-container: #410002;
+
+    --book-bg: #f4f1ec;
+    --book-fg: #33312d;
+    --book-selection: rgba(122, 127, 90, 0.25);
+  }
+
+  /* 20. Sky Whisper */
+  [data-theme='sky'] {
+    --color-surface: #f2f8fb;
+    --color-surface-dim: #e4eff3;
+    --color-surface-bright: #ffffff;
+    --color-surface-container-lowest: #ffffff;
+    --color-surface-container-low: #ebf4f8;
+    --color-surface-container: #e0edf3;
+    --color-surface-container-high: #d4e4eb;
+    --color-surface-container-highest: #c7dbe2;
+
+    --color-on-surface: #24363f;
+    --color-on-surface-variant: #5f7885;
+    --color-outline: #5f7885;
+    --color-outline-variant: #bdd1dc;
+
+    --color-primary: #2f7f9d;
+    --color-on-primary: #ffffff;
+    --color-primary-container: #c7eefb;
+    --color-on-primary-container: #002b3a;
+
+    --color-secondary: #4c6572;
+    --color-on-secondary: #ffffff;
+    --color-secondary-container: #cee5f3;
+    --color-on-secondary-container: #081f2a;
+
+    --color-tertiary: #605b77;
+    --color-on-tertiary: #ffffff;
+    --color-tertiary-container: #e5dffb;
+    --color-on-tertiary-container: #1c1731;
+
+    --color-error: #ba1a1a;
+    --color-on-error: #ffffff;
+    --color-error-container: #ffdad6;
+    --color-on-error-container: #410002;
+
+    --book-bg: #f2f8fb;
+    --book-fg: #24363f;
+    --book-selection: rgba(47, 127, 157, 0.25);
+  }
+
+  /* 21. Butter Linen */
+  [data-theme='butter'] {
+    --color-surface: #faf7e8;
+    --color-surface-dim: #f0eccf;
+    --color-surface-bright: #ffffff;
+    --color-surface-container-lowest: #ffffff;
+    --color-surface-container-low: #f5f1da;
+    --color-surface-container: #efe9cc;
+    --color-surface-container-high: #e6dfbf;
+    --color-surface-container-highest: #ddd5b1;
+
+    --color-on-surface: #3e3a25;
+    --color-on-surface-variant: #7a7455;
+    --color-outline: #7a7455;
+    --color-outline-variant: #d4ccaa;
+
+    --color-primary: #8c7f2a;
+    --color-on-primary: #ffffff;
+    --color-primary-container: #f8eda2;
+    --color-on-primary-container: #2f2a03;
+
+    --color-secondary: #6b6543;
+    --color-on-secondary: #ffffff;
+    --color-secondary-container: #f3edc3;
+    --color-on-secondary-container: #242007;
+
+    --color-tertiary: #526759;
+    --color-on-tertiary: #ffffff;
+    --color-tertiary-container: #d4ebdc;
+    --color-on-tertiary-container: #0f2318;
+
+    --color-error: #ba1a1a;
+    --color-on-error: #ffffff;
+    --color-error-container: #ffdad6;
+    --color-on-error-container: #410002;
+
+    --book-bg: #faf7e8;
+    --book-fg: #3e3a25;
+    --book-selection: rgba(140, 127, 42, 0.25);
+  }
+
+  /* 22. Dusty Mauve */
+  [data-theme='mauve'] {
+    --color-surface: #f6f1f3;
+    --color-surface-dim: #ece3e6;
+    --color-surface-bright: #ffffff;
+    --color-surface-container-lowest: #ffffff;
+    --color-surface-container-low: #f1e9ec;
+    --color-surface-container: #eae0e4;
+    --color-surface-container-high: #dfd3d8;
+    --color-surface-container-highest: #d4c6cb;
+
+    --color-on-surface: #3f3338;
+    --color-on-surface-variant: #7b6870;
+    --color-outline: #7b6870;
+    --color-outline-variant: #d2c1c8;
+
+    --color-primary: #8e5a6e;
+    --color-on-primary: #ffffff;
+    --color-primary-container: #fbd7e3;
+    --color-on-primary-container: #391122;
+
+    --color-secondary: #705861;
+    --color-on-secondary: #ffffff;
+    --color-secondary-container: #fbd9e5;
+    --color-on-secondary-container: #28141d;
+
+    --color-tertiary: #715d4d;
+    --color-on-tertiary: #ffffff;
+    --color-tertiary-container: #fadfcb;
+    --color-on-tertiary-container: #2a1a0d;
+
+    --color-error: #ba1a1a;
+    --color-on-error: #ffffff;
+    --color-error-container: #ffdad6;
+    --color-on-error-container: #410002;
+
+    --book-bg: #f6f1f3;
+    --book-fg: #3f3338;
+    --book-selection: rgba(142, 90, 110, 0.25);
+  }
+
+  /* 23. Olive Paper */
+  [data-theme='olive'] {
+    --color-surface: #f5f5ec;
+    --color-surface-dim: #eaebdd;
+    --color-surface-bright: #ffffff;
+    --color-surface-container-lowest: #ffffff;
+    --color-surface-container-low: #f0f1e4;
+    --color-surface-container: #e6e8d6;
+    --color-surface-container-high: #dcdfc8;
+    --color-surface-container-highest: #d1d5ba;
+
+    --color-on-surface: #30342a;
+    --color-on-surface-variant: #687059;
+    --color-outline: #687059;
+    --color-outline-variant: #c2c9b2;
+
+    --color-primary: #667a3a;
+    --color-on-primary: #ffffff;
+    --color-primary-container: #dcf2ae;
+    --color-on-primary-container: #1c2706;
+
+    --color-secondary: #5c6549;
+    --color-on-secondary: #ffffff;
+    --color-secondary-container: #dfe8c8;
+    --color-on-secondary-container: #19210c;
+
+    --color-tertiary: #4a6763;
+    --color-on-tertiary: #ffffff;
+    --color-tertiary-container: #ceebe5;
+    --color-on-tertiary-container: #07211e;
+
+    --color-error: #ba1a1a;
+    --color-on-error: #ffffff;
+    --color-error-container: #ffdad6;
+    --color-on-error-container: #410002;
+
+    --book-bg: #f5f5ec;
+    --book-fg: #30342a;
+    --book-selection: rgba(102, 122, 58, 0.25);
+  }
+
+  /* 24. Cool Mist */
+  [data-theme='mist'] {
+    --color-surface: #f4f6f7;
+    --color-surface-dim: #e8ecee;
+    --color-surface-bright: #ffffff;
+    --color-surface-container-lowest: #ffffff;
+    --color-surface-container-low: #eef1f3;
+    --color-surface-container: #e3e8ea;
+    --color-surface-container-high: #d8dfe2;
+    --color-surface-container-highest: #ccd5d9;
+
+    --color-on-surface: #2a3336;
+    --color-on-surface-variant: #66747a;
+    --color-outline: #66747a;
+    --color-outline-variant: #c4ced2;
+
+    --color-primary: #3d7c85;
+    --color-on-primary: #ffffff;
+    --color-primary-container: #cef0f6;
+    --color-on-primary-container: #02272d;
+
+    --color-secondary: #50646b;
+    --color-on-secondary: #ffffff;
+    --color-secondary-container: #d3e6ee;
+    --color-on-secondary-container: #0c1e24;
+
+    --color-tertiary: #605b73;
+    --color-on-tertiary: #ffffff;
+    --color-tertiary-container: #e6dffb;
+    --color-on-tertiary-container: #1c172e;
+
+    --color-error: #ba1a1a;
+    --color-on-error: #ffffff;
+    --color-error-container: #ffdad6;
+    --color-on-error-container: #410002;
+
+    --book-bg: #f4f6f7;
+    --book-fg: #2a3336;
+    --book-selection: rgba(61, 124, 133, 0.25);
+  }
+
+  /* 25. Mocha Dark */
+  [data-theme='mocha'] {
+    --color-surface: #1f1a17;
+    --color-surface-dim: #181412;
+    --color-surface-bright: #453a35;
+    --color-surface-container-lowest: #120f0d;
+    --color-surface-container-low: #25201b;
+    --color-surface-container: #2c2420;
+    --color-surface-container-high: #362d28;
+    --color-surface-container-highest: #433832;
+
+    --color-on-surface: #eadfd3;
+    --color-on-surface-variant: #bba999;
+    --color-outline: #8b7b6c;
+    --color-outline-variant: #4a3e36;
+
+    --color-primary: #d08a5e;
+    --color-on-primary: #371a07;
+    --color-primary-container: #552d14;
+    --color-on-primary-container: #facab0;
+
+    --color-secondary: #c3af9f;
+    --color-on-secondary: #2e2218;
+    --color-secondary-container: #453629;
+    --color-on-secondary-container: #deccc0;
+
+    --color-tertiary: #bfb896;
+    --color-on-tertiary: #2b260f;
+    --color-tertiary-container: #413c20;
+    --color-on-tertiary-container: #ddd6b4;
+
+    --color-error: #ffb4ab;
+    --color-on-error: #690005;
+    --color-error-container: #93000a;
+    --color-on-error-container: #ffdad6;
+
+    --book-bg: #1f1a17;
+    --book-fg: #eadfd3;
+    --book-selection: rgba(208, 138, 94, 0.25);
+  }
+
+  /* 26. Ink Navy */
+  [data-theme='navy'] {
+    --color-surface: #131a26;
+    --color-surface-dim: #0e141e;
+    --color-surface-bright: #34425a;
+    --color-surface-container-lowest: #080d14;
+    --color-surface-container-low: #182130;
+    --color-surface-container: #1e2838;
+    --color-surface-container-high: #263346;
+    --color-surface-container-highest: #314056;
+
+    --color-on-surface: #e2e8f2;
+    --color-on-surface-variant: #9daac0;
+    --color-outline: #717d94;
+    --color-outline-variant: #354256;
+
+    --color-primary: #6fa3e0;
+    --color-on-primary: #0b2446;
+    --color-primary-container: #1c3b65;
+    --color-on-primary-container: #cbe1fd;
+
+    --color-secondary: #a6bbd7;
+    --color-on-secondary: #172b43;
+    --color-secondary-container: #2d415b;
+    --color-on-secondary-container: #c4d7f2;
+
+    --color-tertiary: #a6cbd6;
+    --color-on-tertiary: #13333c;
+    --color-tertiary-container: #2a4953;
+    --color-on-tertiary-container: #c6edf9;
+
+    --color-error: #ffb4ab;
+    --color-on-error: #690005;
+    --color-error-container: #93000a;
+    --color-on-error-container: #ffdad6;
+
+    --book-bg: #131a26;
+    --book-fg: #e2e8f2;
+    --book-selection: rgba(111, 163, 224, 0.25);
+  }
+
+  /* 27. Plum Night */
+  [data-theme='plum'] {
+    --color-surface: #1c171f;
+    --color-surface-dim: #161218;
+    --color-surface-bright: #433948;
+    --color-surface-container-lowest: #0f0b11;
+    --color-surface-container-low: #221d27;
+    --color-surface-container: #292230;
+    --color-surface-container-high: #332c3a;
+    --color-surface-container-highest: #403648;
+
+    --color-on-surface: #e9e1ee;
+    --color-on-surface-variant: #b3a6bd;
+    --color-outline: #82768c;
+    --color-outline-variant: #43394b;
+
+    --color-primary: #c58fb5;
+    --color-on-primary: #34152c;
+    --color-primary-container: #502745;
+    --color-on-primary-container: #f8ceee;
+
+    --color-secondary: #bfb0c7;
+    --color-on-secondary: #2c2033;
+    --color-secondary-container: #43354b;
+    --color-on-secondary-container: #ddcfe5;
+
+    --color-tertiary: #d0b0a8;
+    --color-on-tertiary: #38211c;
+    --color-tertiary-container: #513630;
+    --color-on-tertiary-container: #f6d4cc;
+
+    --color-error: #ffb4ab;
+    --color-on-error: #690005;
+    --color-error-container: #93000a;
+    --color-on-error-container: #ffdad6;
+
+    --book-bg: #1c171f;
+    --book-fg: #e9e1ee;
+    --book-selection: rgba(197, 143, 181, 0.25);
+  }
+
+  /* 28. Moss Dark */
+  [data-theme='moss'] {
+    --color-surface: #1a1d17;
+    --color-surface-dim: #141712;
+    --color-surface-bright: #3d4438;
+    --color-surface-container-lowest: #0d100c;
+    --color-surface-container-low: #20241c;
+    --color-surface-container: #262b21;
+    --color-surface-container-high: #30362a;
+    --color-surface-container-highest: #3b4335;
+
+    --color-on-surface: #e0e5d6;
+    --color-on-surface-variant: #a9b39a;
+    --color-outline: #77816a;
+    --color-outline-variant: #3f4735;
+
+    --color-primary: #a7bf6a;
+    --color-on-primary: #233107;
+    --color-primary-container: #394b1a;
+    --color-on-primary-container: #dceea8;
+
+    --color-secondary: #b1ba9f;
+    --color-on-secondary: #232b18;
+    --color-secondary-container: #3a442d;
+    --color-on-secondary-container: #ccd5b9;
+
+    --color-tertiary: #a6c5b2;
+    --color-on-tertiary: #133324;
+    --color-tertiary-container: #2a4b3a;
+    --color-on-tertiary-container: #c6ecd4;
+
+    --color-error: #ffb4ab;
+    --color-on-error: #690005;
+    --color-error-container: #93000a;
+    --color-on-error-container: #ffdad6;
+
+    --book-bg: #1a1d17;
+    --book-fg: #e0e5d6;
+    --book-selection: rgba(167, 191, 106, 0.25);
+  }
+
+  /* 29. Teal Dusk */
+  [data-theme='teal-dusk'] {
+    --color-surface: #141e1f;
+    --color-surface-dim: #0e1617;
+    --color-surface-bright: #334446;
+    --color-surface-container-lowest: #080f10;
+    --color-surface-container-low: #192527;
+    --color-surface-container: #1f2d2f;
+    --color-surface-container-high: #27373a;
+    --color-surface-container-highest: #314447;
+
+    --color-on-surface: #ddeae8;
+    --color-on-surface-variant: #9db5b1;
+    --color-outline: #6e8582;
+    --color-outline-variant: #344848;
+
+    --color-primary: #5fbfb0;
+    --color-on-primary: #05332e;
+    --color-primary-container: #174e47;
+    --color-on-primary-container: #b8f4ea;
+
+    --color-secondary: #a0b9b6;
+    --color-on-secondary: #142e2c;
+    --color-secondary-container: #2a4542;
+    --color-on-secondary-container: #bcddd9;
+
+    --color-tertiary: #adc3d9;
+    --color-on-tertiary: #182c3d;
+    --color-tertiary-container: #2e4355;
+    --color-on-tertiary-container: #c8e3fd;
+
+    --color-error: #ffb4ab;
+    --color-on-error: #690005;
+    --color-error-container: #93000a;
+    --color-on-error-container: #ffdad6;
+
+    --book-bg: #141e1f;
+    --book-fg: #ddeae8;
+    --book-selection: rgba(95, 191, 176, 0.25);
+  }
+
+  /* 30. Ash Rose */
+  [data-theme='ash-rose'] {
+    --color-surface: #211b1c;
+    --color-surface-dim: #191415;
+    --color-surface-bright: #473c3e;
+    --color-surface-container-lowest: #120d0e;
+    --color-surface-container-low: #272021;
+    --color-surface-container: #2f2527;
+    --color-surface-container-high: #3a2f31;
+    --color-surface-container-highest: #473a3d;
+
+    --color-on-surface: #ede1e1;
+    --color-on-surface-variant: #b9a5a7;
+    --color-outline: #887678;
+    --color-outline-variant: #4a3e40;
+
+    --color-primary: #d58c94;
+    --color-on-primary: #3b141b;
+    --color-primary-container: #572a32;
+    --color-on-primary-container: #fdcfd4;
+
+    --color-secondary: #c3adb0;
+    --color-on-secondary: #2f2124;
+    --color-secondary-container: #463639;
+    --color-on-secondary-container: #e0c7ca;
+
+    --color-tertiary: #cbb4a0;
+    --color-on-tertiary: #342517;
+    --color-tertiary-container: #4d3b2c;
+    --color-on-tertiary-container: #e9d2bf;
+
+    --color-error: #ffb4ab;
+    --color-on-error: #690005;
+    --color-error-container: #93000a;
+    --color-on-error-container: #ffdad6;
+
+    --book-bg: #211b1c;
+    --book-fg: #ede1e1;
+    --book-selection: rgba(213, 140, 148, 0.25);
+  }
+
+  /* 31. Coffee Bean */
+  [data-theme='coffee'] {
+    --color-surface: #1a1512;
+    --color-surface-dim: #13100d;
+    --color-surface-bright: #433932;
+    --color-surface-container-lowest: #0c0a07;
+    --color-surface-container-low: #211a15;
+    --color-surface-container: #281f1a;
+    --color-surface-container-high: #332822;
+    --color-surface-container-highest: #3f332c;
+
+    --color-on-surface: #e6d8c8;
+    --color-on-surface-variant: #b3a08c;
+    --color-outline: #857463;
+    --color-outline-variant: #463a31;
+
+    --color-primary: #c9a24f;
+    --color-on-primary: #332504;
+    --color-primary-container: #4d3c14;
+    --color-on-primary-container: #e8d198;
+
+    --color-secondary: #bcae97;
+    --color-on-secondary: #2c2314;
+    --color-secondary-container: #433827;
+    --color-on-secondary-container: #d8c9b3;
+
+    --color-tertiary: #aba686;
+    --color-on-tertiary: #23220d;
+    --color-tertiary-container: #39371f;
+    --color-on-tertiary-container: #c8c3a4;
+
+    --color-error: #ffb4ab;
+    --color-on-error: #690005;
+    --color-error-container: #93000a;
+    --color-on-error-container: #ffdad6;
+
+    --book-bg: #1a1512;
+    --book-fg: #e6d8c8;
+    --book-selection: rgba(201, 162, 79, 0.25);
+  }
+
+  /* 32. Nord Frost */
+  [data-theme='nord'] {
+    --color-surface: #1f2430;
+    --color-surface-dim: #181c25;
+    --color-surface-bright: #444e63;
+    --color-surface-container-lowest: #11141b;
+    --color-surface-container-low: #242a38;
+    --color-surface-container: #2a3140;
+    --color-surface-container-high: #343c4e;
+    --color-surface-container-highest: #3f485d;
+
+    --color-on-surface: #e5e9f0;
+    --color-on-surface-variant: #a9b4c4;
+    --color-outline: #778397;
+    --color-outline-variant: #3f4759;
+
+    --color-primary: #88c0d0;
+    --color-on-primary: #12303a;
+    --color-primary-container: #244955;
+    --color-on-primary-container: #c2edf9;
+
+    --color-secondary: #acbacd;
+    --color-on-secondary: #1b2939;
+    --color-secondary-container: #334254;
+    --color-on-secondary-container: #c7d7ec;
+
+    --color-tertiary: #81a1c1;
+    --color-on-tertiary: #10263b;
+    --color-tertiary-container: #23405c;
+    --color-on-tertiary-container: #c0dbfa;
+
+    --color-error: #bf616a;
+    --color-on-error: #ffffff;
+    --color-error-container: #4c2428;
+    --color-on-error-container: #f8d1d5;
+
+    --book-bg: #1f2430;
+    --book-fg: #e5e9f0;
+    --book-selection: rgba(136, 192, 208, 0.25);
+  }
+
+  [data-theme='eink-light'] {
+    --color-surface: #ffffff;
+    --color-surface-dim: #f0f0f0;
+    --color-surface-bright: #ffffff;
+    --color-surface-container-lowest: #ffffff;
+    --color-surface-container-low: #f8f8f8;
+    --color-surface-container: #f0f0f0;
+    --color-surface-container-high: #e8e8e8;
+    --color-surface-container-highest: #e0e0e0;
+
+    --color-on-surface: #000000;
+    --color-on-surface-variant: #222222;
+    --color-outline: #000000;
+    --color-outline-variant: #666666;
+
+    --color-primary: #000000;
+    --color-on-primary: #ffffff;
+    --color-primary-container: #e0e0e0;
+    --color-on-primary-container: #000000;
+
+    --color-secondary: #000000;
+    --color-on-secondary: #ffffff;
+    --color-secondary-container: #e5e5e5;
+    --color-on-secondary-container: #000000;
+
+    --color-tertiary: #000000;
+    --color-on-tertiary: #ffffff;
+    --color-tertiary-container: #eeeeee;
+    --color-on-tertiary-container: #000000;
+
+    --color-error: #000000;
+    --color-on-error: #ffffff;
+    --color-error-container: #e0e0e0;
+    --color-on-error-container: #000000;
+
+    --book-bg: #ffffff;
+    --book-fg: #000000;
+    --book-selection: rgba(0, 0, 0, 0.22);
+  }
+
+  [data-theme='eink-dark'] {
+    --color-surface: #000000;
+    --color-surface-dim: #000000;
+    --color-surface-bright: #1a1a1a;
+    --color-surface-container-lowest: #000000;
+    --color-surface-container-low: #111111;
+    --color-surface-container: #1a1a1a;
+    --color-surface-container-high: #242424;
+    --color-surface-container-highest: #333333;
+
+    --color-on-surface: #ffffff;
+    --color-on-surface-variant: #dddddd;
+    --color-outline: #ffffff;
+    --color-outline-variant: #999999;
+
+    --color-primary: #ffffff;
+    --color-on-primary: #000000;
+    --color-primary-container: #2a2a2a;
+    --color-on-primary-container: #ffffff;
+
+    --color-secondary: #ffffff;
+    --color-on-secondary: #000000;
+    --color-secondary-container: #222222;
+    --color-on-secondary-container: #ffffff;
+
+    --color-tertiary: #ffffff;
+    --color-on-tertiary: #000000;
+    --color-tertiary-container: #1c1c1c;
+    --color-on-tertiary-container: #ffffff;
+
+    --color-error: #ffffff;
+    --color-on-error: #000000;
+    --color-error-container: #333333;
+    --color-on-error-container: #ffffff;
+
+    --book-bg: #000000;
+    --book-fg: #ffffff;
+    --book-selection: rgba(255, 255, 255, 0.28);
+  }
+}
+
+/* Tailwind utility mappings for theme tokens */
+@theme {
+  --color-surface: var(--color-surface);
+  --color-surface-dim: var(--color-surface-dim);
+  --color-surface-bright: var(--color-surface-bright);
+  --color-surface-container-lowest: var(--color-surface-container-lowest);
+  --color-surface-container-low: var(--color-surface-container-low);
+  --color-surface-container: var(--color-surface-container);
+  --color-surface-container-high: var(--color-surface-container-high);
+  --color-surface-container-highest: var(--color-surface-container-highest);
+
+  --color-on-surface: var(--color-on-surface);
+  --color-on-surface-variant: var(--color-on-surface-variant);
+  --color-outline: var(--color-outline);
+  --color-outline-variant: var(--color-outline-variant);
+
+  --color-primary: var(--color-primary);
+  --color-on-primary: var(--color-on-primary);
+  --color-primary-container: var(--color-primary-container);
+  --color-on-primary-container: var(--color-on-primary-container);
+
+  --color-secondary: var(--color-secondary);
+  --color-on-secondary: var(--color-on-secondary);
+  --color-secondary-container: var(--color-secondary-container);
+  --color-on-secondary-container: var(--color-on-secondary-container);
+
+  --color-tertiary: var(--color-tertiary);
+  --color-on-tertiary: var(--color-on-tertiary);
+  --color-tertiary-container: var(--color-tertiary-container);
+  --color-on-tertiary-container: var(--color-on-tertiary-container);
+
+  --color-error: var(--color-error);
+  --color-on-error: var(--color-on-error);
+  --color-error-container: var(--color-error-container);
+  --color-on-error-container: var(--color-on-error-container);
+}
+
+/* Smooth transitions for theme switching */
+html {
+  transition:
+    background-color 0.25s ease,
+    color 0.25s ease;
+  color-scheme: light;
+}
+
+html[data-theme='dark'],
+html[data-theme='charcoal'],
+html[data-theme='slate'],
+html[data-theme='oled'],
+html[data-theme='midnight'] {
+  color-scheme: dark;
+}
