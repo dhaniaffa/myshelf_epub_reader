@@ -6,7 +6,7 @@ export const APP_CONFIG = {
   name: 'MyShelf',
   subtitle: 'Offline Library Epub Reader',
   fullName: 'MyShelf - Offline Library Epub Reader',
-  version: '1.0.0',
+  version: '1.1.0',
 
   // Database Name (IndexedDB)
   databaseName: 'MyShelfDB',

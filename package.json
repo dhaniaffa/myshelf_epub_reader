@@ -1,7 +1,7 @@
 {
   "name": "myshelf",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -15,7 +15,8 @@
     "bump": "node scripts/bump-version.js",
     "bump:patch": "node scripts/bump-version.js patch",
     "bump:minor": "node scripts/bump-version.js minor",
-    "bump:major": "node scripts/bump-version.js major"
+    "bump:major": "node scripts/bump-version.js major",
+    "latest-json": "node scripts/generate-latest-json.js"
   },
   "dependencies": {
     "@fontsource/roboto": "^5.3.0",
