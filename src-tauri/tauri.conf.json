@@ -36,5 +36,13 @@
     "android": {
       "debugApplicationIdSuffix": ".debug"
     }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEY5QTdGQkYyNENGOEY3RTQKUldUazkvaE04dnVuK1E3VW8wN256L082QjA5TC9kMVpMbFlIbC9Xa3NCZDB6QmdDZmx4VWhmUjAK",
+      "endpoints": [
+        "https://github.com/dhaniaffa/myshelf_epub_reader/releases/latest/download/latest.json"
+      ]
+    }
   }
 }

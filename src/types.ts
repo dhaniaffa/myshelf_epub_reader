@@ -125,6 +125,7 @@ export interface ReaderSettings {
   textContrast?: ReaderTextContrast; // Text weight adjustment for e-reader screens without a backlight
   dailyGoalMinutes?: number; // Daily reading goal (default: 20 minutes)
   readingSpeedWpm?: number; // Average reading speed in words per minute (default: 220 WPM)
+  autoUpdateEnabled?: boolean; // Check and prompt/install updates automatically on launch (default: true)
 }
 
 export interface FootnoteData {

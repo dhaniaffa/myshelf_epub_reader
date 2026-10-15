@@ -19,6 +19,7 @@ interface SettingsState extends ReaderSettings {
   setTextContrast: (textContrast: NonNullable<ReaderSettings['textContrast']>) => void;
   setDailyGoalMinutes: (minutes: number) => void;
   setReadingSpeedWpm: (wpm: number) => void;
+  setAutoUpdateEnabled: (autoUpdateEnabled: boolean) => void;
   resetSettings: () => void;
 }
 
@@ -36,6 +37,7 @@ const DEFAULT_SETTINGS: ReaderSettings = {
   textContrast: 'normal',
   dailyGoalMinutes: 20,
   readingSpeedWpm: 220,
+  autoUpdateEnabled: true,
 };
 
 export const useSettingsStore = create<SettingsState>()(
@@ -57,6 +59,7 @@ export const useSettingsStore = create<SettingsState>()(
         set({ dailyGoalMinutes: Math.max(5, Math.min(180, dailyGoalMinutes)) }),
       setReadingSpeedWpm: (readingSpeedWpm) =>
         set({ readingSpeedWpm: Math.max(50, Math.min(600, readingSpeedWpm)) }),
+      setAutoUpdateEnabled: (autoUpdateEnabled) => set({ autoUpdateEnabled }),
       resetSettings: () => set(DEFAULT_SETTINGS),
     }),
     {

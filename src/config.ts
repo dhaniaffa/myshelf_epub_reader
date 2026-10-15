@@ -29,6 +29,14 @@ export const APP_CONFIG = {
 
   // Theme Style ID
   themeStyleId: 'myshelf-theme-style',
+
+  // GitHub Repository & Update Endpoints
+  repository: {
+    owner: 'dhaniaffa',
+    repo: 'myshelf_epub_reader',
+    url: 'https://github.com/dhaniaffa/myshelf_epub_reader',
+    releasesApi: 'https://api.github.com/repos/dhaniaffa/myshelf_epub_reader/releases/latest',
+  },
 } as const;
 
 export const APP_NAME = APP_CONFIG.name;

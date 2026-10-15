@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useEffect, useMemo } from 'react';
+import React, { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 
@@ -6,9 +6,11 @@ import { AppShell } from '@/components/layout/AppShell';
 import { GlobalSyncIndicator } from '@/components/sync/GlobalSyncIndicator';
 import { ToastContainer } from '@/components/ToastContainer';
 import { Button } from '@/components/ui';
+import { UpdateDialog } from '@/components/UpdateDialog';
 import { LibraryPage } from '@/features/library/LibraryPage';
 import { useHashRoute } from '@/lib/route';
 import { THEME_PALETTES } from '@/lib/theme';
+import { checkForAppUpdate, type AppUpdateInfo } from '@/lib/updater';
 import { useSettingsStore } from '@/store/settings';
 
 import type { ReaderTheme } from '@/types';
@@ -31,7 +33,33 @@ const SettingsPage = lazy(() =>
 
 export const App: React.FC = () => {
   const route = useHashRoute();
-  const { theme } = useSettingsStore();
+  const { theme, autoUpdateEnabled = true } = useSettingsStore();
+
+  const [startupUpdate, setStartupUpdate] = useState<AppUpdateInfo | null>(null);
+  const [startupDialogOpen, setStartupDialogOpen] = useState(false);
+
+  // Auto-check for updates on initial launch if enabled
+  useEffect(() => {
+    if (!autoUpdateEnabled) return;
+
+    let active = true;
+    const timer = setTimeout(async () => {
+      try {
+        const update = await checkForAppUpdate();
+        if (active && update) {
+          setStartupUpdate(update);
+          setStartupDialogOpen(true);
+        }
+      } catch (err) {
+        console.warn('Initial update check skipped:', err);
+      }
+    }, 1500);
+
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [autoUpdateEnabled]);
 
   // PWA Service Worker updater
   const {
@@ -153,6 +181,13 @@ export const App: React.FC = () => {
 
       {/* Global Toast Container */}
       <ToastContainer />
+
+      {/* Startup Auto Update Dialog */}
+      <UpdateDialog
+        open={startupDialogOpen}
+        onClose={() => setStartupDialogOpen(false)}
+        updateInfo={startupUpdate}
+      />
     </>
   );
 };
