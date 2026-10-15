@@ -22,3 +22,14 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Android Keystore & Certificates (NEVER commit to git)
+*.jks
+*.keystore
+*.key
+*.p8
+*.p12
+
+# Mobile Packages
+*.apk
+*.aab
