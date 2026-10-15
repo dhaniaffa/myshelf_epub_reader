@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { toast } from '@/store/toast';
+
 export interface UseTTSOptions {
   onPageNext?: () => void;
   onPagePrev?: () => void;
@@ -33,14 +35,60 @@ export interface UseTTSReturn {
 }
 
 /**
- * Splits paragraph text into distinct sentences
+ * Splits paragraph text into clean, natural sentences and sub-chunks long phrases (<140 chars).
  */
 export function splitIntoSentences(text: string): string[] {
-  return text
+  const rawSentences = text
+    .replace(/[\r\n]+/g, ' . ')
     .replace(/\s+/g, ' ')
     .split(/(?<=[.?!;:])\s+/)
     .map((s) => s.trim())
-    .filter((s) => s.length > 0);
+    .filter((s) => s.length > 0 && s !== '.');
+
+  const maxLen = 140;
+  const result: string[] = [];
+
+  for (const sentence of rawSentences) {
+    if (sentence.length <= maxLen) {
+      result.push(sentence);
+      continue;
+    }
+
+    // Split long sentence by clauses or punctuation
+    const clauses = sentence.split(/(?<=[,;:—-])\s+/);
+    let currentClause = '';
+
+    for (const clause of clauses) {
+      if ((currentClause + ' ' + clause).trim().length <= maxLen) {
+        currentClause = (currentClause + ' ' + clause).trim();
+      } else {
+        if (currentClause) {
+          result.push(currentClause);
+        }
+        if (clause.length <= maxLen) {
+          currentClause = clause;
+        } else {
+          // Fallback: split long clause by words
+          const words = clause.split(/\s+/);
+          let wordChunk = '';
+          for (const w of words) {
+            if ((wordChunk + ' ' + w).trim().length <= maxLen) {
+              wordChunk = (wordChunk + ' ' + w).trim();
+            } else {
+              if (wordChunk) result.push(wordChunk);
+              wordChunk = w;
+            }
+          }
+          currentClause = wordChunk;
+        }
+      }
+    }
+    if (currentClause) {
+      result.push(currentClause);
+    }
+  }
+
+  return result;
 }
 
 const TTS_LANG_KEY = 'myshelf_tts_language';
@@ -77,8 +125,19 @@ function getInitialRate(): number {
   return 1.0;
 }
 
+/**
+ * Builds universal fallback TTS audio stream URL
+ */
+function getAudioTtsUrl(text: string, lang: TTSLanguage): string {
+  const langCode = lang === 'id' ? 'id' : 'en';
+  return `https://translate.google.com/translate_tts?ie=UTF-8&tl=${langCode}&client=tw-ob&q=${encodeURIComponent(
+    text
+  )}`;
+}
+
 export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
-  const isSupported = typeof window !== 'undefined' && 'speechSynthesis' in window;
+  const hasWindow = typeof window !== 'undefined';
+  const hasNativeSpeech = hasWindow && 'speechSynthesis' in window;
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -99,7 +158,12 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
   const isPlayingRef = useRef(false);
   const speakCurrentSentenceRef = useRef<(index: number) => void>(() => {});
 
-  // Sync refs with latest state inside effect (not during render)
+  // Audio Engine Fallback (for Android WebView & Linux WebKitGTK)
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const preloadAudioRef = useRef<HTMLAudioElement | null>(null);
+  const activeEngineRef = useRef<'speechSynthesis' | 'audio'>('speechSynthesis');
+
+  // Sync refs with latest state
   useEffect(() => {
     sentencesRef.current = sentences;
     currentIndexRef.current = currentIndex;
@@ -111,56 +175,134 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
 
   // Load available browser / OS speech synthesis voices
   useEffect(() => {
-    if (!isSupported) return;
+    if (!hasNativeSpeech) return;
 
     const updateVoices = () => {
-      const vList = window.speechSynthesis.getVoices();
-      setVoices(vList);
+      try {
+        const vList = window.speechSynthesis.getVoices();
+        setVoices(vList);
 
-      // Find default voice matching active language
-      setSelectedVoice((prev) => {
-        if (prev) return prev;
-        if (vList.length === 0) return null;
-        const currentLang = languageRef.current;
-        const matched =
-          currentLang === 'id'
-            ? vList.find(
-                (v) =>
-                  v.lang.toLowerCase().startsWith('id') || v.lang.toLowerCase().startsWith('in')
-              )
-            : vList.find((v) => v.lang.toLowerCase().startsWith('en'));
-        return (
-          matched || vList.find((v) => v.lang.toLowerCase().startsWith('en')) || vList[0] || null
-        );
-      });
+        setSelectedVoice((prev) => {
+          if (prev) return prev;
+          if (vList.length === 0) return null;
+          const currentLang = languageRef.current;
+          const matched =
+            currentLang === 'id'
+              ? vList.find(
+                  (v) =>
+                    v.lang.toLowerCase().startsWith('id') || v.lang.toLowerCase().startsWith('in')
+                )
+              : vList.find((v) => v.lang.toLowerCase().startsWith('en'));
+          return (
+            matched || vList.find((v) => v.lang.toLowerCase().startsWith('en')) || vList[0] || null
+          );
+        });
+      } catch (err) {
+        console.warn('Failed to load speechSynthesis voices:', err);
+      }
     };
 
     updateVoices();
-    window.speechSynthesis.onvoiceschanged = updateVoices;
+    if (typeof window.speechSynthesis.onvoiceschanged !== 'undefined') {
+      window.speechSynthesis.onvoiceschanged = updateVoices;
+    }
 
     return () => {
-      if (isSupported) {
-        window.speechSynthesis.cancel();
+      if (hasNativeSpeech) {
+        try {
+          window.speechSynthesis.cancel();
+        } catch {
+          // ignore
+        }
+      }
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
       }
     };
-  }, [isSupported]);
+  }, [hasNativeSpeech]);
+
+  // Internal function to stop audio playback
+  const stopAllPlayback = useCallback(() => {
+    if (hasNativeSpeech) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch {
+        // ignore
+      }
+    }
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.onended = null;
+      audioRef.current.onerror = null;
+      audioRef.current.src = '';
+    }
+  }, [hasNativeSpeech]);
+
+  // Internal function to play using HTML5 Audio fallback
+  const playWithAudioFallback = useCallback(
+    (textToSpeak: string, index: number) => {
+      activeEngineRef.current = 'audio';
+
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.onended = null;
+        audioRef.current.onerror = null;
+      }
+
+      const url = getAudioTtsUrl(textToSpeak, languageRef.current);
+      const audio = new Audio(url);
+      audio.playbackRate = rateRef.current;
+
+      audio.onended = () => {
+        if (!isPlayingRef.current) return;
+        const nextIdx = index + 1;
+        setCurrentIndex(nextIdx);
+        currentIndexRef.current = nextIdx;
+        speakCurrentSentenceRef.current(nextIdx);
+      };
+
+      audio.onerror = () => {
+        if (!isPlayingRef.current) return;
+        console.warn('Audio TTS fallback playback error');
+        toast.info('Gagal memutar audio kalimat');
+        setIsPlaying(false);
+        setIsPaused(false);
+      };
+
+      audioRef.current = audio;
+      audio.play().catch((err) => {
+        console.warn('Audio play error:', err);
+        setIsPlaying(false);
+        setIsPaused(false);
+      });
+
+      // Preload next audio chunk for seamless playback
+      const list = sentencesRef.current;
+      if (index + 1 < list.length) {
+        const nextUrl = getAudioTtsUrl(list[index + 1], languageRef.current);
+        const preloader = new Audio();
+        preloader.src = nextUrl;
+        preloader.preload = 'auto';
+        preloadAudioRef.current = preloader;
+      }
+    },
+    []
+  );
 
   // Internal function to speak sentence at specified index
   const speakCurrentSentence = useCallback(
     (index: number) => {
-      if (!isSupported) return;
-      window.speechSynthesis.cancel();
+      stopAllPlayback();
 
       const list = sentencesRef.current;
       if (index >= list.length) {
         if (isSpeakingSelectionRef.current) {
-          // Selection finished speaking; do not flip page
           setIsPlaying(false);
           setIsPaused(false);
           isSpeakingSelectionRef.current = false;
           setIsSpeakingSelection(false);
         } else if (onPageNext) {
-          // Finished sentence batch on this page
           onPageNext();
         } else {
           setIsPlaying(false);
@@ -172,33 +314,57 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
       const textToSpeak = list[index];
       if (!textToSpeak) return;
 
-      const utterance = new SpeechSynthesisUtterance(textToSpeak);
-      utterance.rate = rateRef.current;
-      if (voiceRef.current) {
-        utterance.voice = voiceRef.current;
-        utterance.lang = voiceRef.current.lang;
-      } else {
-        utterance.lang = languageRef.current === 'id' ? 'id-ID' : 'en-US';
+      // Check if native speechSynthesis has actual voices loaded
+      const currentVoices = hasNativeSpeech ? window.speechSynthesis.getVoices() : [];
+      const hasMatchingVoice =
+        currentVoices.length > 0 &&
+        currentVoices.some((v) =>
+          languageRef.current === 'id'
+            ? v.lang.toLowerCase().startsWith('id') || v.lang.toLowerCase().startsWith('in')
+            : v.lang.toLowerCase().startsWith('en')
+        );
+
+      // On Android WebView or WebKitGTK without daemon, voices list is empty -> use Audio fallback
+      if (!hasNativeSpeech || !hasMatchingVoice) {
+        playWithAudioFallback(textToSpeak, index);
+        return;
       }
 
-      utterance.onend = () => {
-        if (!isPlayingRef.current) return;
-        const nextIdx = index + 1;
-        setCurrentIndex(nextIdx);
-        currentIndexRef.current = nextIdx;
-        speakCurrentSentenceRef.current(nextIdx);
-      };
+      // Try native SpeechSynthesis
+      try {
+        activeEngineRef.current = 'speechSynthesis';
+        const utterance = new SpeechSynthesisUtterance(textToSpeak);
+        utterance.rate = rateRef.current;
 
-      utterance.onerror = (e) => {
-        // If canceled intentionally, ignore
-        if (e.error === 'interrupted' || e.error === 'canceled') return;
-        setIsPlaying(false);
-        setIsPaused(false);
-      };
+        if (voiceRef.current) {
+          utterance.voice = voiceRef.current;
+          utterance.lang = voiceRef.current.lang;
+        } else {
+          utterance.lang = languageRef.current === 'id' ? 'id-ID' : 'en-US';
+        }
 
-      window.speechSynthesis.speak(utterance);
+        utterance.onend = () => {
+          if (!isPlayingRef.current) return;
+          const nextIdx = index + 1;
+          setCurrentIndex(nextIdx);
+          currentIndexRef.current = nextIdx;
+          speakCurrentSentenceRef.current(nextIdx);
+        };
+
+        utterance.onerror = (e) => {
+          if (e.error === 'interrupted' || e.error === 'canceled') return;
+          console.warn('Native speechSynthesis error, falling back to Audio:', e);
+          // Seamlessly fallback to Audio engine if native fails
+          playWithAudioFallback(textToSpeak, index);
+        };
+
+        window.speechSynthesis.speak(utterance);
+      } catch (err) {
+        console.warn('Failed to start native SpeechSynthesis, using Audio fallback:', err);
+        playWithAudioFallback(textToSpeak, index);
+      }
     },
-    [isSupported, onPageNext]
+    [hasNativeSpeech, onPageNext, playWithAudioFallback, stopAllPlayback]
   );
 
   // Update ref for recursive onend callback
@@ -206,11 +372,10 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
     speakCurrentSentenceRef.current = speakCurrentSentence;
   }, [speakCurrentSentence]);
 
-  // Mulai memutar
+  // Start playback
   const start = useCallback(
     (customSentences?: string[], isSelection = false) => {
-      if (!isSupported) return;
-      window.speechSynthesis.cancel();
+      stopAllPlayback();
 
       const list = customSentences || sentencesRef.current;
       if (list.length === 0) return;
@@ -225,41 +390,52 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
       setIsPaused(false);
       speakCurrentSentence(0);
     },
-    [isSupported, speakCurrentSentence]
+    [speakCurrentSentence, stopAllPlayback]
   );
 
-  // Jeda
+  // Pause playback
   const pause = useCallback(() => {
-    if (!isSupported) return;
-    window.speechSynthesis.pause();
+    if (activeEngineRef.current === 'speechSynthesis' && hasNativeSpeech) {
+      try {
+        window.speechSynthesis.pause();
+      } catch {
+        // ignore
+      }
+    } else if (audioRef.current) {
+      audioRef.current.pause();
+    }
     setIsPaused(true);
-  }, [isSupported]);
+  }, [hasNativeSpeech]);
 
-  // Lanjutkan
+  // Resume playback
   const resume = useCallback(() => {
-    if (!isSupported) return;
-    window.speechSynthesis.resume();
+    if (activeEngineRef.current === 'speechSynthesis' && hasNativeSpeech) {
+      try {
+        window.speechSynthesis.resume();
+      } catch {
+        // ignore
+      }
+    } else if (audioRef.current) {
+      audioRef.current.play().catch(() => {});
+    }
     setIsPaused(false);
-  }, [isSupported]);
+  }, [hasNativeSpeech]);
 
-  // Hentikan
+  // Stop playback
   const stop = useCallback(() => {
-    if (!isSupported) return;
     isSpeakingSelectionRef.current = false;
     setIsSpeakingSelection(false);
-    window.speechSynthesis.cancel();
+    stopAllPlayback();
     setIsPlaying(false);
     setIsPaused(false);
     setCurrentIndex(0);
     currentIndexRef.current = 0;
-  }, [isSupported]);
+  }, [stopAllPlayback]);
 
-  // Reset player and prepare new sentence list (e.g. when selection is closed)
+  // Reset player and prepare new sentences
   const reset = useCallback(
     (newSentences: string[] = []) => {
-      if (isSupported) {
-        window.speechSynthesis.cancel();
-      }
+      stopAllPlayback();
       isSpeakingSelectionRef.current = false;
       setIsSpeakingSelection(false);
       setIsPlaying(false);
@@ -269,26 +445,24 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
       setSentences(newSentences);
       sentencesRef.current = newSentences;
     },
-    [isSupported]
+    [stopAllPlayback]
   );
 
-  // Jump to next sentence
+  // Next sentence
   const nextSentence = useCallback(() => {
-    if (!isSupported) return;
     const nextIdx = currentIndexRef.current + 1;
     if (nextIdx < sentencesRef.current.length) {
       setCurrentIndex(nextIdx);
       speakCurrentSentence(nextIdx);
     }
-  }, [isSupported, speakCurrentSentence]);
+  }, [speakCurrentSentence]);
 
-  // Jump to previous sentence
+  // Prev sentence
   const prevSentence = useCallback(() => {
-    if (!isSupported) return;
     const prevIdx = Math.max(0, currentIndexRef.current - 1);
     setCurrentIndex(prevIdx);
     speakCurrentSentence(prevIdx);
-  }, [isSupported, speakCurrentSentence]);
+  }, [speakCurrentSentence]);
 
   // Set speed/rate
   const setRate = useCallback(
@@ -300,14 +474,17 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
       } catch {
         // ignore
       }
-      if (isPlayingRef.current && !window.speechSynthesis.paused) {
+      if (audioRef.current) {
+        audioRef.current.playbackRate = newRate;
+      }
+      if (isPlayingRef.current) {
         speakCurrentSentence(currentIndexRef.current);
       }
     },
     [speakCurrentSentence]
   );
 
-  // Ganti bahasa (Indonesia / Inggris)
+  // Set language
   const setLanguage = useCallback(
     (newLang: TTSLanguage) => {
       setLanguageState(newLang);
@@ -318,29 +495,30 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
         // ignore
       }
 
-      // Find matching voice for new language
-      const vList = window.speechSynthesis.getVoices();
-      const matched =
-        newLang === 'id'
-          ? vList.find(
-              (v) => v.lang.toLowerCase().startsWith('id') || v.lang.toLowerCase().startsWith('in')
-            )
-          : vList.find((v) => v.lang.toLowerCase().startsWith('en'));
+      if (hasNativeSpeech) {
+        const vList = window.speechSynthesis.getVoices();
+        const matched =
+          newLang === 'id'
+            ? vList.find(
+                (v) =>
+                  v.lang.toLowerCase().startsWith('id') || v.lang.toLowerCase().startsWith('in')
+              )
+            : vList.find((v) => v.lang.toLowerCase().startsWith('en'));
 
-      if (matched) {
-        setSelectedVoice(matched);
-        voiceRef.current = matched;
-      } else {
-        setSelectedVoice(null);
-        voiceRef.current = null;
+        if (matched) {
+          setSelectedVoice(matched);
+          voiceRef.current = matched;
+        } else {
+          setSelectedVoice(null);
+          voiceRef.current = null;
+        }
       }
 
-      // If currently playing, refresh active sentence with new voice/language
-      if (isPlayingRef.current && !window.speechSynthesis.paused) {
+      if (isPlayingRef.current) {
         speakCurrentSentence(currentIndexRef.current);
       }
     },
-    [speakCurrentSentence]
+    [hasNativeSpeech, speakCurrentSentence]
   );
 
   // Set voice
@@ -349,21 +527,20 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
     voiceRef.current = v;
   }, []);
 
-  // Speak single text snippet (e.g. from SelectionBar)
+  // Speak single text
   const speakText = useCallback(
     (text: string) => {
-      if (!isSupported) return;
       const trimmed = text.trim();
       if (!trimmed) return;
       const splitted = splitIntoSentences(trimmed);
       const sentenceList = splitted.length > 0 ? splitted : [trimmed];
       start(sentenceList, true);
     },
-    [isSupported, start]
+    [start]
   );
 
   return {
-    isSupported,
+    isSupported: true, // Always supported via hybrid native + audio fallback
     isPlaying,
     isPaused,
     currentSentence: sentences[currentIndex] || '',

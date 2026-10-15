@@ -568,7 +568,9 @@ const EpubReaderView: React.FC<ReaderPageProps> = ({ bookId }) => {
         onTouchStart={handleStageTouchStart}
         onTouchEnd={handleStageTouchEnd}
         style={{ cursor: stageCursor }}
-        className={`h-full w-full flex-1 pt-16 pb-20 sm:pt-16 sm:pb-24 ${stagePaddingClass} relative box-border flex items-center justify-center overflow-hidden`}
+        className={`h-full w-full flex-1 pt-16 ${
+          showTTSBar ? 'pb-24 sm:pb-28' : 'pb-20 sm:pb-24'
+        } ${stagePaddingClass} relative box-border flex items-center justify-center overflow-hidden`}
       >
         {/* Desktop Navigation Buttons Floating on Hover */}
         <button
@@ -617,7 +619,7 @@ const EpubReaderView: React.FC<ReaderPageProps> = ({ bookId }) => {
         {state.isReady && (
           <div
             className={`absolute inset-x-0 bottom-2.5 sm:bottom-3 ${maxWidthClass} mx-auto ${stagePaddingClass} pointer-events-none z-10 flex items-center justify-between text-[11px] transition-opacity duration-300 select-none ${
-              showBars ? 'opacity-0' : 'opacity-100'
+              showBars || showTTSBar ? 'opacity-0' : 'opacity-100'
             } ${isEink ? 'text-on-surface font-bold' : 'text-on-surface-variant/75 font-medium'}`}
           >
             {/* Chapter / Book Title in bottom left corner */}
