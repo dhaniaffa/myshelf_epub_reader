@@ -35,10 +35,12 @@ import {
   updateFolderOptions,
 } from '@/lib/fileSystemSync';
 import { importBookFiles } from '@/lib/importBooks';
-import { checkForAppUpdate, type AppUpdateInfo } from '@/lib/updater';
+import { checkForAppUpdate } from '@/lib/updater';
 import { useSettingsStore } from '@/store/settings';
 import { useSyncStore } from '@/store/sync';
 import { toast } from '@/store/toast';
+
+import type { AppUpdateInfo } from '@/lib/updater';
 
 export const SettingsPage: React.FC = () => {
   const {
@@ -793,7 +795,8 @@ export const SettingsPage: React.FC = () => {
             {/* Check Button & Version Info */}
             <div className="border-outline-variant/15 flex flex-col items-start justify-between gap-3 border-t pt-3 sm:flex-row sm:items-center">
               <div className="text-on-surface-variant text-xs">
-                Versi terpasang: <span className="text-on-surface font-semibold">v{APP_VERSION}</span>
+                Versi terpasang:{' '}
+                <span className="text-on-surface font-semibold">v{APP_VERSION}</span>
               </div>
 
               <Button

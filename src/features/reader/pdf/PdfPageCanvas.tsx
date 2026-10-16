@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 
 import { READER_EVENTS } from '@/config';
 import { pdfjsLib } from '@/lib/pdf';
-
 import { resolvePdfDestination } from './pdfUtils';
 
 export interface PdfLinkItem {

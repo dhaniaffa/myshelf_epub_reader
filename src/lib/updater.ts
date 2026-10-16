@@ -1,9 +1,11 @@
 import { isTauri } from '@tauri-apps/api/core';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { relaunch } from '@tauri-apps/plugin-process';
-import { check, type Update } from '@tauri-apps/plugin-updater';
+import { check } from '@tauri-apps/plugin-updater';
 
 import { APP_CONFIG } from '@/config';
+
+import type { Update } from '@tauri-apps/plugin-updater';
 
 export interface AppUpdateInfo {
   version: string;
@@ -73,7 +75,10 @@ export async function checkForAppUpdate(): Promise<AppUpdateInfo | null> {
         };
       }
     } catch (desktopErr) {
-      console.warn('Tauri native updater check skipped or failed, falling back to GitHub API:', desktopErr);
+      console.warn(
+        'Tauri native updater check skipped or failed, falling back to GitHub API:',
+        desktopErr
+      );
     }
   }
 
@@ -98,8 +103,8 @@ export async function checkForAppUpdate(): Promise<AppUpdateInfo | null> {
       let apkDownloadUrl: string | undefined;
       if (Array.isArray(release.assets)) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const apkAsset = release.assets.find((a: any) =>
-          typeof a.name === 'string' && a.name.toLowerCase().endsWith('.apk')
+        const apkAsset = release.assets.find(
+          (a: any) => typeof a.name === 'string' && a.name.toLowerCase().endsWith('.apk')
         );
         if (apkAsset && apkAsset.browser_download_url) {
           apkDownloadUrl = apkAsset.browser_download_url;

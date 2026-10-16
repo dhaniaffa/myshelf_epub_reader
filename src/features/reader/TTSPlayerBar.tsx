@@ -32,7 +32,9 @@ export const TTSPlayerBar: React.FC<TTSPlayerBarProps> = ({ tts, onPlay, onClose
           <div className="flex shrink-0 items-center gap-1.5">
             <div
               className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
-                isReading ? 'bg-primary text-on-primary shadow-xs' : 'bg-surface-container text-primary'
+                isReading
+                  ? 'bg-primary text-on-primary shadow-xs'
+                  : 'bg-surface-container text-primary'
               }`}
             >
               <Headphones size={15} className={isReading ? 'animate-pulse' : ''} />

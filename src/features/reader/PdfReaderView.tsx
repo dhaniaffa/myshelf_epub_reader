@@ -7,16 +7,11 @@ import { db } from '@/lib/db';
 import { navigate } from '@/lib/route';
 import { useSettingsStore } from '@/store/settings';
 import { toast } from '@/store/toast';
-
 import { PdfBottomBar } from './pdf/PdfBottomBar';
 import { PdfHeaderBar } from './pdf/PdfHeaderBar';
-import { PdfFlashOverlay } from './pdf/PdfStateOverlays';
 import { PdfStage } from './pdf/PdfStage';
-import {
-  getPdfCanvasFilterStyle,
-  mapPdfOutlineToToc,
-  mapPdfSearchResults,
-} from './pdf/pdfUtils';
+import { PdfFlashOverlay } from './pdf/PdfStateOverlays';
+import { getPdfCanvasFilterStyle, mapPdfOutlineToToc, mapPdfSearchResults } from './pdf/pdfUtils';
 import { usePdfHotkeys } from './pdf/usePdfHotkeys';
 
 import type { PanelTab } from '@/features/reader/panels';

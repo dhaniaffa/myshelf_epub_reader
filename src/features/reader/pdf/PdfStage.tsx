@@ -2,7 +2,6 @@ import React, { useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { navigate } from '@/lib/route';
-
 import { PdfPageCanvas } from './PdfPageCanvas';
 import { PdfRunningFooter } from './PdfRunningFooter';
 import { PdfErrorOverlay, PdfLoadingOverlay } from './PdfStateOverlays';
@@ -232,10 +231,7 @@ export const PdfStage: React.FC<PdfStageProps> = ({
 
       {/* Error State */}
       {hasError && (
-        <PdfErrorOverlay
-          errorMessage={errorMessage}
-          onReturnHome={() => navigate('/')}
-        />
+        <PdfErrorOverlay errorMessage={errorMessage} onReturnHome={() => navigate('/')} />
       )}
 
       {/* Loading Spinner */}

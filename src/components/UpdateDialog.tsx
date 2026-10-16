@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { Download, ExternalLink, Loader2, Sparkles } from 'lucide-react';
 
 import { Button, Dialog } from '@/components/ui';
-import { installAppUpdate, isAndroidPlatform, type AppUpdateInfo } from '@/lib/updater';
+import { installAppUpdate, isAndroidPlatform } from '@/lib/updater';
 import { toast } from '@/store/toast';
+
+import type { AppUpdateInfo } from '@/lib/updater';
 
 interface UpdateDialogProps {
   open: boolean;

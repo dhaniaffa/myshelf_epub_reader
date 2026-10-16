@@ -10,9 +10,10 @@ import { UpdateDialog } from '@/components/UpdateDialog';
 import { LibraryPage } from '@/features/library/LibraryPage';
 import { useHashRoute } from '@/lib/route';
 import { THEME_PALETTES } from '@/lib/theme';
-import { checkForAppUpdate, type AppUpdateInfo } from '@/lib/updater';
+import { checkForAppUpdate } from '@/lib/updater';
 import { useSettingsStore } from '@/store/settings';
 
+import type { AppUpdateInfo } from '@/lib/updater';
 import type { ReaderTheme } from '@/types';
 
 const ReaderPage = lazy(() =>

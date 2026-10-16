@@ -240,55 +240,52 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
   }, [hasNativeSpeech]);
 
   // Internal function to play using HTML5 Audio fallback
-  const playWithAudioFallback = useCallback(
-    (textToSpeak: string, index: number) => {
-      activeEngineRef.current = 'audio';
+  const playWithAudioFallback = useCallback((textToSpeak: string, index: number) => {
+    activeEngineRef.current = 'audio';
 
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.onended = null;
-        audioRef.current.onerror = null;
-      }
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.onended = null;
+      audioRef.current.onerror = null;
+    }
 
-      const url = getAudioTtsUrl(textToSpeak, languageRef.current);
-      const audio = new Audio(url);
-      audio.playbackRate = rateRef.current;
+    const url = getAudioTtsUrl(textToSpeak, languageRef.current);
+    const audio = new Audio(url);
+    audio.playbackRate = rateRef.current;
 
-      audio.onended = () => {
-        if (!isPlayingRef.current) return;
-        const nextIdx = index + 1;
-        setCurrentIndex(nextIdx);
-        currentIndexRef.current = nextIdx;
-        speakCurrentSentenceRef.current(nextIdx);
-      };
+    audio.onended = () => {
+      if (!isPlayingRef.current) return;
+      const nextIdx = index + 1;
+      setCurrentIndex(nextIdx);
+      currentIndexRef.current = nextIdx;
+      speakCurrentSentenceRef.current(nextIdx);
+    };
 
-      audio.onerror = () => {
-        if (!isPlayingRef.current) return;
-        console.warn('Audio TTS fallback playback error');
-        toast.info('Gagal memutar audio kalimat');
-        setIsPlaying(false);
-        setIsPaused(false);
-      };
+    audio.onerror = () => {
+      if (!isPlayingRef.current) return;
+      console.warn('Audio TTS fallback playback error');
+      toast.info('Gagal memutar audio kalimat');
+      setIsPlaying(false);
+      setIsPaused(false);
+    };
 
-      audioRef.current = audio;
-      audio.play().catch((err) => {
-        console.warn('Audio play error:', err);
-        setIsPlaying(false);
-        setIsPaused(false);
-      });
+    audioRef.current = audio;
+    audio.play().catch((err) => {
+      console.warn('Audio play error:', err);
+      setIsPlaying(false);
+      setIsPaused(false);
+    });
 
-      // Preload next audio chunk for seamless playback
-      const list = sentencesRef.current;
-      if (index + 1 < list.length) {
-        const nextUrl = getAudioTtsUrl(list[index + 1], languageRef.current);
-        const preloader = new Audio();
-        preloader.src = nextUrl;
-        preloader.preload = 'auto';
-        preloadAudioRef.current = preloader;
-      }
-    },
-    []
-  );
+    // Preload next audio chunk for seamless playback
+    const list = sentencesRef.current;
+    if (index + 1 < list.length) {
+      const nextUrl = getAudioTtsUrl(list[index + 1], languageRef.current);
+      const preloader = new Audio();
+      preloader.src = nextUrl;
+      preloader.preload = 'auto';
+      preloadAudioRef.current = preloader;
+    }
+  }, []);
 
   // Internal function to speak sentence at specified index
   const speakCurrentSentence = useCallback(

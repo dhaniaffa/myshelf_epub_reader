@@ -6,10 +6,7 @@ export interface PdfErrorOverlayProps {
   onReturnHome: () => void;
 }
 
-export const PdfErrorOverlay: React.FC<PdfErrorOverlayProps> = ({
-  errorMessage,
-  onReturnHome,
-}) => {
+export const PdfErrorOverlay: React.FC<PdfErrorOverlayProps> = ({ errorMessage, onReturnHome }) => {
   return (
     <div className="bg-surface absolute inset-0 z-20 flex flex-col items-center justify-center gap-3.5 p-6 text-center">
       <div className="bg-error/10 text-error flex h-12 w-12 items-center justify-center rounded-2xl">

@@ -10,9 +10,9 @@ import {
   User,
 } from 'lucide-react';
 
+import { useCoverUrl } from '@/lib/cover';
 import { db } from '@/lib/db';
 import { formatFileSize, readMetadata } from '@/lib/epub';
-import { useCoverUrl } from '@/lib/cover';
 import { navigate } from '@/lib/route';
 import { useClickOutside } from '@/lib/useClickOutside';
 import { toast } from '@/store/toast';

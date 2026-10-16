@@ -63,15 +63,21 @@ function main() {
     let platformKey = null;
 
     if (assetName.endsWith('.AppImage') || assetName.endsWith('.AppImage.tar.gz')) {
-      platformKey = assetName.includes('aarch64') || assetName.includes('arm64')
-        ? 'linux-aarch64'
-        : 'linux-x86_64';
-    } else if (assetName.endsWith('.nsis.zip') || assetName.endsWith('.msi.zip') || assetName.endsWith('.exe')) {
+      platformKey =
+        assetName.includes('aarch64') || assetName.includes('arm64')
+          ? 'linux-aarch64'
+          : 'linux-x86_64';
+    } else if (
+      assetName.endsWith('.nsis.zip') ||
+      assetName.endsWith('.msi.zip') ||
+      assetName.endsWith('.exe')
+    ) {
       platformKey = 'windows-x86_64';
     } else if (assetName.endsWith('.app.tar.gz')) {
-      platformKey = assetName.includes('aarch64') || assetName.includes('arm64')
-        ? 'darwin-aarch64'
-        : 'darwin-x86_64';
+      platformKey =
+        assetName.includes('aarch64') || assetName.includes('arm64')
+          ? 'darwin-aarch64'
+          : 'darwin-x86_64';
     }
 
     if (platformKey) {
