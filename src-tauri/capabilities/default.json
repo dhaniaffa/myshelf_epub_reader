@@ -9,7 +9,6 @@
     "opener:allow-open-path",
     "opener:allow-open-url",
     "process:default",
-    "process:allow-restart",
-    "updater:default"
+    "process:allow-restart"
   ]
 }
