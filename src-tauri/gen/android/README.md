@@ -369,8 +369,15 @@ $BUILD_TOOLS/apksigner verify --print-certs app/build/outputs/apk/universal/rele
      ```
 
 3. **Membersihkan Cache Build:**
-   * Linux: `./gradlew clean`
-   * Windows: `gradlew.bat clean`
+   * **Pembersihan Total Lintas Platform (Direkomendasikan):**
+     Jalankan dari root folder proyek:
+     ```bash
+     npm run clean
+     ```
+     *(Perintah ini otomatis membersihkan cache Rust `target/`, Gradle build Android, NDK `.cxx`, serta output `dist/` baik di Windows maupun Linux).*
+   * Pembersihan khusus modul Android saja:
+     * Linux: `./gradlew clean`
+     * Windows: `gradlew.bat clean`
 
 4. **Perhatian Terhadap Regenerasi Tauri:**
    Sebagian besar file dalam folder `gen/android` digenerate oleh Tauri. Jika di masa depan Anda menjalankan `tauri android init` ulang, pastikan konfigurasi kustom pada [app/build.gradle.kts](./app/build.gradle.kts) (seperti blok `keystoreProperties` dan `signingConfigs`) tetap dipertahankan.
