@@ -13,6 +13,7 @@ dist
 dist-ssr
 *.local
 *.tsbuildinfo
+latest.json
 
 # Editor directories and files
 .idea
@@ -23,7 +24,7 @@ dist-ssr
 *.sln
 *.sw?
 
-# Android Keystore & Certificates (NEVER commit to git)
+# Android Keystore & Certificates
 *.jks
 *.keystore
 *.key
