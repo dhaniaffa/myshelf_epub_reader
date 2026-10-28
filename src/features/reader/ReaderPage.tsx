@@ -477,6 +477,22 @@ const EpubReaderView: React.FC<ReaderPageProps> = ({ bookId }) => {
     ? `${state.currentPage}–${state.endPage && state.endPage > state.currentPage ? state.endPage : Math.min(state.totalPages, state.currentPage + 1)}`
     : `${state.currentPage}`;
 
+  const formattedRemainingTime = useMemo(() => {
+    const end = state.endPage || state.currentPage;
+    if (!state.totalPages || state.totalPages <= end) return null;
+    const pagesLeft = state.totalPages - end;
+    const minutes = Math.max(1, Math.round((pagesLeft * 250) / (settings.readingSpeedWpm || 220)));
+    if (minutes < 60) {
+      return `~${minutes} mnt`;
+    }
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (mins === 0) {
+      return `~${hours} jam`;
+    }
+    return `~${hours}j ${mins}m`;
+  }, [state.totalPages, state.endPage, state.currentPage, settings.readingSpeedWpm]);
+
   const maxWidthClass = isDoubleSpread
     ? {
         narrow: 'max-w-4xl sm:max-w-5xl',
@@ -677,12 +693,12 @@ const EpubReaderView: React.FC<ReaderPageProps> = ({ bookId }) => {
 
       {/* BOTTOM CONTROL BAR */}
       <footer
-        className={`bg-surface-container/95 border-outline-variant/30 fixed inset-x-0 bottom-0 z-30 flex flex-col gap-2 border-t px-4 py-3 backdrop-blur-md transition-transform duration-300 sm:px-8 ${
+        className={`bg-surface-container/95 border-outline-variant/30 fixed inset-x-0 bottom-0 z-30 flex flex-col gap-2 border-t px-3 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] backdrop-blur-md transition-transform duration-300 sm:px-8 sm:pb-3 ${
           showBars ? 'translate-y-0' : 'translate-y-full'
         }`}
       >
         {/* Slider & Quick Page Step */}
-        <div className="mx-auto flex w-full max-w-3xl items-center gap-4">
+        <div className="mx-auto flex w-full max-w-3xl items-center gap-3 sm:gap-4">
           <IconButton size="sm" onClick={prev} title="Halaman Sebelumnya">
             <ChevronLeft size={20} />
           </IconButton>
@@ -704,32 +720,41 @@ const EpubReaderView: React.FC<ReaderPageProps> = ({ bookId }) => {
         </div>
 
         {/* Reading Progress Indicator */}
-        <div className="text-on-surface-variant mx-auto flex w-full max-w-3xl items-center justify-between px-2 text-[11px]">
-          <span className="line-clamp-1 max-w-[50%]">{state.chapterTitle || 'Membaca'}</span>
-          <div className="flex items-center gap-2 font-medium">
+        <div className="text-on-surface-variant mx-auto flex w-full max-w-3xl items-center justify-between gap-2.5 px-1 text-[11px] select-none sm:px-2 sm:text-xs">
+          {/* Chapter / Book Title */}
+          <span
+            className="min-w-0 flex-1 truncate text-left font-medium"
+            title={state.chapterTitle || 'Membaca'}
+          >
+            {state.chapterTitle || 'Membaca'}
+          </span>
+
+          {/* Page Info, Percentage, and Time Badge */}
+          <div className="flex shrink-0 items-center gap-2 font-medium whitespace-nowrap">
             {state.totalPages > 0 ? (
               <span>
-                Hal {formattedPageRange} dari {state.totalPages} ·{' '}
+                <span className="hidden sm:inline">Hal </span>
+                <span className="text-on-surface font-semibold">{formattedPageRange}</span>
+                <span className="opacity-70"> / {state.totalPages}</span>
               </span>
             ) : state.totalLocations > 0 ? (
               <span>
-                Lokasi {state.currentLocation} / {state.totalLocations} ·{' '}
+                <span className="hidden sm:inline">Lokasi </span>
+                <span className="text-on-surface font-semibold">{state.currentLocation}</span>
+                <span className="opacity-70"> / {state.totalLocations}</span>
               </span>
             ) : null}
-            <span className="text-on-surface font-semibold">
-              {Math.round(state.percentage * 100)}%
-            </span>
-            {state.totalPages > (state.endPage || state.currentPage) && (
-              <span className="text-primary bg-primary/10 rounded-md px-1.5 py-0.5 text-[10px] font-normal">
-                Sisa ~
-                {Math.max(
-                  1,
-                  Math.round(
-                    ((state.totalPages - (state.endPage || state.currentPage)) * 250) /
-                      (settings.readingSpeedWpm || 220)
-                  )
-                )}{' '}
-                mnt
+
+            <span className="bg-outline-variant/40 h-3 w-px shrink-0 opacity-60" />
+
+            <span className="text-on-surface font-bold">{Math.round(state.percentage * 100)}%</span>
+
+            {formattedRemainingTime && (
+              <span
+                className="text-primary bg-primary/10 rounded-md px-1.5 py-0.5 text-[10px] font-semibold"
+                title={`Estimasi waktu tersisa: ${formattedRemainingTime}`}
+              >
+                {formattedRemainingTime}
               </span>
             )}
           </div>
