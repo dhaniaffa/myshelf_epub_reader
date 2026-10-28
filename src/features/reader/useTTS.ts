@@ -135,6 +135,24 @@ function getAudioTtsUrl(text: string, lang: TTSLanguage): string {
   )}`;
 }
 
+/**
+ * Checks if a SpeechSynthesisVoice matches the requested language
+ */
+function isMatchingVoice(voice: SpeechSynthesisVoice, lang: TTSLanguage): boolean {
+  const vLang = voice.lang.toLowerCase();
+  const vName = voice.name.toLowerCase();
+  if (lang === 'id') {
+    return (
+      vLang.startsWith('id') ||
+      vLang.startsWith('in') ||
+      vLang.startsWith('ind') ||
+      vName.includes('indonesia') ||
+      vName.includes('bahasa')
+    );
+  }
+  return vLang.startsWith('en') || vName.includes('english');
+}
+
 export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
   const hasWindow = typeof window !== 'undefined';
   const hasNativeSpeech = hasWindow && 'speechSynthesis' in window;
@@ -187,16 +205,8 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
           if (prev) return prev;
           if (vList.length === 0) return null;
           const currentLang = languageRef.current;
-          const matched =
-            currentLang === 'id'
-              ? vList.find(
-                  (v) =>
-                    v.lang.toLowerCase().startsWith('id') || v.lang.toLowerCase().startsWith('in')
-                )
-              : vList.find((v) => v.lang.toLowerCase().startsWith('en'));
-          return (
-            matched || vList.find((v) => v.lang.toLowerCase().startsWith('en')) || vList[0] || null
-          );
+          const matched = vList.find((v) => isMatchingVoice(v, currentLang));
+          return matched || vList.find((v) => isMatchingVoice(v, 'en')) || vList[0] || null;
         });
       } catch (err) {
         console.warn('Failed to load speechSynthesis voices:', err);
@@ -226,6 +236,10 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
   // Internal function to stop audio playback
   const stopAllPlayback = useCallback(() => {
     activeUtteranceRef.current = null;
+    if (typeof window !== 'undefined') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      delete (window as any).__activeUtterance;
+    }
     if (hasNativeSpeech) {
       try {
         window.speechSynthesis.cancel();
@@ -245,24 +259,19 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
   const playWithAudioFallback = useCallback((textToSpeak: string, index: number) => {
     activeEngineRef.current = 'audio';
 
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.onended = null;
-      audioRef.current.onerror = null;
+    if (!audioRef.current) {
+      audioRef.current = new Audio();
     }
+    const audio = audioRef.current;
+    audio.pause();
+    audio.onended = null;
+    audio.onerror = null;
 
     const url = getAudioTtsUrl(textToSpeak, languageRef.current);
-    let audio: HTMLAudioElement;
-
-    if (preloadAudioRef.current && preloadAudioRef.current.src === url) {
-      audio = preloadAudioRef.current;
-      preloadAudioRef.current = null;
-    } else {
-      audio = new Audio();
-      audio.setAttribute('referrerpolicy', 'no-referrer');
-      audio.src = url;
-    }
-
+    audio.setAttribute('referrerpolicy', 'no-referrer');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (audio as any).referrerPolicy = 'no-referrer';
+    audio.src = url;
     audio.playbackRate = rateRef.current;
 
     audio.onended = () => {
@@ -281,7 +290,6 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
       setIsPaused(false);
     };
 
-    audioRef.current = audio;
     audio.play().catch((err) => {
       if (!isPlayingRef.current) return;
       console.warn('Audio play error:', err);
@@ -294,11 +302,15 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
     const list = sentencesRef.current;
     if (index + 1 < list.length) {
       const nextUrl = getAudioTtsUrl(list[index + 1], languageRef.current);
-      const preloader = new Audio();
+      if (!preloadAudioRef.current) {
+        preloadAudioRef.current = new Audio();
+      }
+      const preloader = preloadAudioRef.current;
       preloader.setAttribute('referrerpolicy', 'no-referrer');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (preloader as any).referrerPolicy = 'no-referrer';
       preloader.src = nextUrl;
       preloader.preload = 'auto';
-      preloadAudioRef.current = preloader;
     }
   }, []);
 
@@ -326,18 +338,23 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
       const textToSpeak = list[index];
       if (!textToSpeak) return;
 
+      const isMobile =
+        typeof navigator !== 'undefined' &&
+        (/android|iphone|ipad|ipod/i.test(navigator.userAgent) ||
+          ('maxTouchPoints' in navigator &&
+            navigator.maxTouchPoints > 2 &&
+            /Macintosh/i.test(navigator.userAgent)));
+
       // Check if native speechSynthesis has actual voices loaded
       const currentVoices = hasNativeSpeech ? window.speechSynthesis.getVoices() : [];
-      const hasMatchingVoice =
-        currentVoices.length > 0 &&
-        currentVoices.some((v) =>
-          languageRef.current === 'id'
-            ? v.lang.toLowerCase().startsWith('id') || v.lang.toLowerCase().startsWith('in')
-            : v.lang.toLowerCase().startsWith('en')
-        );
+      const matchingVoice = currentVoices.find((v) => isMatchingVoice(v, languageRef.current));
 
-      // On Android WebView or WebKitGTK without daemon, voices list is empty -> use Audio fallback
-      if (!hasNativeSpeech || !hasMatchingVoice) {
+      // On desktop WebKitGTK without speech daemon, getVoices() is empty and speech hangs silently.
+      // But on Android/mobile, OS TextToSpeech handles synthesis even when getVoices() is initially empty.
+      const shouldTryNativeSpeech =
+        hasNativeSpeech && (isMobile || !!matchingVoice || currentVoices.length > 0);
+
+      if (!shouldTryNativeSpeech) {
         playWithAudioFallback(textToSpeak, index);
         return;
       }
@@ -345,28 +362,53 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
       // Try native SpeechSynthesis
       try {
         activeEngineRef.current = 'speechSynthesis';
+        // Clear any stuck queue on Android / Chromium before speaking
+        window.speechSynthesis.cancel();
+
         const utterance = new SpeechSynthesisUtterance(textToSpeak);
         activeUtteranceRef.current = utterance;
+        if (typeof window !== 'undefined') {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (window as any).__activeUtterance = utterance;
+        }
+
         utterance.rate = rateRef.current;
 
-        if (voiceRef.current) {
-          utterance.voice = voiceRef.current;
-          utterance.lang = voiceRef.current.lang;
+        const voiceToUse = voiceRef.current || matchingVoice;
+        if (voiceToUse) {
+          utterance.voice = voiceToUse;
+          utterance.lang = voiceToUse.lang;
         } else {
           utterance.lang = languageRef.current === 'id' ? 'id-ID' : 'en-US';
         }
 
-        utterance.onend = () => {
+        let hasEnded = false;
+        const cleanupUtterance = () => {
+          if (hasEnded) return;
+          hasEnded = true;
           activeUtteranceRef.current = null;
+          if (typeof window !== 'undefined') {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            delete (window as any).__activeUtterance;
+          }
+        };
+
+        utterance.onend = () => {
+          cleanupUtterance();
           if (!isPlayingRef.current) return;
           const nextIdx = index + 1;
           setCurrentIndex(nextIdx);
           currentIndexRef.current = nextIdx;
-          speakCurrentSentenceRef.current(nextIdx);
+          // Minimal delay to allow Android OS TTS to reset audio track cleanly
+          setTimeout(() => {
+            if (isPlayingRef.current) {
+              speakCurrentSentenceRef.current(nextIdx);
+            }
+          }, 20);
         };
 
         utterance.onerror = (e) => {
-          activeUtteranceRef.current = null;
+          cleanupUtterance();
           if (e.error === 'interrupted' || e.error === 'canceled') return;
           console.warn('Native speechSynthesis error, falling back to Audio:', e);
           // Seamlessly fallback to Audio engine if native fails
@@ -376,6 +418,10 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
         window.speechSynthesis.speak(utterance);
       } catch (err) {
         activeUtteranceRef.current = null;
+        if (typeof window !== 'undefined') {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          delete (window as any).__activeUtterance;
+        }
         console.warn('Failed to start native SpeechSynthesis, using Audio fallback:', err);
         playWithAudioFallback(textToSpeak, index);
       }
@@ -392,6 +438,15 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
   const start = useCallback(
     (customSentences?: string[], isSelection = false) => {
       stopAllPlayback();
+
+      // Ensure audio element is initialized during user gesture for Android fallback if needed
+      if (!audioRef.current && typeof Audio !== 'undefined') {
+        try {
+          audioRef.current = new Audio();
+        } catch {
+          // ignore
+        }
+      }
 
       const list = customSentences || sentencesRef.current;
       if (list.length === 0) return;
@@ -427,15 +482,20 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
   const resume = useCallback(() => {
     if (activeEngineRef.current === 'speechSynthesis' && hasNativeSpeech) {
       try {
-        window.speechSynthesis.resume();
+        if (window.speechSynthesis.paused) {
+          window.speechSynthesis.resume();
+        } else {
+          // On Android WebView, resume() may not resume paused audio -> restart current sentence
+          speakCurrentSentence(currentIndexRef.current);
+        }
       } catch {
-        // ignore
+        speakCurrentSentence(currentIndexRef.current);
       }
     } else if (audioRef.current) {
       audioRef.current.play().catch(() => {});
     }
     setIsPaused(false);
-  }, [hasNativeSpeech]);
+  }, [hasNativeSpeech, speakCurrentSentence]);
 
   // Stop playback
   const stop = useCallback(() => {
@@ -513,13 +573,7 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
 
       if (hasNativeSpeech) {
         const vList = window.speechSynthesis.getVoices();
-        const matched =
-          newLang === 'id'
-            ? vList.find(
-                (v) =>
-                  v.lang.toLowerCase().startsWith('id') || v.lang.toLowerCase().startsWith('in')
-              )
-            : vList.find((v) => v.lang.toLowerCase().startsWith('en'));
+        const matched = vList.find((v) => isMatchingVoice(v, newLang));
 
         if (matched) {
           setSelectedVoice(matched);
