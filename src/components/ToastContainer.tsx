@@ -18,19 +18,23 @@ export const ToastContainer: React.FC = () => {
   };
 
   return (
-    <div className="pointer-events-none fixed right-5 bottom-5 z-50 flex w-full max-w-sm flex-col gap-2 p-2">
+    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] z-50 mx-auto flex w-full max-w-[calc(100vw-2rem)] flex-col items-center gap-2 px-2 transition-all duration-200 sm:inset-x-auto sm:right-6 sm:bottom-6 sm:mx-0 sm:max-w-sm sm:items-end sm:px-0">
       {toasts.map((t) => (
         <div
           key={t.id}
-          className="bg-surface-container-highest text-on-surface border-outline-variant/30 animate-slide-up pointer-events-auto flex items-center gap-3 rounded-2xl border p-3.5 text-sm font-medium shadow-lg"
+          className="bg-surface-container-highest/95 dark:bg-surface-container-highest text-on-surface border-outline-variant/30 animate-slide-up pointer-events-auto flex w-full items-center gap-3 rounded-2xl border px-4 py-3 shadow-xl backdrop-blur-md"
         >
           {icons[t.type]}
-          <div className="flex-1 leading-snug">{t.message}</div>
+          <div className="text-on-surface min-w-0 flex-1 text-xs leading-snug font-medium break-words sm:text-sm">
+            {t.message}
+          </div>
           <button
+            type="button"
             onClick={() => removeToast(t.id)}
-            className="text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded-full p-1"
+            className="text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high shrink-0 rounded-full p-1.5 transition-transform active:scale-95"
+            aria-label="Tutup notifikasi"
           >
-            <X size={14} />
+            <X size={15} />
           </button>
         </div>
       ))}

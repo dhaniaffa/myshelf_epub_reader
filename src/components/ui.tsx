@@ -150,7 +150,7 @@ export const Dialog: React.FC<DialogProps> = ({
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
-        className={`relative z-10 w-full ${maxWidthClass} bg-surface-container-high border-outline-variant/30 animate-slide-up flex max-h-[90vh] flex-col rounded-[28px] border p-6 shadow-xl`}
+        className={`relative z-10 w-full ${maxWidthClass} bg-surface-container-high border-outline-variant/30 animate-slide-up flex max-h-[90vh] flex-col rounded-[24px] border p-4.5 shadow-xl sm:rounded-[28px] sm:p-6`}
       >
         {title && (
           <div className="mb-2 flex items-center justify-between pb-3">
