@@ -38,6 +38,19 @@ export function setupIframeListeners({
   styleEl.innerHTML = cssRules;
   contents.document.head.appendChild(styleEl);
 
+  try {
+    contents.document.documentElement.style.webkitUserSelect = 'text';
+    contents.document.documentElement.style.userSelect = 'text';
+    if (contents.document.body) {
+      contents.document.body.style.webkitUserSelect = 'text';
+      contents.document.body.style.userSelect = 'text';
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (contents.document.body.style as any).webkitTouchCallout = 'default';
+    }
+  } catch {
+    // ignore
+  }
+
   // 2. Image click handler (image viewer lightbox)
   contents.document.addEventListener(
     'click',
@@ -377,8 +390,11 @@ export function setupIframeListeners({
   contents.document.addEventListener(
     'touchend',
     (e: TouchEvent) => {
-      const sel = contents.window.getSelection();
-      if (sel && sel.toString().trim().length > 0) return;
+      const sel = getSelectionObj();
+      if (sel && sel.toString().trim().length > 0) {
+        handleSelection();
+        return;
+      }
 
       const touch = e.changedTouches[0];
       if (!touch) return;
@@ -433,8 +449,14 @@ export function setupIframeListeners({
       return;
     }
 
-    // If selection was made very recently (e.g. mouse drag just ended within 80ms), do not clear
-    if (Date.now() - lastSelectionTime < 80) {
+    // If user held touch down for > 300ms (selection / long-press gesture on mobile/touchscreen),
+    // this click is a synthetic event from finger release, NOT an intentional dismiss tap!
+    if (touchStartTime > 0 && Date.now() - touchStartTime > 300) {
+      return;
+    }
+
+    // If selection was made very recently (e.g. within 500ms), do not clear
+    if (Date.now() - lastSelectionTime < 500) {
       return;
     }
 

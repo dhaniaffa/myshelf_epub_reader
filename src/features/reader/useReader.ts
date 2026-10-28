@@ -249,6 +249,7 @@ export function useReader({ bookId, settings, resolvedTheme }: UseReaderOptions)
           },
           onSelectText: (selection) => {
             if (!isMounted) return;
+            lastSelectionTimestampRef.current = Date.now();
             setState((prev) => {
               if (
                 prev.selection?.cfiRange === selection.cfiRange &&
@@ -341,6 +342,7 @@ export function useReader({ bookId, settings, resolvedTheme }: UseReaderOptions)
             }
           }
           if (text) {
+            lastSelectionTimestampRef.current = Date.now();
             setState((prev) => ({
               ...prev,
               selection: { cfiRange, text },
@@ -498,8 +500,16 @@ export function useReader({ bookId, settings, resolvedTheme }: UseReaderOptions)
           }
         }
 
+        const isMobile =
+          typeof navigator !== 'undefined' &&
+          (/android|iphone|ipad|ipod/i.test(navigator.userAgent) ||
+            ('maxTouchPoints' in navigator &&
+              navigator.maxTouchPoints > 2 &&
+              /Macintosh/i.test(navigator.userAgent)));
+
         // If no text is selected anywhere and user is not interacting with toolbar or open dialogs, automatically close selection bar
-        if (!foundSelection && stateRef.current.selection) {
+        // On mobile / touchscreens, do not aggressively auto-close via polling as WebView focus can shift to action handles
+        if (!isMobile && !foundSelection && stateRef.current.selection) {
           const isInteractingWithToolbar =
             Boolean(document.querySelector('.selection-bar-container:hover')) ||
             Boolean(document.querySelector('dialog[open]')) ||
@@ -508,7 +518,7 @@ export function useReader({ bookId, settings, resolvedTheme }: UseReaderOptions)
             Boolean(document.activeElement?.closest('dialog')) ||
             Boolean(document.activeElement?.closest('[role="dialog"]'));
 
-          if (!isInteractingWithToolbar && Date.now() - lastSelectionTimestampRef.current > 80) {
+          if (!isInteractingWithToolbar && Date.now() - lastSelectionTimestampRef.current > 400) {
             setState((prev) => (prev.selection ? { ...prev, selection: null } : prev));
           }
         }

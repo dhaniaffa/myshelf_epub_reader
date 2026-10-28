@@ -109,7 +109,11 @@
 }
 
 .select-text,
-.select-text * {
+.select-text *,
+.epub-container,
+.epub-view,
+.epub-view iframe {
   -webkit-user-select: text !important;
   user-select: text !important;
+  -webkit-touch-callout: default !important;
 }

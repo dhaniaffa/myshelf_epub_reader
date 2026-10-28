@@ -178,6 +178,7 @@ body {
   text-size-adjust: 100% !important;
   -webkit-user-select: text !important;
   user-select: text !important;
+  -webkit-touch-callout: default !important;
   box-sizing: border-box !important;
   margin: 0 !important;
   padding: 16px var(--reader-horizontal-padding) 20px !important;
@@ -189,6 +190,7 @@ body {
   caret-color: transparent !important;
   -webkit-user-select: text !important;
   user-select: text !important;
+  -webkit-touch-callout: default !important;
 }
 
 p,

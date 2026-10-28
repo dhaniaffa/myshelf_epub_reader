@@ -154,7 +154,8 @@ const EpubReaderView: React.FC<ReaderPageProps> = ({ bookId }) => {
         !target.closest('.tts-player-bar-container') &&
         !target.closest('dialog') &&
         !target.closest('.modal-container') &&
-        !target.closest('[role="dialog"]')
+        !target.closest('[role="dialog"]') &&
+        !containerRef.current?.contains(target)
       ) {
         if (!showTTSBar) {
           handleClearSelection();
@@ -166,7 +167,7 @@ const EpubReaderView: React.FC<ReaderPageProps> = ({ bookId }) => {
     return () => {
       window.removeEventListener('pointerdown', handlePointerDown);
     };
-  }, [state.selection, showTTSBar, handleClearSelection]);
+  }, [state.selection, showTTSBar, handleClearSelection, containerRef]);
 
   // Extract active page text and play
   const handleToggleTTS = useCallback(() => {
@@ -499,7 +500,7 @@ const EpubReaderView: React.FC<ReaderPageProps> = ({ bookId }) => {
 
   return (
     <div
-      className={`bg-surface text-on-surface relative flex h-screen w-screen flex-col overflow-hidden select-none ${
+      className={`bg-surface text-on-surface relative flex h-screen w-screen flex-col overflow-hidden ${
         isEink ? 'eink-mode' : ''
       }`}
     >
