@@ -1,4 +1,5 @@
 #[tauri::command]
+#[allow(unused_variables)]
 fn save_file_dialog(default_filename: String, content: String) -> Result<Option<String>, String> {
   #[cfg(target_os = "linux")]
   {
