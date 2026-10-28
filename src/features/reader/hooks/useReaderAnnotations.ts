@@ -68,7 +68,7 @@ export function useReaderAnnotations({
     });
   }, [annotations, isReady, renditionRef, onAnnotationClick]);
 
-  // Add new highlight
+  // Add new highlight (or update existing if selection overlaps/matches)
   const addHighlight = useCallback(
     async (
       color: HighlightColor,
@@ -78,6 +78,27 @@ export function useReaderAnnotations({
     ) => {
       if (!selection) return;
       const { cfiRange, text } = selection;
+      const trimmedText = text.trim();
+
+      // Check if an annotation already exists with matching cfiRange or text
+      const existing = annotations.find(
+        (a) =>
+          a.cfiRange === cfiRange ||
+          (a.text.trim() === trimmedText && (!a.chapter || !chapterTitle || a.chapter === chapterTitle))
+      );
+
+      if (existing) {
+        const updated: Annotation = {
+          ...existing,
+          color,
+          note: note !== undefined ? (note || null) : existing.note,
+          updatedAt: Date.now(),
+        };
+
+        await db.annotations.put(updated);
+        setAnnotations((prev) => prev.map((a) => (a.id === existing.id ? updated : a)));
+        return updated;
+      }
 
       const newAnnotation: Annotation = {
         id: Math.random().toString(36).substring(2, 10),
@@ -95,7 +116,7 @@ export function useReaderAnnotations({
       setAnnotations((prev) => [...prev, newAnnotation]);
       return newAnnotation;
     },
-    [bookId]
+    [bookId, annotations]
   );
 
   // Update note on an annotation

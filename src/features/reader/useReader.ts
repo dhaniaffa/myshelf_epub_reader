@@ -503,8 +503,10 @@ export function useReader({ bookId, settings, resolvedTheme }: UseReaderOptions)
           const isInteractingWithToolbar =
             Boolean(document.querySelector('.selection-bar-container:hover')) ||
             Boolean(document.querySelector('dialog[open]')) ||
+            Boolean(document.querySelector('[role="dialog"]')) ||
             Boolean(document.activeElement?.closest('.selection-bar-container')) ||
-            Boolean(document.activeElement?.closest('dialog'));
+            Boolean(document.activeElement?.closest('dialog')) ||
+            Boolean(document.activeElement?.closest('[role="dialog"]'));
 
           if (!isInteractingWithToolbar && Date.now() - lastSelectionTimestampRef.current > 80) {
             setState((prev) => (prev.selection ? { ...prev, selection: null } : prev));
@@ -667,9 +669,14 @@ export function useReader({ bookId, settings, resolvedTheme }: UseReaderOptions)
 
   // Add highlight and clear active selection
   const addHighlight = useCallback(
-    async (color: HighlightColor, note?: string) => {
-      if (!state.selection) return;
-      await addHighlightRecord(color, note, state.selection, state.chapterTitle);
+    async (
+      color: HighlightColor,
+      note?: string,
+      customSelection?: { cfiRange: string; text: string }
+    ) => {
+      const targetSelection = customSelection || state.selection;
+      if (!targetSelection) return;
+      await addHighlightRecord(color, note, targetSelection, state.chapterTitle);
       clearSelection();
     },
     [state.selection, state.chapterTitle, addHighlightRecord, clearSelection]

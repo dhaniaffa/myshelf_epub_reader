@@ -92,6 +92,8 @@ const EpubReaderView: React.FC<ReaderPageProps> = ({ bookId }) => {
   const [editingNoteFor, setEditingNoteFor] = useState<{
     annotation?: Annotation;
     quoteText: string;
+    cfiRange?: string;
+    selection?: { cfiRange: string; text: string };
     isExisting: boolean;
   } | null>(null);
 
@@ -225,6 +227,44 @@ const EpubReaderView: React.FC<ReaderPageProps> = ({ bookId }) => {
       toast.success('Halaman berhasil ditandai');
     }
   }, [state.currentCfi, state.percentage, state.chapterTitle, bookmarks, refreshBookmarks, bookId]);
+
+  // Check if active selection overlaps or matches an existing highlight
+  const findMatchingAnnotation = useCallback(
+    (selection: { cfiRange: string; text: string } | null): Annotation | null => {
+      if (!selection || annotations.length === 0) return null;
+      const trimmedText = selection.text.trim();
+      if (!trimmedText) return null;
+
+      // 1. Exact CFI range match
+      const byCfi = annotations.find((a) => a.cfiRange === selection.cfiRange);
+      if (byCfi) return byCfi;
+
+      // 2. Exact text match in the current chapter
+      const byText = annotations.find(
+        (a) =>
+          a.text.trim() === trimmedText &&
+          (!a.chapter || !state.chapterTitle || a.chapter === state.chapterTitle)
+      );
+      if (byText) return byText;
+
+      // 3. Substring match for highlighted range
+      const bySub = annotations.find((a) => {
+        const aText = a.text.trim();
+        const sameChap = !a.chapter || !state.chapterTitle || a.chapter === state.chapterTitle;
+        if (!sameChap) return false;
+        return (
+          (aText.length > 5 && trimmedText.includes(aText)) ||
+          (trimmedText.length > 5 && aText.includes(trimmedText))
+        );
+      });
+      return bySub || null;
+    },
+    [annotations, state.chapterTitle]
+  );
+
+  const matchingAnnotation = useMemo(() => {
+    return findMatchingAnnotation(state.selection);
+  }, [findMatchingAnnotation, state.selection]);
 
   const [isFlashing, setIsFlashing] = useState(false);
   const triggerFlashRefresh = useCallback(() => {
@@ -727,13 +767,46 @@ const EpubReaderView: React.FC<ReaderPageProps> = ({ bookId }) => {
         <SelectionBar
           text={state.selection.text}
           isBottomBarVisible={showBars}
-          onSelectColor={(color) => addHighlight(color)}
-          onOpenNote={() => {
-            setEditingNoteFor({
-              quoteText: state.selection?.text || '',
-              isExisting: false,
-            });
+          currentColor={matchingAnnotation?.color}
+          hasExistingNote={Boolean(matchingAnnotation?.note)}
+          isExistingHighlight={Boolean(matchingAnnotation)}
+          onSelectColor={async (color) => {
+            if (matchingAnnotation) {
+              await updateAnnotation(matchingAnnotation.id, matchingAnnotation.note || '', color);
+              toast.success('Warna sorotan diperbarui');
+              handleClearSelection();
+            } else {
+              await addHighlight(color);
+            }
           }}
+          onOpenNote={() => {
+            if (!state.selection) return;
+            if (matchingAnnotation) {
+              setEditingNoteFor({
+                annotation: matchingAnnotation,
+                quoteText: matchingAnnotation.text || state.selection.text,
+                selection: state.selection,
+                cfiRange: matchingAnnotation.cfiRange,
+                isExisting: true,
+              });
+            } else {
+              setEditingNoteFor({
+                quoteText: state.selection.text,
+                selection: state.selection,
+                cfiRange: state.selection.cfiRange,
+                isExisting: false,
+              });
+            }
+          }}
+          onDeleteHighlight={
+            matchingAnnotation
+              ? async () => {
+                  await removeAnnotation(matchingAnnotation.id);
+                  toast.info('Sorotan dihapus');
+                  handleClearSelection();
+                }
+              : undefined
+          }
           onOpenDictionary={() => setDictionaryWord(state.selection?.text || null)}
           onSpeakText={() => {
             if (state.selection?.text) {
@@ -752,30 +825,56 @@ const EpubReaderView: React.FC<ReaderPageProps> = ({ bookId }) => {
           setEditingNoteFor(null);
           clearActiveAnnotation();
         }}
-        quoteText={editingNoteFor?.quoteText || state.activeAnnotation?.text || ''}
-        initialNote={editingNoteFor?.annotation?.note || state.activeAnnotation?.note || ''}
-        initialColor={
-          editingNoteFor?.annotation?.color || state.activeAnnotation?.color || 'yellow'
+        quoteText={
+          editingNoteFor?.quoteText ||
+          editingNoteFor?.annotation?.text ||
+          state.activeAnnotation?.text ||
+          ''
         }
-        isExisting={editingNoteFor?.isExisting || !!state.activeAnnotation}
-        onSave={(note, color) => {
-          if (editingNoteFor?.isExisting && editingNoteFor.annotation) {
-            updateAnnotation(editingNoteFor.annotation.id, note, color);
-          } else if (state.activeAnnotation) {
-            updateAnnotation(state.activeAnnotation.id, note, color);
-          } else if (state.selection) {
-            addHighlight(color, note);
+        initialNote={
+          editingNoteFor?.annotation?.note ||
+          state.activeAnnotation?.note ||
+          ''
+        }
+        initialColor={
+          editingNoteFor?.annotation?.color ||
+          state.activeAnnotation?.color ||
+          'yellow'
+        }
+        isExisting={
+          Boolean(editingNoteFor?.isExisting) || Boolean(state.activeAnnotation)
+        }
+        onSave={async (note, color) => {
+          const targetAnn = editingNoteFor?.annotation || state.activeAnnotation;
+          if (targetAnn) {
+            await updateAnnotation(targetAnn.id, note, color);
+            toast.success('Catatan berhasil diperbarui');
+          } else {
+            const targetSelection = editingNoteFor?.selection || state.selection;
+            if (targetSelection) {
+              const existing = findMatchingAnnotation(targetSelection);
+              if (existing) {
+                await updateAnnotation(existing.id, note, color);
+                toast.success('Catatan berhasil diperbarui');
+              } else {
+                await addHighlight(color, note, targetSelection);
+                toast.success('Sorotan & catatan berhasil disimpan');
+              }
+            }
           }
           setEditingNoteFor(null);
           clearActiveAnnotation();
+          handleClearSelection();
         }}
-        onDelete={() => {
+        onDelete={async () => {
           const targetId = editingNoteFor?.annotation?.id || state.activeAnnotation?.id;
           if (targetId) {
-            removeAnnotation(targetId);
+            await removeAnnotation(targetId);
+            toast.info('Sorotan dihapus');
           }
           setEditingNoteFor(null);
           clearActiveAnnotation();
+          handleClearSelection();
         }}
       />
 

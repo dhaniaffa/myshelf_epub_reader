@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookA, Copy, MessageSquarePlus, Volume2, X } from 'lucide-react';
+import { BookA, Copy, MessageSquarePlus, Trash2, Volume2, X } from 'lucide-react';
 
 import { HIGHLIGHT_COLORS } from '@/lib/theme';
 import { toast } from '@/store/toast';
@@ -9,8 +9,12 @@ import type { HighlightColor } from '@/types';
 interface SelectionBarProps {
   text: string;
   isBottomBarVisible?: boolean;
+  currentColor?: HighlightColor;
+  hasExistingNote?: boolean;
+  isExistingHighlight?: boolean;
   onSelectColor: (color: HighlightColor) => void;
   onOpenNote: () => void;
+  onDeleteHighlight?: () => void;
   onOpenDictionary?: () => void;
   onSpeakText?: () => void;
   onClose: () => void;
@@ -19,8 +23,12 @@ interface SelectionBarProps {
 export const SelectionBar: React.FC<SelectionBarProps> = ({
   text,
   isBottomBarVisible,
+  currentColor,
+  hasExistingNote,
+  isExistingHighlight,
   onSelectColor,
   onOpenNote,
+  onDeleteHighlight,
   onOpenDictionary,
   onSpeakText,
   onClose,
@@ -62,17 +70,24 @@ export const SelectionBar: React.FC<SelectionBarProps> = ({
         {/* Tier 1: Color Choices (Centered on Mobile) + Mobile Close Button */}
         <div className="border-outline-variant/20 sm:border-outline-variant/30 relative flex items-center justify-center border-b pb-2 sm:justify-start sm:border-r sm:border-b-0 sm:pr-2 sm:pb-0">
           <div className="flex items-center justify-center gap-3 sm:gap-2">
-            {colors.map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => onSelectColor(c)}
-                title={HIGHLIGHT_COLORS[c].label}
-                aria-label={`Sorot ${HIGHLIGHT_COLORS[c].label}`}
-                className="h-7 w-7 cursor-pointer rounded-full border-2 border-white/40 shadow-xs transition-transform hover:scale-115 active:scale-95"
-                style={{ backgroundColor: HIGHLIGHT_COLORS[c].border }}
-              />
-            ))}
+            {colors.map((c) => {
+              const isSelected = currentColor === c;
+              return (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => onSelectColor(c)}
+                  title={HIGHLIGHT_COLORS[c].label}
+                  aria-label={`Sorot ${HIGHLIGHT_COLORS[c].label}`}
+                  className={`h-7 w-7 cursor-pointer rounded-full border-2 shadow-xs transition-transform hover:scale-115 active:scale-95 ${
+                    isSelected
+                      ? 'border-primary ring-primary/60 scale-110 shadow-md ring-2'
+                      : 'border-white/40'
+                  }`}
+                  style={{ backgroundColor: HIGHLIGHT_COLORS[c].border }}
+                />
+              );
+            })}
           </div>
 
           {/* Mobile Close Button (Right Corner) */}
@@ -87,17 +102,31 @@ export const SelectionBar: React.FC<SelectionBarProps> = ({
           </button>
         </div>
 
-        {/* Tier 2: Text Actions (Note, Dictionary, Listen, Copy) */}
+        {/* Tier 2: Text Actions (Note, Dictionary, Listen, Delete, Copy) */}
         <div className="flex w-full items-center justify-between gap-1 sm:w-auto">
           {/* Note Button */}
           <button
             type="button"
             onClick={onOpenNote}
             className="hover:bg-surface-container text-on-surface flex flex-1 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl px-2 py-1.5 text-[11px] font-semibold transition-colors sm:flex-initial sm:flex-row sm:gap-1.5 sm:rounded-full sm:text-xs"
+            title={hasExistingNote ? 'Edit Catatan' : 'Tambah Catatan'}
           >
             <MessageSquarePlus size={15} className="text-primary shrink-0" />
-            <span className="truncate">Catatan</span>
+            <span className="truncate">{hasExistingNote ? 'Edit Catatan' : 'Catatan'}</span>
           </button>
+
+          {/* Delete Highlight Button (visible if text is already highlighted) */}
+          {isExistingHighlight && onDeleteHighlight && (
+            <button
+              type="button"
+              onClick={onDeleteHighlight}
+              className="hover:bg-surface-container text-error flex flex-1 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl px-2 py-1.5 text-[11px] font-semibold transition-colors sm:flex-initial sm:flex-row sm:gap-1.5 sm:rounded-full sm:text-xs"
+              title="Hapus Sorotan"
+            >
+              <Trash2 size={14} className="shrink-0" />
+              <span className="truncate">Hapus</span>
+            </button>
+          )}
 
           {/* Tombol Kamus (Hybrid) */}
           {onOpenDictionary && (
