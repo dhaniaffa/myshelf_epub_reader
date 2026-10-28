@@ -7,25 +7,41 @@ Dokumentasi ini mencakup panduan lengkap untuk developer yang menggunakan sistem
 ---
 
 ## Daftar Isi
-1. [Struktur Direktori](#1-struktur-direktori)
-2. [Prasyarat Lingkungan (Environment Setup)](#2-prasyarat-lingkungan-environment-setup)
-   - [A. Pengguna Linux](#a-pengguna-linux)
-   - [B. Pengguna Windows](#b-pengguna-windows)
-   - [Target Rust (Lintas Platform)](#target-rust-lintas-platform)
-3. [Membuat Keystore Rilis Baru (Generate Key)](#3-membuat-keystore-rilis-baru-generate-key)
-   - [A. Generate Key di Linux](#a-generate-key-di-linux)
-   - [B. Generate Key di Windows](#b-generate-key-di-windows)
-   - [Penjelasan Parameter `keytool`](#penjelasan-parameter-keytool)
-   - [Panduan Pengisian Data Interaktif](#panduan-pengisian-data-interaktif)
-   - [Prinsip Keamanan Keystore](#prinsip-keamanan-keystore)
-4. [Konfigurasi Signing Otomatis (Keystore)](#4-konfigurasi-signing-otomatis-keystore)
-   - [Format Penulisan Path (Linux vs Windows)](#format-penulisan-path-linux-vs-windows)
-5. [Perintah Build & Kompilasi](#5-perintah-build--kompilasi)
-   - [Opsi A: Menggunakan Tauri CLI](#opsi-a-menggunakan-tauri-cli-direkomendasikan)
-   - [Opsi B: Menggunakan Gradle CLI Langsung](#opsi-b-menggunakan-gradle-cli-langsung)
-6. [Lokasi Berkas Output](#6-lokasi-berkas-output)
-7. [Verifikasi Sertifikat APK](#7-verifikasi-sertifikat-apk)
-8. [Troubleshooting Khusus Windows & Tips Tambahan](#8-troubleshooting-khusus-windows--tips-tambahan)
+
+- [Dokumentasi Android Proyek MyShelf (Tauri v2)](#dokumentasi-android-proyek-myshelf-tauri-v2)
+  - [Daftar Isi](#daftar-isi)
+  - [1. Struktur Direktori](#1-struktur-direktori)
+  - [2. Prasyarat Lingkungan (Environment Setup)](#2-prasyarat-lingkungan-environment-setup)
+    - [A. Pengguna Linux](#a-pengguna-linux)
+    - [B. Pengguna Windows](#b-pengguna-windows)
+      - [1. Lokasi Default SDK \& JDK di Windows](#1-lokasi-default-sdk--jdk-di-windows)
+      - [2. Perintah PowerShell untuk Menyetel Environment Variables](#2-perintah-powershell-untuk-menyetel-environment-variables)
+    - [Target Rust (Lintas Platform)](#target-rust-lintas-platform)
+  - [3. Membuat Keystore Rilis Baru (Generate Key)](#3-membuat-keystore-rilis-baru-generate-key)
+    - [A. Generate Key di Linux](#a-generate-key-di-linux)
+    - [B. Generate Key di Windows](#b-generate-key-di-windows)
+      - [Menggunakan PowerShell](#menggunakan-powershell)
+      - [Menggunakan Command Prompt (CMD)](#menggunakan-command-prompt-cmd)
+    - [Penjelasan Parameter `keytool`](#penjelasan-parameter-keytool)
+    - [Panduan Pengisian Data Interaktif](#panduan-pengisian-data-interaktif)
+    - [Prinsip Keamanan Keystore](#prinsip-keamanan-keystore)
+  - [4. Konfigurasi Signing Otomatis (Keystore)](#4-konfigurasi-signing-otomatis-keystore)
+    - [Format Penulisan Path (Linux vs Windows)](#format-penulisan-path-linux-vs-windows)
+      - [Contoh untuk Linux](#contoh-untuk-linux)
+      - [Contoh untuk Windows](#contoh-untuk-windows)
+    - [Penjelasan Parameter](#penjelasan-parameter)
+  - [5. Perintah Build \& Kompilasi](#5-perintah-build--kompilasi)
+    - [Opsi A: Menggunakan Tauri CLI (Direkomendasikan)](#opsi-a-menggunakan-tauri-cli-direkomendasikan)
+    - [Opsi B: Menggunakan Gradle CLI Langsung](#opsi-b-menggunakan-gradle-cli-langsung)
+  - [6. Lokasi Berkas Output](#6-lokasi-berkas-output)
+  - [7. Menandatangani APK Secara Manual (Manual Signing)](#7-menandatangani-apk-secara-manual-manual-signing)
+    - [A. Di Linux (Bash)](#a-di-linux-bash)
+    - [B. Di Windows (PowerShell)](#b-di-windows-powershell)
+    - [C. Di Windows (Command Prompt / CMD)](#c-di-windows-command-prompt--cmd)
+  - [8. Verifikasi Sertifikat APK](#8-verifikasi-sertifikat-apk)
+    - [Di Linux](#di-linux)
+    - [Di Windows (Command Prompt / PowerShell)](#di-windows-command-prompt--powershell)
+  - [9. Troubleshooting Khusus Windows \& Tips Tambahan](#9-troubleshooting-khusus-windows--tips-tambahan)
 
 ---
 
@@ -73,6 +89,7 @@ export PATH=$PATH:$ANDROID_HOME/platform-tools:$BUILD_TOOLS
 ```
 
 Muat ulang konfigurasi terminal:
+
 ```bash
 source ~/.bashrc
 ```
@@ -83,12 +100,16 @@ source ~/.bashrc
 
 Pada Windows, Anda dapat menyetel Environment Variables melalui **GUI System Properties** atau menggunakan **PowerShell** (jalankan sebagai Administrator jika ingin set ke tingkat System, atau set ke tingkat User):
 
-#### 1. Lokasi Default SDK & JDK di Windows:
-* **JDK 21:** Biasanya berada di `C:\Program Files\Eclipse Adoptium\jdk-21.x.x-hotspot\` atau Java bawaan Android Studio di `C:\Program Files\Android\Android Studio\jbr`.
-* **Android SDK:** Default berada di `C:\Users\<Username>\AppData\Local\Android\Sdk`.
-* **NDK:** Berada di `C:\Users\<Username>\AppData\Local\Android\Sdk\ndk\28.2.13676358`.
+#### 1. Lokasi Default SDK & JDK di Windows
 
-#### 2. Perintah PowerShell untuk Menyetel Environment Variables:
+- **JDK 21:** Biasanya berada di `C:\Program Files\Eclipse Adoptium\jdk-21.x.x-hotspot\` atau Java bawaan Android Studio di `C:\Program Files\Android\Android Studio\jbr`.
+
+- **Android SDK:** Default berada di `C:\Users\<Username>\AppData\Local\Android\Sdk`.
+
+- **NDK:** Berada di `C:\Users\<Username>\AppData\Local\Android\Sdk\ndk\28.2.13676358`.
+
+#### 2. Perintah PowerShell untuk Menyetel Environment Variables
+
 ```powershell
 # Ganti <Username> dan versi JDK sesuai instalasi Anda
 [System.Environment]::SetEnvironmentVariable("JAVA_HOME", "C:\Program Files\Android\Android Studio\jbr", "User")
@@ -144,7 +165,8 @@ keytool -genkey -v \
 
 ### B. Generate Key di Windows
 
-#### Menggunakan PowerShell:
+#### Menggunakan PowerShell
+
 ```powershell
 # 1. Buat direktori aman di folder User Profile
 New-Item -ItemType Directory -Force -Path "$HOME\.android-keys"
@@ -159,7 +181,8 @@ Set-Location "$HOME\.android-keys"
   -alias myshelf-key
 ```
 
-#### Menggunakan Command Prompt (CMD):
+#### Menggunakan Command Prompt (CMD)
+
 ```cmd
 REM 1. Buat direktori aman
 mkdir "%USERPROFILE%\.android-keys"
@@ -194,12 +217,12 @@ Saat perintah `keytool` dijalankan, Anda akan diminta mengisi serangkaian pertan
 2. **`Re-enter new password:`**
    Ketik ulang kata sandi yang sama untuk konfirmasi.
 3. **Identitas Pengembang (Distinguished Name / DN):**
-   * *What is your first and last name?* $\rightarrow$ Isi nama Anda atau nama tim.
-   * *What is the name of your organizational unit?* $\rightarrow$ Misal: `Mobile Dev` (atau kosongkan dengan tekan `Enter`).
-   * *What is the name of your organization?* $\rightarrow$ Misal: `MyShelf` (atau nama perusahaan/pribadi).
-   * *What is the name of your City or Locality?* $\rightarrow$ Kota domisili Anda.
-   * *What is the name of your State or Province?* $\rightarrow$ Provinsi domisili Anda.
-   * *What is the two-letter country code for this unit?* $\rightarrow$ Kode negara 2 huruf (contoh: `ID` untuk Indonesia).
+   - *What is your first and last name?* $\rightarrow$ Isi nama Anda atau nama tim.
+   - *What is the name of your organizational unit?* $\rightarrow$ Misal: `Mobile Dev` (atau kosongkan dengan tekan `Enter`).
+   - *What is the name of your organization?* $\rightarrow$ Misal: `MyShelf` (atau nama perusahaan/pribadi).
+   - *What is the name of your City or Locality?* $\rightarrow$ Kota domisili Anda.
+   - *What is the name of your State or Province?* $\rightarrow$ Provinsi domisili Anda.
+   - *What is the two-letter country code for this unit?* $\rightarrow$ Kode negara 2 huruf (contoh: `ID` untuk Indonesia).
 4. **Konfirmasi:**
    Terminal akan menampilkan ringkasan data dan bertanya:
    `Is CN=..., OU=..., O=... correct? [no]:` $\rightarrow$ Ketik **`yes`** lalu tekan `Enter`.
@@ -213,6 +236,7 @@ Saat perintah `keytool` dijalankan, Anda akan diminta mengisi serangkaian pertan
 
 > [!CAUTION]
 > **ATURAN MUTLAK KEAMANAN KEYSTORE:**
+>
 > 1. **JANGAN PERNAH MENG-COMMIT FILE `.jks` KE GITHUB / GIT REPOSITORY.**
 > 2. **JANGAN SAMPAI FILE INI HILANG!**
 >    Android dan Google Play Store mengidentifikasi update aplikasi berdasarkan sertifikat penandatanganan ini. Jika file `.jks` hilang atau password terlupakan, **Anda tidak akan pernah bisa mengirim update aplikasi ke pengguna yang sudah menginstall MyShelf**.
@@ -232,7 +256,8 @@ Buat berkas `keystore.properties` pada root direktori ini (`src-tauri/gen/androi
 > [!IMPORTANT]
 > Pada format file `.properties` Java, karakter backslash `\` berfungsi sebagai karakter escape. Khusus developer Windows, **Gunakan forward slash (`/`)** atau **double backslash (`\\`)** pada nilai `storeFile`.
 
-#### Contoh untuk Linux:
+#### Contoh untuk Linux
+
 ```properties
 storeFile=/path/to/release-key/.android-keys/release-key.jks
 storePassword=password_keystore
@@ -240,7 +265,8 @@ keyAlias=app-alias-key
 keyPassword=password_alias
 ```
 
-#### Contoh untuk Windows:
+#### Contoh untuk Windows
+
 ```properties
 # Opsi 1 (Sangat disarankan - gunakan forward slash):
 storeFile=C:/Users/<username>/.android-keys/release-key.jks
@@ -252,7 +278,8 @@ keyPassword=password_alias
 # storeFile=C:\\Users\\Username\\.android-keys\\release-key.jks
 ```
 
-### Penjelasan Parameter:
+### Penjelasan Parameter
+
 | Parameter | Keterangan |
 | :--- | :--- |
 | `storeFile` | Path absolut menuju berkas `.jks` di komputer Anda (simpan di luar repo). |
@@ -268,19 +295,23 @@ keyPassword=password_alias
 ## 5. Perintah Build & Kompilasi
 
 ### Opsi A: Menggunakan Tauri CLI (Direkomendasikan)
+
 Jalankan dari root direktori proyek (`epub_reader`):
 
 1. **Build APK Universal (Semua arsitektur CPU - untuk instalasi langsung / Sideloading):**
+
    ```bash
    npm run tauri android build -- --apk
    ```
 
 2. **Build APK Cepat Khusus Arsitektur Tertentu (misal ARM64 untuk HP modern):**
+
    ```bash
    npm run tauri android build -- --apk --target aarch64
    ```
 
 3. **Build AAB (Android App Bundle - untuk Google Play Store):**
+
    ```bash
    npm run tauri android build
    ```
@@ -288,9 +319,11 @@ Jalankan dari root direktori proyek (`epub_reader`):
 ---
 
 ### Opsi B: Menggunakan Gradle CLI Langsung
+
 Jika Anda berada di dalam folder `src-tauri/gen/android`:
 
-* **Di Linux:**
+- **Di Linux:**
+
   ```bash
   # Build APK Rilis
   ./gradlew assembleUniversalRelease
@@ -299,7 +332,8 @@ Jika Anda berada di dalam folder `src-tauri/gen/android`:
   ./gradlew bundleUniversalRelease
   ```
 
-* **Di Windows (CMD / PowerShell):**
+- **Di Windows (CMD / PowerShell):**
+
   ```cmd
   REM Build APK Rilis
   gradlew.bat assembleUniversalRelease
@@ -314,70 +348,127 @@ Jika Anda berada di dalam folder `src-tauri/gen/android`:
 
 Setelah proses build selesai, berkas rilis yang **sudah ditandatangani secara otomatis** dapat ditemukan pada lokasi:
 
-* **APK Universal Release:**
-  * Linux: `app/build/outputs/apk/universal/release/app-universal-release.apk`
-  * Windows: `app\build\outputs\apk\universal\release\app-universal-release.apk`
-* **APK ARM64 Release (Jika menggunakan `--target aarch64`):**
-  * Linux: `app/build/outputs/apk/arm64-v8a/release/app-arm64-v8a-release.apk`
-  * Windows: `app\build\outputs\apk\arm64-v8a\release\app-arm64-v8a-release.apk`
-* **AAB Release (Play Store Bundle):**
-  * Linux: `app/build/outputs/bundle/universalRelease/app-universal-release.aab`
-  * Windows: `app\build\outputs\bundle\universalRelease\app-universal-release.aab`
+- **APK Universal Release:**
+  - Linux: `app/build/outputs/apk/universal/release/app-universal-release.apk`
+  - Windows: `app\build\outputs\apk\universal\release\app-universal-release.apk`
+- **APK ARM64 Release (Jika menggunakan `--target aarch64`):**
+  - Linux: `app/build/outputs/apk/arm64-v8a/release/app-arm64-v8a-release.apk`
+  - Windows: `app\build\outputs\apk\arm64-v8a\release\app-arm64-v8a-release.apk`
+
+- **AAB Release (Play Store Bundle):**
+  - Linux: `app/build/outputs/bundle/universalRelease/app-universal-release.aab`
+  - Windows: `app\build\outputs\bundle\universalRelease\app-universal-release.aab`
 
 ---
 
-## 7. Verifikasi Sertifikat APK
+## 7. Menandatangani APK Secara Manual (Manual Signing)
+
+Jika Anda tidak menggunakan berkas otomatisasi `keystore.properties` (atau ingin menandatangani berkas APK hasil build secara manual menggunakan `apksigner` seperti pada `docs/ANDROID_SIGNING_GUIDE.md`), jalankan perintah berikut dari **root proyek** (`epub_reader`):
+
+### A. Di Linux (Bash)
+
+```bash
+$BUILD_TOOLS/apksigner sign \
+  --ks ~/.android-keys/myshelf-release-key.jks \
+  --ks-key-alias myshelf-key \
+  --out myshelf_1.0.0.apk \
+  src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk
+```
+
+### B. Di Windows (PowerShell)
+
+```powershell
+& "$env:BUILD_TOOLS\apksigner.bat" sign `
+  --ks "$env:USERPROFILE\.android-keys\myshelf-release-key.jks" `
+  --ks-key-alias myshelf-key `
+  --out myshelf_1.0.0.apk `
+  src-tauri\gen\android\app\build\outputs\apk\universal\release\app-universal-release.apk
+```
+
+### C. Di Windows (Command Prompt / CMD)
+
+```cmd
+"%BUILD_TOOLS%\apksigner.bat" sign ^
+  --ks "%USERPROFILE%\.android-keys\myshelf-release-key.jks" ^
+  --ks-key-alias myshelf-key ^
+  --out myshelf_1.0.0.apk ^
+  src-tauri\gen\android\app\build\outputs\apk\universal\release\app-universal-release.apk
+```
+
+Terminal akan meminta kata sandi:
+
+```text
+Keystore password for signer #1: [ketik password keystore Anda]
+```
+
+Setelah selesai, berkas **`myshelf_1.0.0.apk`** akan tercipta langsung di root folder proyek dan siap dipublikasikan atau di-install ke HP.
+
+---
+
+## 8. Verifikasi Sertifikat APK
 
 Untuk memastikan APK rilis benar-benar telah ditandatangani dengan sertifikat resmi Anda (bukan sertifikat `Android Debug` bawaan), periksa sertifikatnya:
 
-### Di Linux:
+### Di Linux
+
 ```bash
 $BUILD_TOOLS/apksigner verify --print-certs app/build/outputs/apk/universal/release/app-universal-release.apk
 ```
 
-### Di Windows (Command Prompt / PowerShell):
-* **Command Prompt:**
+### Di Windows (Command Prompt / PowerShell)
+
+- **Command Prompt:**
+
   ```cmd
   "%ANDROID_HOME%\build-tools\35.0.0\apksigner.bat" verify --print-certs app\build\outputs\apk\universal\release\app-universal-release.apk
   ```
-* **PowerShell:**
+
+- **PowerShell:**
+
   ```powershell
   & "$env:ANDROID_HOME\build-tools\35.0.0\apksigner.bat" verify --print-certs app\build\outputs\apk\universal\release\app-universal-release.apk
   ```
 
 **Ciri-ciri APK yang berhasil ditandatangani resmi:**
-* Pada baris `Signer #1 certificate DN` tercantum identitas pengembang/organisasi Anda.
-* Skema verifikasi **v1, v2, v3** bernilai `true`.
+
+- Pada baris `Signer #1 certificate DN` tercantum identitas pengembang/organisasi Anda.
+
+- Skema verifikasi **v1, v2, v3** bernilai `true`.
 
 ---
 
-## 8. Troubleshooting Khusus Windows & Tips Tambahan
+## 9. Troubleshooting Khusus Windows & Tips Tambahan
 
 1. **Error Path Terlalu Panjang (*Filename too long* / *Long Paths*):**
-   * Di Windows, path file build native Rust/Android terkadang melebihi batas 260 karakter.
-   * **Solusi:** Aktifkan *Long Paths* di Git dengan menjalankan:
+   - Di Windows, path file build native Rust/Android terkadang melebihi batas 260 karakter.
+   - **Solusi:** Aktifkan *Long Paths* di Git dengan menjalankan:
+
      ```cmd
      git config --system core.longpaths true
      ```
-   * Pastikan juga meletakkan folder proyek di path yang tidak terlalu dalam (misalnya `C:\dev\epub_reader` bukan di dalam nested folder yang panjang).
+
+   - Pastikan juga meletakkan folder proyek di path yang tidak terlalu dalam (misalnya `C:\dev\epub_reader` bukan di dalam nested folder yang panjang).
 
 2. **File Terkunci oleh Gradle Daemon (*The process cannot access the file because it is being used by another process*):**
-   * Di Windows, proses Gradle Daemon terkadang menahan kunci file binary/DLL setelah kompilasi gagal.
-   * **Solusi:** Hentikan seluruh daemon Gradle yang aktif dengan perintah:
+   - Di Windows, proses Gradle Daemon terkadang menahan kunci file binary/DLL setelah kompilasi gagal.
+   - **Solusi:** Hentikan seluruh daemon Gradle yang aktif dengan perintah:
+
      ```cmd
      gradlew.bat --stop
      ```
 
 3. **Membersihkan Cache Build:**
-   * **Pembersihan Total Lintas Platform (Direkomendasikan):**
+   - **Pembersihan Total Lintas Platform (Direkomendasikan):**
      Jalankan dari root folder proyek:
+
      ```bash
      npm run clean
      ```
+
      *(Perintah ini otomatis membersihkan cache Rust `target/`, Gradle build Android, NDK `.cxx`, serta output `dist/` baik di Windows maupun Linux).*
-   * Pembersihan khusus modul Android saja:
-     * Linux: `./gradlew clean`
-     * Windows: `gradlew.bat clean`
+   - Pembersihan khusus modul Android saja:
+     - Linux: `./gradlew clean`
+     - Windows: `gradlew.bat clean`
 
 4. **Perhatian Terhadap Regenerasi Tauri:**
    Sebagian besar file dalam folder `gen/android` digenerate oleh Tauri. Jika di masa depan Anda menjalankan `tauri android init` ulang, pastikan konfigurasi kustom pada [app/build.gradle.kts](./app/build.gradle.kts) (seperti blok `keystoreProperties` dan `signingConfigs`) tetap dipertahankan.

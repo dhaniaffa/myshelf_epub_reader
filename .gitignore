@@ -11,6 +11,7 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+build
 *.local
 *.tsbuildinfo
 latest.json
@@ -33,4 +34,5 @@ latest.json
 
 # Mobile Packages
 *.apk
+*.apk.idsig
 *.aab
