@@ -21,6 +21,43 @@ function downloadFile(content: string, filename: string, mimeType: string) {
   URL.revokeObjectURL(url);
 }
 
+/**
+ * Saves file via Android native bridge using Storage Access Framework (ACTION_CREATE_DOCUMENT)
+ * Allows user to pick destination folder and confirm filename natively on Android.
+ */
+function saveViaAndroidBridge(
+  filename: string,
+  content: string,
+  mimeType: string
+): Promise<SaveFileResult> {
+  return new Promise((resolve) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).__onAndroidSaveResult = (success: boolean) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      delete (window as any).__onAndroidSaveResult;
+      resolve(success ? 'saved' : 'cancelled');
+    };
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const bridge = (window as any).AndroidBackupBridge;
+      if (typeof bridge.saveFileWithPicker === 'function') {
+        bridge.saveFileWithPicker(filename, content, mimeType);
+      } else if (typeof bridge.saveFile === 'function') {
+        bridge.saveFile(filename, content, mimeType);
+      } else {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        delete (window as any).__onAndroidSaveResult;
+        resolve('cancelled');
+      }
+    } catch (err) {
+      console.warn('AndroidBackupBridge failed:', err);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      delete (window as any).__onAndroidSaveResult;
+      resolve('cancelled');
+    }
+  });
+}
+
 export async function saveFileWithPicker({
   content,
   filename,
@@ -41,7 +78,15 @@ export async function saveFileWithPicker({
         navigator.maxTouchPoints > 2 &&
         /Macintosh/i.test(navigator.userAgent)));
 
-  // Tier 1: Desktop Native Tauri Dialog
+  // Tier 1: Android Native App Bridge (Tauri Android / Storage Access Framework)
+  // Lets the user browse and select any folder (Internal Storage, SD Card, etc.)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const hasAndroidBridge = typeof window !== 'undefined' && !!(window as any).AndroidBackupBridge;
+  if (hasAndroidBridge) {
+    return await saveViaAndroidBridge(filename, content, mimeType);
+  }
+
+  // Tier 2: Desktop Native Tauri Dialog (Linux Zenity, Windows SaveFileDialog, macOS AppleScript)
   if (isTauri() && !isMobile) {
     try {
       const savedPath = await invoke<string | null>('save_file_dialog', {
@@ -57,7 +102,7 @@ export async function saveFileWithPicker({
     }
   }
 
-  // Tier 2: File System Access API on Desktop Web (Chrome, Edge, Opera, Brave)
+  // Tier 3: File System Access API on Desktop Web (Chrome, Edge, Opera, Brave)
   if (!isMobile && typeof window !== 'undefined' && 'showSaveFilePicker' in window) {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -83,27 +128,7 @@ export async function saveFileWithPicker({
     }
   }
 
-  // Tier 3: Mobile Web Share API on Android (triggers system share sheet -> "Save to Files" / File Manager)
-  if (isMobile && typeof navigator !== 'undefined' && 'share' in navigator) {
-    try {
-      const file = new File([content], filename, { type: mimeType });
-      if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({
-          title: filename,
-          text: `Berkas cadangan MyShelf: ${filename}`,
-          files: [file],
-        });
-        return 'shared';
-      }
-    } catch (err: unknown) {
-      if (err instanceof Error && err.name === 'AbortError') {
-        return 'cancelled';
-      }
-      console.warn('navigator.share failed:', err);
-    }
-  }
-
-  // Tier 4: Fallback to traditional anchor download
+  // Tier 4: Fallback to standard browser download (Mobile Web / browsers without file picker)
   downloadFile(content, filename, mimeType);
   return 'downloaded';
 }
