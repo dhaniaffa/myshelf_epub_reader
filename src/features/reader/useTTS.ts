@@ -162,6 +162,7 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const preloadAudioRef = useRef<HTMLAudioElement | null>(null);
   const activeEngineRef = useRef<'speechSynthesis' | 'audio'>('speechSynthesis');
+  const activeUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   // Sync refs with latest state
   useEffect(() => {
@@ -224,6 +225,7 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
 
   // Internal function to stop audio playback
   const stopAllPlayback = useCallback(() => {
+    activeUtteranceRef.current = null;
     if (hasNativeSpeech) {
       try {
         window.speechSynthesis.cancel();
@@ -250,7 +252,17 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
     }
 
     const url = getAudioTtsUrl(textToSpeak, languageRef.current);
-    const audio = new Audio(url);
+    let audio: HTMLAudioElement;
+
+    if (preloadAudioRef.current && preloadAudioRef.current.src === url) {
+      audio = preloadAudioRef.current;
+      preloadAudioRef.current = null;
+    } else {
+      audio = new Audio();
+      audio.setAttribute('referrerpolicy', 'no-referrer');
+      audio.src = url;
+    }
+
     audio.playbackRate = rateRef.current;
 
     audio.onended = () => {
@@ -261,9 +273,9 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
       speakCurrentSentenceRef.current(nextIdx);
     };
 
-    audio.onerror = () => {
+    audio.onerror = (err) => {
       if (!isPlayingRef.current) return;
-      console.warn('Audio TTS fallback playback error');
+      console.warn('Audio TTS fallback playback error:', err);
       toast.info('Gagal memutar audio kalimat');
       setIsPlaying(false);
       setIsPaused(false);
@@ -271,7 +283,9 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
 
     audioRef.current = audio;
     audio.play().catch((err) => {
+      if (!isPlayingRef.current) return;
       console.warn('Audio play error:', err);
+      toast.info('Gagal memutar audio kalimat');
       setIsPlaying(false);
       setIsPaused(false);
     });
@@ -281,6 +295,7 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
     if (index + 1 < list.length) {
       const nextUrl = getAudioTtsUrl(list[index + 1], languageRef.current);
       const preloader = new Audio();
+      preloader.setAttribute('referrerpolicy', 'no-referrer');
       preloader.src = nextUrl;
       preloader.preload = 'auto';
       preloadAudioRef.current = preloader;
@@ -331,6 +346,7 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
       try {
         activeEngineRef.current = 'speechSynthesis';
         const utterance = new SpeechSynthesisUtterance(textToSpeak);
+        activeUtteranceRef.current = utterance;
         utterance.rate = rateRef.current;
 
         if (voiceRef.current) {
@@ -341,6 +357,7 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
         }
 
         utterance.onend = () => {
+          activeUtteranceRef.current = null;
           if (!isPlayingRef.current) return;
           const nextIdx = index + 1;
           setCurrentIndex(nextIdx);
@@ -349,6 +366,7 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
         };
 
         utterance.onerror = (e) => {
+          activeUtteranceRef.current = null;
           if (e.error === 'interrupted' || e.error === 'canceled') return;
           console.warn('Native speechSynthesis error, falling back to Audio:', e);
           // Seamlessly fallback to Audio engine if native fails
@@ -357,6 +375,7 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
 
         window.speechSynthesis.speak(utterance);
       } catch (err) {
+        activeUtteranceRef.current = null;
         console.warn('Failed to start native SpeechSynthesis, using Audio fallback:', err);
         playWithAudioFallback(textToSpeak, index);
       }
@@ -474,7 +493,7 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
       if (audioRef.current) {
         audioRef.current.playbackRate = newRate;
       }
-      if (isPlayingRef.current) {
+      if (isPlayingRef.current && activeEngineRef.current === 'speechSynthesis') {
         speakCurrentSentence(currentIndexRef.current);
       }
     },

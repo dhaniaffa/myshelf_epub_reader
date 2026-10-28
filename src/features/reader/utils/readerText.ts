@@ -43,48 +43,50 @@ export function getCurrentPageText(
 
   // 2. Fallback: Extract text elements overlapping with container viewport
   try {
-    const iframe = container?.querySelector('iframe');
-    if (iframe && iframe.contentDocument && iframe.contentWindow) {
-      const doc = iframe.contentDocument;
-      const win = iframe.contentWindow;
-      const viewportWidth = win.innerWidth || iframe.clientWidth;
-      const viewportHeight = win.innerHeight || iframe.clientHeight;
-
-      const textElements = doc.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, blockquote');
+    const iframes = Array.from(container?.querySelectorAll('iframe') || []);
+    if (iframes.length > 0) {
       const visibleTexts: string[] = [];
-
       const innerContainer =
         (container?.querySelector('.epub-container') as HTMLElement) || container;
       const cRect = innerContainer ? innerContainer.getBoundingClientRect() : null;
-      const iRect = iframe.getBoundingClientRect();
 
-      for (let i = 0; i < textElements.length; i++) {
-        const el = textElements[i] as HTMLElement;
-        const text = el.innerText?.trim();
-        if (!text) continue;
+      for (const iframe of iframes) {
+        if (!iframe.contentDocument || !iframe.contentWindow) continue;
+        const doc = iframe.contentDocument;
+        const win = iframe.contentWindow;
+        const viewportWidth = win.innerWidth || iframe.clientWidth;
+        const viewportHeight = win.innerHeight || iframe.clientHeight;
+        const iRect = iframe.getBoundingClientRect();
 
-        const rect = el.getBoundingClientRect();
-        let isVisible = false;
+        const textElements = doc.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, blockquote');
+        for (let i = 0; i < textElements.length; i++) {
+          const el = textElements[i] as HTMLElement;
+          const text = el.innerText?.trim();
+          if (!text) continue;
 
-        if (cRect) {
-          const elScreenLeft = rect.left + iRect.left;
-          const elScreenRight = rect.right + iRect.left;
-          const elScreenTop = rect.top + iRect.top;
-          const elScreenBottom = rect.bottom + iRect.top;
+          const rect = el.getBoundingClientRect();
+          let isVisible = false;
 
-          const horzOverlap = elScreenRight > cRect.left + 5 && elScreenLeft < cRect.right - 5;
-          const vertOverlap = elScreenBottom > cRect.top + 5 && elScreenTop < cRect.bottom - 5;
-          isVisible = horzOverlap && vertOverlap;
-        } else {
-          isVisible =
-            rect.right > 0 &&
-            rect.left < viewportWidth &&
-            rect.bottom > 0 &&
-            rect.top < viewportHeight;
-        }
+          if (cRect) {
+            const elScreenLeft = rect.left + iRect.left;
+            const elScreenRight = rect.right + iRect.left;
+            const elScreenTop = rect.top + iRect.top;
+            const elScreenBottom = rect.bottom + iRect.top;
 
-        if (isVisible) {
-          visibleTexts.push(text);
+            const horzOverlap = elScreenRight > cRect.left + 5 && elScreenLeft < cRect.right - 5;
+            const vertOverlap = elScreenBottom > cRect.top + 5 && elScreenTop < cRect.bottom - 5;
+            isVisible = horzOverlap && vertOverlap;
+          } else {
+            isVisible =
+              rect.right > 0 &&
+              rect.left < viewportWidth &&
+              rect.bottom > 0 &&
+              rect.top < viewportHeight;
+          }
+
+          if (isVisible) {
+            visibleTexts.push(text);
+          }
         }
       }
 
@@ -98,8 +100,14 @@ export function getCurrentPageText(
 
   // 3. Final fallback: iframe body innerText
   try {
-    const iframe = container?.querySelector('iframe');
-    return iframe?.contentDocument?.body?.innerText?.trim() || '';
+    const iframes = Array.from(container?.querySelectorAll('iframe') || []);
+    const texts = iframes
+      .map((iframe) => iframe.contentDocument?.body?.innerText?.trim())
+      .filter(Boolean);
+    if (texts.length > 0) {
+      return texts.join('\n\n');
+    }
+    return '';
   } catch {
     return '';
   }
