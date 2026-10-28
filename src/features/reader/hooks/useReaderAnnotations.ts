@@ -84,14 +84,15 @@ export function useReaderAnnotations({
       const existing = annotations.find(
         (a) =>
           a.cfiRange === cfiRange ||
-          (a.text.trim() === trimmedText && (!a.chapter || !chapterTitle || a.chapter === chapterTitle))
+          (a.text.trim() === trimmedText &&
+            (!a.chapter || !chapterTitle || a.chapter === chapterTitle))
       );
 
       if (existing) {
         const updated: Annotation = {
           ...existing,
           color,
-          note: note !== undefined ? (note || null) : existing.note,
+          note: note !== undefined ? note || null : existing.note,
           updatedAt: Date.now(),
         };
 
