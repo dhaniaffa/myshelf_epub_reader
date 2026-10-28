@@ -1,3 +1,5 @@
+import { EpubCFI } from 'epubjs';
+
 import { READER_EVENTS, THEME_STYLE_ID } from '@/config';
 import { buildCss } from '@/lib/theme';
 
@@ -11,7 +13,9 @@ export interface SetupIframeListenersOptions {
   containerRef: React.RefObject<HTMLDivElement | null>;
   settingsRef: React.RefObject<ReaderSettings>;
   themeRef: React.RefObject<Exclude<ReaderTheme, 'auto'>>;
+  checkIsSelectionActive?: () => boolean;
   onClearSelection: () => void;
+  onSelectText?: (selection: { cfiRange: string; text: string }) => void;
 }
 
 /**
@@ -24,7 +28,9 @@ export function setupIframeListeners({
   containerRef,
   settingsRef,
   themeRef,
+  checkIsSelectionActive,
   onClearSelection,
+  onSelectText,
 }: SetupIframeListenersOptions): void {
   // 1. Inject theme CSS
   const cssRules = buildCss(settingsRef.current, themeRef.current);
@@ -174,16 +180,166 @@ export function setupIframeListeners({
     true
   );
 
-  // 4. Automatically clear floating selection when no text is selected
+  // 4. Automatically detect and handle text selection (supporting both Desktop and Touch)
   let selTimeout: number | undefined;
+  let hasActiveSelection = false;
+  let lastSelectionTime = 0;
+  let mouseDownX = 0;
+  let mouseDownY = 0;
+  let isMouseDragging = false;
+
+  const getSelectionObj = () => {
+    try {
+      const winSel = contents.window?.getSelection();
+      if (winSel && winSel.rangeCount > 0) {
+        const text = winSel.toString().trim();
+        const range = winSel.getRangeAt(0);
+        if (text.length > 0 || !range.collapsed) {
+          return winSel;
+        }
+      }
+    } catch {
+      // ignore
+    }
+    try {
+      const docSel = contents.document?.getSelection?.();
+      if (docSel && docSel.rangeCount > 0) {
+        const text = docSel.toString().trim();
+        const range = docSel.getRangeAt(0);
+        if (text.length > 0 || !range.collapsed) {
+          return docSel;
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  };
+
+  const handleSelection = () => {
+    try {
+      const sel = getSelectionObj();
+      if (!sel || sel.rangeCount === 0) return;
+      const range = sel.getRangeAt(0);
+      if (range.collapsed) return;
+
+      let text = sel.toString().trim();
+      if (!text) {
+        text = range.toString().trim();
+      }
+      if (!text) return;
+
+      let cfiRange = '';
+      try {
+        const contentsWithSection = contents as unknown as {
+          cfiFromRange?: (range: Range) => string;
+          section?: { cfiFromRange?: (range: Range) => string };
+        };
+        if (typeof contentsWithSection.cfiFromRange === 'function') {
+          cfiRange = contentsWithSection.cfiFromRange(range);
+        } else if (typeof contentsWithSection.section?.cfiFromRange === 'function') {
+          cfiRange = contentsWithSection.section.cfiFromRange(range);
+        } else {
+          cfiRange = new EpubCFI(range, contents.cfiBase).toString();
+        }
+      } catch (err) {
+        console.warn('Failed to calculate cfiRange from selection:', err);
+      }
+
+      lastSelectionTime = Date.now();
+      hasActiveSelection = true;
+      onSelectText?.({ cfiRange, text });
+    } catch (e) {
+      console.error('Error handling selection:', e);
+    }
+  };
+
+  // Track mouse gestures inside book iframe
+  contents.document.addEventListener('mousedown', (e: MouseEvent) => {
+    mouseDownX = e.clientX;
+    mouseDownY = e.clientY;
+    isMouseDragging = false;
+  });
+
+  contents.document.addEventListener('mousemove', (e: MouseEvent) => {
+    if (e.buttons > 0) {
+      const deltaX = Math.abs(e.clientX - mouseDownX);
+      const deltaY = Math.abs(e.clientY - mouseDownY);
+      if (deltaX > 4 || deltaY > 4) {
+        isMouseDragging = true;
+      }
+    }
+  });
+
+  const onWindowMouseMove = (e: MouseEvent) => {
+    if (e.buttons > 0 && (mouseDownX > 0 || mouseDownY > 0)) {
+      const deltaX = Math.abs(e.clientX - mouseDownX);
+      const deltaY = Math.abs(e.clientY - mouseDownY);
+      if (deltaX > 4 || deltaY > 4) {
+        isMouseDragging = true;
+      }
+    }
+  };
+  window.addEventListener('mousemove', onWindowMouseMove);
+
+  // Selectionchange listener: only handle selection when text is selected;
+  // NEVER clear selection here to prevent premature dismiss on iframe blur/focus events.
   contents.document.addEventListener('selectionchange', () => {
     window.clearTimeout(selTimeout);
     selTimeout = window.setTimeout(() => {
-      const sel = contents.window.getSelection();
-      if (!sel || sel.isCollapsed || sel.toString().trim().length === 0) {
-        onClearSelection();
+      const sel = getSelectionObj();
+      if (sel) {
+        handleSelection();
       }
-    }, 80);
+    }, 120);
+  });
+
+  // Desktop mouse and keyboard selection handlers
+  const onDocMouseUp = (e: MouseEvent) => {
+    const deltaX = Math.abs(e.clientX - mouseDownX);
+    const deltaY = Math.abs(e.clientY - mouseDownY);
+    if (deltaX > 4 || deltaY > 4) {
+      isMouseDragging = true;
+    }
+    handleSelection();
+    setTimeout(handleSelection, 25);
+    setTimeout(handleSelection, 100);
+  };
+  contents.document.addEventListener('mouseup', onDocMouseUp);
+  contents.document.addEventListener('pointerup', onDocMouseUp);
+  contents.window?.addEventListener('mouseup', onDocMouseUp);
+  contents.window?.addEventListener('pointerup', onDocMouseUp);
+
+  const onWindowMouseUp = (e: MouseEvent) => {
+    const deltaX = Math.abs(e.clientX - mouseDownX);
+    const deltaY = Math.abs(e.clientY - mouseDownY);
+    if (deltaX > 4 || deltaY > 4) {
+      isMouseDragging = true;
+    }
+    handleSelection();
+    setTimeout(handleSelection, 25);
+    setTimeout(handleSelection, 100);
+  };
+  window.addEventListener('mouseup', onWindowMouseUp);
+  window.addEventListener('pointerup', onWindowMouseUp);
+
+  contents.window.addEventListener('unload', () => {
+    window.removeEventListener('mouseup', onWindowMouseUp);
+    window.removeEventListener('pointerup', onWindowMouseUp);
+    window.removeEventListener('mousemove', onWindowMouseMove);
+  });
+
+  contents.document.addEventListener('keyup', (e: KeyboardEvent) => {
+    if (
+      e.shiftKey ||
+      e.key === 'ArrowLeft' ||
+      e.key === 'ArrowRight' ||
+      e.key === 'ArrowUp' ||
+      e.key === 'ArrowDown'
+    ) {
+      handleSelection();
+      setTimeout(handleSelection, 25);
+    }
   });
 
   // 5. Detect touch swipe gestures inside book iframe
@@ -258,10 +414,39 @@ export function setupIframeListeners({
       return;
     }
 
-    const sel = contents.window.getSelection();
-    if (sel && sel.toString().trim().length > 0) return;
+    if (isMouseDragging) {
+      isMouseDragging = false;
+      e.preventDefault();
+      e.stopPropagation();
+      handleSelection();
+      return;
+    }
 
-    onClearSelection();
+    // Ignore multi-clicks (e.g. double-click or triple-click for word/line selection)
+    if (e.detail > 1) {
+      handleSelection();
+      return;
+    }
+
+    const sel = getSelectionObj();
+    if (sel && sel.toString().trim().length > 0) {
+      handleSelection();
+      return;
+    }
+
+    // If selection was made very recently (e.g. mouse drag just ended within 80ms), do not clear
+    if (Date.now() - lastSelectionTime < 80) {
+      return;
+    }
+
+    const wasSelectionActive = checkIsSelectionActive
+      ? checkIsSelectionActive()
+      : hasActiveSelection;
+    if (wasSelectionActive) {
+      hasActiveSelection = false;
+      onClearSelection();
+      return;
+    }
 
     const target = e.target as HTMLElement;
     if (target.closest('a') || target.closest('img')) return;

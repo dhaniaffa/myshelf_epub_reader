@@ -102,9 +102,9 @@ export async function checkForAppUpdate(): Promise<AppUpdateInfo | null> {
       // Look for an APK asset if on Android
       let apkDownloadUrl: string | undefined;
       if (Array.isArray(release.assets)) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const apkAsset = release.assets.find(
-          (a: any) => typeof a.name === 'string' && a.name.toLowerCase().endsWith('.apk')
+          (a: { name?: string; browser_download_url?: string }) =>
+            typeof a.name === 'string' && a.name.toLowerCase().endsWith('.apk')
         );
         if (apkAsset && apkAsset.browser_download_url) {
           apkDownloadUrl = apkAsset.browser_download_url;

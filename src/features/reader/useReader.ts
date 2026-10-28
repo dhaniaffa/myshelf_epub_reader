@@ -72,6 +72,13 @@ export function useReader({ bookId, settings, resolvedTheme }: UseReaderOptions)
     activeAnnotation: null,
   });
 
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
+  const lastSelectionTimestampRef = useRef(0);
+
   const clearActiveAnnotation = useCallback(() => {
     setState((prev) => ({ ...prev, activeAnnotation: null }));
   }, []);
@@ -236,8 +243,25 @@ export function useReader({ bookId, settings, resolvedTheme }: UseReaderOptions)
           containerRef,
           settingsRef,
           themeRef,
+          checkIsSelectionActive: () => Boolean(stateRef.current.selection),
           onClearSelection: () => {
             setState((prev) => (prev.selection ? { ...prev, selection: null } : prev));
+          },
+          onSelectText: (selection) => {
+            if (!isMounted) return;
+            setState((prev) => {
+              if (
+                prev.selection?.cfiRange === selection.cfiRange &&
+                prev.selection?.text === selection.text
+              ) {
+                return prev;
+              }
+              return {
+                ...prev,
+                selection,
+                activeAnnotation: null,
+              };
+            });
           },
         });
       });
@@ -300,8 +324,22 @@ export function useReader({ bookId, settings, resolvedTheme }: UseReaderOptions)
       renditionInstance.on('selected', (cfiRange: string, contents: Contents) => {
         if (!isMounted) return;
         try {
-          const range = contents.window.getSelection();
-          const text = range ? range.toString().trim() : '';
+          const sel =
+            (contents.window && contents.window.getSelection
+              ? contents.window.getSelection()
+              : null) ||
+            (contents.document && contents.document.getSelection
+              ? contents.document.getSelection()
+              : null);
+          let text = sel ? sel.toString().trim() : '';
+          if (!text && renditionRef.current) {
+            try {
+              const range = renditionRef.current.getRange(cfiRange);
+              text = range?.toString()?.trim() || '';
+            } catch {
+              // ignore
+            }
+          }
           if (text) {
             setState((prev) => ({
               ...prev,
@@ -382,6 +420,213 @@ export function useReader({ bookId, settings, resolvedTheme }: UseReaderOptions)
       }
     };
   }, [bookId, settings.flowMode, settings.spreadMode, debouncedSavePosition]);
+
+  // 6. Global selection listener & continuous detection (vital for WebKitGTK / Desktop Linux Tauri where iframe mouseup/selectionchange is not emitted to the parent window)
+  useEffect(() => {
+    if (!state.isReady) return;
+
+    let selDebounceTimer: number | undefined;
+    let isChecking = false;
+
+    const checkGlobalSelection = () => {
+      if (!containerRef.current || isChecking) return;
+      isChecking = true;
+      try {
+        const iframes = Array.from(containerRef.current.querySelectorAll('iframe'));
+        let foundSelection = false;
+
+        for (const iframe of iframes) {
+          try {
+            const win = iframe.contentWindow;
+            const doc = iframe.contentDocument;
+            const sel = win?.getSelection() || doc?.getSelection?.();
+            if (!sel || sel.rangeCount === 0 || sel.isCollapsed) continue;
+            const text = sel.toString().trim();
+            if (!text) continue;
+
+            const range = sel.getRangeAt(0);
+            if (range.collapsed) continue;
+
+            foundSelection = true;
+            lastSelectionTimestampRef.current = Date.now();
+
+            let cfiRange = '';
+            try {
+              if (renditionRef.current) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const contentsList: any[] = (renditionRef.current as any).getContents?.() || [];
+                for (const c of contentsList) {
+                  if (c.document === doc || c.window === win || iframes.length === 1) {
+                    if (typeof c.cfiFromRange === 'function') {
+                      cfiRange = c.cfiFromRange(range);
+                    } else if (c.section?.cfiFromRange) {
+                      cfiRange = c.section.cfiFromRange(range);
+                    }
+                    break;
+                  }
+                }
+              }
+            } catch (err) {
+              console.warn('Failed to calculate cfiRange:', err);
+            }
+
+            if (!cfiRange && renditionRef.current) {
+              try {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const loc = (renditionRef.current as any).currentLocation?.();
+                if (loc?.start?.cfi) {
+                  cfiRange = loc.start.cfi;
+                }
+              } catch {
+                // ignore
+              }
+            }
+
+            setState((prev) => {
+              if (prev.selection?.cfiRange === cfiRange && prev.selection?.text === text) {
+                return prev;
+              }
+              return {
+                ...prev,
+                selection: { cfiRange, text },
+                activeAnnotation: null,
+              };
+            });
+            break;
+          } catch {
+            // ignore
+          }
+        }
+
+        // If no text is selected anywhere and user is not interacting with toolbar or open dialogs, automatically close selection bar
+        if (!foundSelection && stateRef.current.selection) {
+          const isInteractingWithToolbar =
+            Boolean(document.querySelector('.selection-bar-container:hover')) ||
+            Boolean(document.querySelector('dialog[open]')) ||
+            Boolean(document.activeElement?.closest('.selection-bar-container')) ||
+            Boolean(document.activeElement?.closest('dialog'));
+
+          if (!isInteractingWithToolbar && Date.now() - lastSelectionTimestampRef.current > 80) {
+            setState((prev) => (prev.selection ? { ...prev, selection: null } : prev));
+          }
+        }
+      } finally {
+        isChecking = false;
+      }
+    };
+
+    const handleMouseUp = () => {
+      checkGlobalSelection();
+      setTimeout(checkGlobalSelection, 20);
+      setTimeout(checkGlobalSelection, 80);
+      setTimeout(checkGlobalSelection, 200);
+    };
+
+    const handleSelectionChange = () => {
+      window.clearTimeout(selDebounceTimer);
+      selDebounceTimer = window.setTimeout(checkGlobalSelection, 40);
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (
+        e.shiftKey ||
+        e.key === 'ArrowLeft' ||
+        e.key === 'ArrowRight' ||
+        e.key === 'ArrowUp' ||
+        e.key === 'ArrowDown'
+      ) {
+        checkGlobalSelection();
+        setTimeout(checkGlobalSelection, 20);
+      }
+    };
+
+    // Attach listeners to window and document
+    window.addEventListener('mouseup', handleMouseUp, true);
+    window.addEventListener('pointerup', handleMouseUp, true);
+    document.addEventListener('selectionchange', handleSelectionChange, true);
+    window.addEventListener('keyup', handleKeyUp, true);
+
+    // Continuous polling check (every 80ms) to ensure desktop selection in WebKitGTK is detected & closed immediately
+    const pollInterval = window.setInterval(checkGlobalSelection, 80);
+
+    const handleIframePointerDown = () => {
+      setTimeout(checkGlobalSelection, 10);
+    };
+
+    // Helper to attach event listeners to an iframe
+    const attachIframeListeners = (iframe: HTMLIFrameElement) => {
+      try {
+        const win = iframe.contentWindow;
+        const doc = iframe.contentDocument;
+        if (doc) {
+          doc.addEventListener('pointerdown', handleIframePointerDown, true);
+          doc.addEventListener('mouseup', handleMouseUp, true);
+          doc.addEventListener('pointerup', handleMouseUp, true);
+          doc.addEventListener('selectionchange', handleSelectionChange, true);
+          doc.addEventListener('keyup', handleKeyUp, true);
+        }
+        if (win) {
+          win.addEventListener('pointerdown', handleIframePointerDown, true);
+          win.addEventListener('mouseup', handleMouseUp, true);
+          win.addEventListener('pointerup', handleMouseUp, true);
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    // Attach to existing iframes
+    const iframes = Array.from(containerRef.current?.querySelectorAll('iframe') || []);
+    iframes.forEach(attachIframeListeners);
+
+    // MutationObserver to attach to any new iframes added dynamically by epubjs
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        for (const node of Array.from(mutation.addedNodes)) {
+          if (node instanceof HTMLIFrameElement) {
+            attachIframeListeners(node);
+          } else if (node instanceof HTMLElement) {
+            const nested = node.querySelectorAll('iframe');
+            nested.forEach(attachIframeListeners);
+          }
+        }
+      }
+    });
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current, { childList: true, subtree: true });
+    }
+
+    return () => {
+      window.removeEventListener('mouseup', handleMouseUp, true);
+      window.removeEventListener('pointerup', handleMouseUp, true);
+      document.removeEventListener('selectionchange', handleSelectionChange, true);
+      window.removeEventListener('keyup', handleKeyUp, true);
+      window.clearTimeout(selDebounceTimer);
+      window.clearInterval(pollInterval);
+      observer.disconnect();
+
+      const currentIframes = Array.from(containerRef.current?.querySelectorAll('iframe') || []);
+      currentIframes.forEach((iframe) => {
+        try {
+          iframe.contentDocument?.removeEventListener('pointerdown', handleIframePointerDown, true);
+          iframe.contentDocument?.removeEventListener('mouseup', handleMouseUp, true);
+          iframe.contentDocument?.removeEventListener('pointerup', handleMouseUp, true);
+          iframe.contentDocument?.removeEventListener(
+            'selectionchange',
+            handleSelectionChange,
+            true
+          );
+          iframe.contentDocument?.removeEventListener('keyup', handleKeyUp, true);
+          iframe.contentWindow?.removeEventListener('pointerdown', handleIframePointerDown, true);
+          iframe.contentWindow?.removeEventListener('mouseup', handleMouseUp, true);
+          iframe.contentWindow?.removeEventListener('pointerup', handleMouseUp, true);
+        } catch {
+          // ignore
+        }
+      });
+    };
+  }, [state.isReady]);
 
   // Book navigation
   const next = useCallback(() => {

@@ -8,6 +8,7 @@ import type { HighlightColor } from '@/types';
 
 interface SelectionBarProps {
   text: string;
+  isBottomBarVisible?: boolean;
   onSelectColor: (color: HighlightColor) => void;
   onOpenNote: () => void;
   onOpenDictionary?: () => void;
@@ -17,6 +18,7 @@ interface SelectionBarProps {
 
 export const SelectionBar: React.FC<SelectionBarProps> = ({
   text,
+  isBottomBarVisible,
   onSelectColor,
   onOpenNote,
   onOpenDictionary,
@@ -47,7 +49,15 @@ export const SelectionBar: React.FC<SelectionBarProps> = ({
   const colors: HighlightColor[] = ['yellow', 'green', 'blue', 'pink'];
 
   return (
-    <div className="selection-bar-container animate-slide-up fixed inset-x-4 bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] z-40 mx-auto w-auto max-w-sm sm:inset-x-0 sm:bottom-20 sm:w-fit sm:max-w-[95vw]">
+    <div
+      onPointerDown={(e) => e.stopPropagation()}
+      onClick={(e) => e.stopPropagation()}
+      className={`selection-bar-container animate-slide-up fixed inset-x-4 z-50 mx-auto w-auto max-w-sm transition-all duration-200 sm:inset-x-0 sm:w-fit sm:max-w-[95vw] ${
+        isBottomBarVisible
+          ? 'bottom-28 sm:bottom-32'
+          : 'bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:bottom-12'
+      }`}
+    >
       <div className="bg-surface-container-highest/95 text-on-surface border-outline-variant/40 flex flex-col gap-2 rounded-2xl border p-2 shadow-2xl backdrop-blur-md sm:flex-row sm:items-center sm:gap-3 sm:rounded-full sm:px-4 sm:py-2.5">
         {/* Tier 1: Color Choices (Centered on Mobile) + Mobile Close Button */}
         <div className="border-outline-variant/20 sm:border-outline-variant/30 relative flex items-center justify-center border-b pb-2 sm:justify-start sm:border-r sm:border-b-0 sm:pr-2 sm:pb-0">

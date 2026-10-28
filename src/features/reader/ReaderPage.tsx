@@ -149,10 +149,11 @@ const EpubReaderView: React.FC<ReaderPageProps> = ({ bookId }) => {
         state.selection &&
         target &&
         !target.closest('.selection-bar-container') &&
-        !target.closest('.tts-player-bar-container')
+        !target.closest('.tts-player-bar-container') &&
+        !target.closest('dialog') &&
+        !target.closest('.modal-container') &&
+        !target.closest('[role="dialog"]')
       ) {
-        const iframe = containerRef.current?.querySelector('iframe');
-        if (iframe && iframe.contains(target)) return;
         if (!showTTSBar) {
           handleClearSelection();
         }
@@ -163,7 +164,7 @@ const EpubReaderView: React.FC<ReaderPageProps> = ({ bookId }) => {
     return () => {
       window.removeEventListener('pointerdown', handlePointerDown);
     };
-  }, [state.selection, showTTSBar, handleClearSelection, containerRef]);
+  }, [state.selection, showTTSBar, handleClearSelection]);
 
   // Extract active page text and play
   const handleToggleTTS = useCallback(() => {
@@ -389,8 +390,14 @@ const EpubReaderView: React.FC<ReaderPageProps> = ({ bookId }) => {
       setActiveFollowLink(null);
     }
 
-    // Ignore if text is currently selected
-    if (state.selection) return;
+    // If text is currently selected, clicking dismisses the selection
+    if (state.selection) {
+      handleClearSelection();
+      return;
+    }
+
+    const winSel = window.getSelection();
+    if (winSel && !winSel.isCollapsed && winSel.toString().trim().length > 0) return;
 
     const isPaginated = settings.flowMode === 'paginated';
     if (!isPaginated) {
@@ -607,7 +614,7 @@ const EpubReaderView: React.FC<ReaderPageProps> = ({ bookId }) => {
 
         <div
           ref={containerRef}
-          className={`h-full w-full ${maxWidthClass} relative mx-auto transition-all duration-200`}
+          className={`h-full w-full ${maxWidthClass} relative mx-auto transition-all duration-200 select-text`}
         >
           {isDoubleSpread && (
             <div
@@ -719,6 +726,7 @@ const EpubReaderView: React.FC<ReaderPageProps> = ({ bookId }) => {
       {state.selection && !showTTSBar && (
         <SelectionBar
           text={state.selection.text}
+          isBottomBarVisible={showBars}
           onSelectColor={(color) => addHighlight(color)}
           onOpenNote={() => {
             setEditingNoteFor({

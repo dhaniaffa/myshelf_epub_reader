@@ -107,3 +107,9 @@
 .eink-mode .shadow-xl {
   box-shadow: none !important;
 }
+
+.select-text,
+.select-text * {
+  -webkit-user-select: text !important;
+  user-select: text !important;
+}
