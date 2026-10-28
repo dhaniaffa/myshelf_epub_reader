@@ -593,8 +593,9 @@ export function useReader({ bookId, settings, resolvedTheme }: UseReaderOptions)
       }
     });
 
-    if (containerRef.current) {
-      observer.observe(containerRef.current, { childList: true, subtree: true });
+    const currentContainer = containerRef.current;
+    if (currentContainer) {
+      observer.observe(currentContainer, { childList: true, subtree: true });
     }
 
     return () => {
@@ -606,7 +607,7 @@ export function useReader({ bookId, settings, resolvedTheme }: UseReaderOptions)
       window.clearInterval(pollInterval);
       observer.disconnect();
 
-      const currentIframes = Array.from(containerRef.current?.querySelectorAll('iframe') || []);
+      const currentIframes = Array.from(currentContainer?.querySelectorAll('iframe') || []);
       currentIframes.forEach((iframe) => {
         try {
           iframe.contentDocument?.removeEventListener('pointerdown', handleIframePointerDown, true);
