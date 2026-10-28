@@ -136,14 +136,14 @@ export const PdfStage: React.FC<PdfStageProps> = ({
       onTouchEnd={handlePdfTouchEnd}
       className="relative box-border flex h-full w-full flex-1 flex-col overflow-hidden"
     >
-      {/* Desktop Navigation Buttons Floating on Hover */}
+      {/* Desktop Navigation Buttons (Visible with subtle opacity on non-mobile screens) */}
       <button
         type="button"
         onClick={(e) => {
           e.stopPropagation();
           onScrollPrev();
         }}
-        className="bg-surface-container/70 hover:bg-surface-container text-on-surface-variant hover:text-on-surface border-outline-variant/20 absolute top-1/2 left-3 z-20 hidden h-10 w-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border opacity-0 shadow-sm transition-opacity hover:opacity-100 md:flex"
+        className="bg-surface-container/70 hover:bg-surface-container text-on-surface-variant hover:text-on-surface border-outline-variant/20 absolute top-1/2 left-3 z-20 hidden h-10 w-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border opacity-40 shadow-sm transition-all hover:scale-105 hover:opacity-100 sm:left-4 md:flex"
         title="Halaman Sebelumnya"
       >
         <ChevronLeft size={22} />
@@ -155,7 +155,7 @@ export const PdfStage: React.FC<PdfStageProps> = ({
           e.stopPropagation();
           onScrollNext();
         }}
-        className="bg-surface-container/70 hover:bg-surface-container text-on-surface-variant hover:text-on-surface border-outline-variant/20 absolute top-1/2 right-3 z-20 hidden h-10 w-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border opacity-0 shadow-sm transition-opacity hover:opacity-100 md:flex"
+        className="bg-surface-container/70 hover:bg-surface-container text-on-surface-variant hover:text-on-surface border-outline-variant/20 absolute top-1/2 right-3 z-20 hidden h-10 w-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border opacity-40 shadow-sm transition-all hover:scale-105 hover:opacity-100 sm:right-4 md:flex"
         title="Halaman Berikutnya"
       >
         <ChevronRight size={22} />
