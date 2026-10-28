@@ -10,7 +10,7 @@ export interface SetupIframeListenersOptions {
   contents: Contents;
   bookRef: React.RefObject<EpubBook | null>;
   renditionRef: React.RefObject<Rendition | null>;
-  containerRef: React.RefObject<HTMLDivElement | null>;
+  containerRef?: React.RefObject<HTMLDivElement | null>;
   settingsRef: React.RefObject<ReaderSettings>;
   themeRef: React.RefObject<Exclude<ReaderTheme, 'auto'>>;
   checkIsSelectionActive?: () => boolean;
@@ -25,7 +25,6 @@ export function setupIframeListeners({
   contents,
   bookRef,
   renditionRef,
-  containerRef,
   settingsRef,
   themeRef,
   checkIsSelectionActive,
@@ -451,97 +450,9 @@ export function setupIframeListeners({
     const target = e.target as HTMLElement;
     if (target.closest('a') || target.closest('img')) return;
 
-    let globalX = e.clientX;
-    try {
-      const frameEl = contents.document.defaultView?.frameElement as HTMLIFrameElement | null;
-      if (frameEl) {
-        const rect = frameEl.getBoundingClientRect();
-        globalX = rect.left + e.clientX;
-      }
-    } catch {
-      globalX = e.clientX;
-    }
-
-    let containerRelativeX = -1;
-    if (containerRef.current) {
-      const cRect = containerRef.current.getBoundingClientRect();
-      if (cRect.width > 0) {
-        containerRelativeX = (globalX - cRect.left) / cRect.width;
-      }
-    }
-
-    const windowWidth = window.innerWidth;
-    const isPaginated = settingsRef.current.flowMode === 'paginated';
-    const isMobile = windowWidth < 768;
-    const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-
-    // On mobile / touch screens, disable left/right click navigation zones
-    // so tapping on words to select or copy text never accidentally flips pages.
-    // Page turning on mobile is handled reliably via swipe gestures.
-    if (isTouch || isMobile) {
-      window.dispatchEvent(new CustomEvent(READER_EVENTS.toggleBars));
-      return;
-    }
-
-    const leftThreshold = 0.22;
-    const rightThreshold = 0.78;
-
-    const isLeftZone =
-      globalX < windowWidth * leftThreshold ||
-      (containerRelativeX >= 0 && containerRelativeX < leftThreshold);
-    const isRightZone =
-      globalX > windowWidth * rightThreshold ||
-      (containerRelativeX > rightThreshold && containerRelativeX <= 1);
-
-    if (isPaginated && isLeftZone) {
-      renditionRef.current?.prev();
-    } else if (isPaginated && isRightZone) {
-      renditionRef.current?.next();
-    } else {
-      window.dispatchEvent(new CustomEvent(READER_EVENTS.toggleBars));
-    }
-  });
-
-  // 7. Adjust cursor style when hovering over left/right navigation zones in iframe
-  contents.document.addEventListener('mousemove', (e: MouseEvent) => {
-    if (settingsRef.current.flowMode !== 'paginated') {
-      contents.document.documentElement.style.cursor = 'auto';
-      return;
-    }
-    let globalX = e.clientX;
-    try {
-      const frameEl = contents.document.defaultView?.frameElement as HTMLIFrameElement | null;
-      if (frameEl) {
-        const rect = frameEl.getBoundingClientRect();
-        globalX = rect.left + e.clientX;
-      }
-    } catch {
-      globalX = e.clientX;
-    }
-
-    let containerRelativeX = -1;
-    if (containerRef.current) {
-      const cRect = containerRef.current.getBoundingClientRect();
-      if (cRect.width > 0) {
-        containerRelativeX = (globalX - cRect.left) / cRect.width;
-      }
-    }
-
-    const windowWidth = window.innerWidth;
-    const isLeftZone =
-      globalX < windowWidth * 0.22 || (containerRelativeX >= 0 && containerRelativeX < 0.25);
-    const isRightZone =
-      globalX > windowWidth * 0.78 || (containerRelativeX > 0.75 && containerRelativeX <= 1);
-
-    if (isLeftZone || isRightZone) {
-      contents.document.documentElement.style.cursor = 'pointer';
-    } else {
-      contents.document.documentElement.style.cursor = 'auto';
-    }
-  });
-
-  contents.document.addEventListener('mouseleave', () => {
-    contents.document.documentElement.style.cursor = 'auto';
+    // Clicking inside the book content iframe toggles control bars; it NEVER flips pages.
+    // Page flipping by click is strictly reserved for the blank spaces outside the book content.
+    window.dispatchEvent(new CustomEvent(READER_EVENTS.toggleBars));
   });
 
   // 8. Keyboard handler inside iframe

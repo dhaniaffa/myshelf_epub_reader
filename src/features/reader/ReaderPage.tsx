@@ -367,21 +367,17 @@ const EpubReaderView: React.FC<ReaderPageProps> = ({ bookId }) => {
       if (stageCursor !== 'default') setStageCursor('default');
       return;
     }
-    const globalX = e.clientX;
-    const windowWidth = window.innerWidth;
-    let containerRelativeX = -1;
-    if (containerRef.current) {
-      const cRect = containerRef.current.getBoundingClientRect();
-      if (cRect.width > 0) {
-        containerRelativeX = (globalX - cRect.left) / cRect.width;
-      }
+    const cRect = containerRef.current?.getBoundingClientRect();
+    if (!cRect) {
+      if (stageCursor !== 'default') setStageCursor('default');
+      return;
     }
-    const isLeftZone =
-      globalX < windowWidth * 0.22 || (containerRelativeX >= 0 && containerRelativeX < 0.25);
-    const isRightZone =
-      globalX > windowWidth * 0.78 || (containerRelativeX > 0.75 && containerRelativeX <= 1);
 
-    const nextCursor = isLeftZone || isRightZone ? 'pointer' : 'default';
+    // Only set pointer cursor when hovered over the empty margin outside the book content container
+    const isLeftEmptySpace = e.clientX < cRect.left;
+    const isRightEmptySpace = e.clientX > cRect.right;
+
+    const nextCursor = isLeftEmptySpace || isRightEmptySpace ? 'pointer' : 'default';
     if (stageCursor !== nextCursor) {
       setStageCursor(nextCursor);
     }
@@ -424,7 +420,10 @@ const EpubReaderView: React.FC<ReaderPageProps> = ({ bookId }) => {
     }
   };
 
-  // Click detection on reading area (left = prev, right = next, center = toggle bar)
+  // Click detection on reading area:
+  // ONLY empty space to the left of content = prev()
+  // ONLY empty space to the right of content = next()
+  // Inside content / text = toggle bars or clear selection (NEVER flip pages!)
   const handleStageClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (activeFollowLink) {
       setActiveFollowLink(null);
@@ -445,41 +444,22 @@ const EpubReaderView: React.FC<ReaderPageProps> = ({ bookId }) => {
       return;
     }
 
-    const globalX = e.clientX;
-    const windowWidth = window.innerWidth;
-    let containerRelativeX = -1;
-    if (containerRef.current) {
-      const cRect = containerRef.current.getBoundingClientRect();
-      if (cRect.width > 0) {
-        containerRelativeX = (globalX - cRect.left) / cRect.width;
-      }
-    }
-    const isMobile = windowWidth < 768;
-    const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-
-    // On mobile / touch screens, disable left/right click navigation zones
-    // so tapping on words to select or copy text never accidentally flips pages.
-    // Page turning on mobile is handled reliably via swipe gestures.
-    if (isTouch || isMobile) {
+    const cRect = containerRef.current?.getBoundingClientRect();
+    if (!cRect) {
       setShowBars((prev) => !prev);
       return;
     }
 
-    const leftThreshold = 0.22;
-    const rightThreshold = 0.78;
+    // Strictly check if click occurred in the empty space outside the book container
+    const isLeftEmptySpace = e.clientX < cRect.left;
+    const isRightEmptySpace = e.clientX > cRect.right;
 
-    const isLeftZone =
-      globalX < windowWidth * leftThreshold ||
-      (containerRelativeX >= 0 && containerRelativeX < leftThreshold);
-    const isRightZone =
-      globalX > windowWidth * rightThreshold ||
-      (containerRelativeX > rightThreshold && containerRelativeX <= 1);
-
-    if (isLeftZone) {
+    if (isLeftEmptySpace) {
       prev();
-    } else if (isRightZone) {
+    } else if (isRightEmptySpace) {
       next();
     } else {
+      // Clicked inside content container: toggle UI bars, NEVER flip page!
       setShowBars((prev) => !prev);
     }
   };
@@ -655,14 +635,7 @@ const EpubReaderView: React.FC<ReaderPageProps> = ({ bookId }) => {
         <div
           ref={containerRef}
           className={`h-full w-full ${maxWidthClass} relative mx-auto transition-all duration-200 select-text`}
-        >
-          {isDoubleSpread && (
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-y-4 left-1/2 z-10 hidden w-8 -translate-x-1/2 bg-linear-to-r from-transparent via-black/15 to-transparent opacity-30 md:block dark:via-black/35"
-            />
-          )}
-        </div>
+        ></div>
 
         {/* Loading Spinner */}
         {!state.isReady && (
@@ -831,19 +804,11 @@ const EpubReaderView: React.FC<ReaderPageProps> = ({ bookId }) => {
           state.activeAnnotation?.text ||
           ''
         }
-        initialNote={
-          editingNoteFor?.annotation?.note ||
-          state.activeAnnotation?.note ||
-          ''
-        }
+        initialNote={editingNoteFor?.annotation?.note || state.activeAnnotation?.note || ''}
         initialColor={
-          editingNoteFor?.annotation?.color ||
-          state.activeAnnotation?.color ||
-          'yellow'
+          editingNoteFor?.annotation?.color || state.activeAnnotation?.color || 'yellow'
         }
-        isExisting={
-          Boolean(editingNoteFor?.isExisting) || Boolean(state.activeAnnotation)
-        }
+        isExisting={Boolean(editingNoteFor?.isExisting) || Boolean(state.activeAnnotation)}
         onSave={async (note, color) => {
           const targetAnn = editingNoteFor?.annotation || state.activeAnnotation;
           if (targetAnn) {
