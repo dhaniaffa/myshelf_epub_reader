@@ -103,8 +103,13 @@ export const SettingsPage: React.FC = () => {
   const handleExportBackup = async () => {
     try {
       setLoading(true);
-      await exportBackupJson();
-      toast.success('Cadangan data berhasil diunduh');
+      const res = await exportBackupJson();
+      if (res === 'cancelled') return;
+      if (res === 'shared') {
+        toast.success('Pilih folder simpan melalui menu perangkat');
+      } else {
+        toast.success('Cadangan data berhasil disimpan');
+      }
     } catch {
       toast.error('Gagal mengekspor cadangan');
     } finally {

@@ -1,9 +1,13 @@
+import { invoke, isTauri } from '@tauri-apps/api/core';
+
 import { db } from '@/lib/db';
 
 import type { Annotation, BackupData, Book } from '@/types';
 
+export type SaveFileResult = 'saved' | 'shared' | 'downloaded' | 'cancelled';
+
 /**
- * Downloads a string as a file in the browser
+ * Downloads a string as a file using traditional anchor click
  */
 function downloadFile(content: string, filename: string, mimeType: string) {
   const blob = new Blob([content], { type: mimeType });
@@ -17,9 +21,93 @@ function downloadFile(content: string, filename: string, mimeType: string) {
   URL.revokeObjectURL(url);
 }
 
-/**
- * Menghasilkan string JSON cadangan aplikasi
- */
+export async function saveFileWithPicker({
+  content,
+  filename,
+  mimeType,
+  description = 'Berkas',
+  extension = 'json',
+}: {
+  content: string;
+  filename: string;
+  mimeType: string;
+  description?: string;
+  extension?: string;
+}): Promise<SaveFileResult> {
+  const isMobile =
+    typeof navigator !== 'undefined' &&
+    (/android|iphone|ipad|ipod/i.test(navigator.userAgent) ||
+      ('maxTouchPoints' in navigator &&
+        navigator.maxTouchPoints > 2 &&
+        /Macintosh/i.test(navigator.userAgent)));
+
+  // Tier 1: Desktop Native Tauri Dialog
+  if (isTauri() && !isMobile) {
+    try {
+      const savedPath = await invoke<string | null>('save_file_dialog', {
+        defaultFilename: filename,
+        content,
+      });
+      if (savedPath) {
+        return 'saved';
+      }
+      return 'cancelled';
+    } catch (err) {
+      console.warn('Native Tauri save dialog failed or cancelled:', err);
+    }
+  }
+
+  // Tier 2: File System Access API on Desktop Web (Chrome, Edge, Opera, Brave)
+  if (!isMobile && typeof window !== 'undefined' && 'showSaveFilePicker' in window) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const picker = (window as any).showSaveFilePicker;
+      const handle = await picker({
+        suggestedName: filename,
+        types: [
+          {
+            description,
+            accept: { [mimeType]: [`.${extension}`] },
+          },
+        ],
+      });
+      const writable = await handle.createWritable();
+      await writable.write(content);
+      await writable.close();
+      return 'saved';
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        return 'cancelled';
+      }
+      console.warn('showSaveFilePicker failed:', err);
+    }
+  }
+
+  // Tier 3: Mobile Web Share API on Android (triggers system share sheet -> "Save to Files" / File Manager)
+  if (isMobile && typeof navigator !== 'undefined' && 'share' in navigator) {
+    try {
+      const file = new File([content], filename, { type: mimeType });
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({
+          title: filename,
+          text: `Berkas cadangan MyShelf: ${filename}`,
+          files: [file],
+        });
+        return 'shared';
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        return 'cancelled';
+      }
+      console.warn('navigator.share failed:', err);
+    }
+  }
+
+  // Tier 4: Fallback to traditional anchor download
+  downloadFile(content, filename, mimeType);
+  return 'downloaded';
+}
+
 export async function generateBackupJsonString(): Promise<string> {
   const books = await db.books.toArray();
   const bookmarks = await db.bookmarks.toArray();
@@ -45,11 +133,20 @@ export async function generateBackupJsonString(): Promise<string> {
 
 /**
  * Exports JSON backup (book metadata, bookmarks, highlights & notes)
+ * Allows user to pick destination directory/folder on Desktop and Android
  */
-export async function exportBackupJson(): Promise<void> {
+export async function exportBackupJson(): Promise<SaveFileResult> {
   const jsonString = await generateBackupJsonString();
   const dateStr = new Date().toISOString().split('T')[0];
-  downloadFile(jsonString, `myshelf-backup-${dateStr}.json`, 'application/json');
+  const filename = `myshelf-backup-${dateStr}.json`;
+
+  return saveFileWithPicker({
+    content: jsonString,
+    filename,
+    mimeType: 'application/json',
+    description: 'Berkas Cadangan MyShelf (*.json)',
+    extension: 'json',
+  });
 }
 
 /**
@@ -115,8 +212,12 @@ export async function importBackupJson(file: File): Promise<{
 
 /**
  * Exports highlights & notes of a book to Markdown format
+ * Allows user to pick destination directory/folder on Desktop and Android
  */
-export function exportAnnotationsMarkdown(book: Book, annotations: Annotation[]): void {
+export async function exportAnnotationsMarkdown(
+  book: Book,
+  annotations: Annotation[]
+): Promise<SaveFileResult> {
   const dateStr = new Date().toLocaleDateString('id-ID', {
     day: 'numeric',
     month: 'long',
@@ -158,5 +259,13 @@ export function exportAnnotationsMarkdown(book: Book, annotations: Annotation[])
   }
 
   const safeTitle = book.title.replace(/[\\/:*?"<>|]/g, '').slice(0, 40);
-  downloadFile(md, `${safeTitle} - Catatan.md`, 'text/markdown;charset=utf-8');
+  const filename = `${safeTitle} - Catatan.md`;
+
+  return saveFileWithPicker({
+    content: md,
+    filename,
+    mimeType: 'text/markdown;charset=utf-8',
+    description: 'Catatan Markdown (*.md)',
+    extension: 'md',
+  });
 }

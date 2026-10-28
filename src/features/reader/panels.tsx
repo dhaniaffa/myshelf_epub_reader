@@ -137,13 +137,22 @@ export const Panels: React.FC<PanelsProps> = ({
     );
   };
 
-  const handleExportMarkdown = () => {
+  const handleExportMarkdown = async () => {
     if (annotations.length === 0) {
       toast.info('Belum ada sorotan atau catatan untuk diekspor');
       return;
     }
-    exportAnnotationsMarkdown(book, annotations);
-    toast.success('Kutipan berhasil diekspor ke Markdown');
+    try {
+      const res = await exportAnnotationsMarkdown(book, annotations);
+      if (res === 'cancelled') return;
+      if (res === 'shared') {
+        toast.success('Pilih folder simpan melalui menu perangkat');
+      } else {
+        toast.success('Kutipan berhasil diekspor ke Markdown');
+      }
+    } catch {
+      toast.error('Gagal mengekspor kutipan');
+    }
   };
 
   // Render individual TOC item with tree styling and active highlight
