@@ -98,111 +98,115 @@ export const BookCard: React.FC<BookCardProps> = ({ book, onDeleteRequest, onSho
   return (
     <div
       onClick={handleCardClick}
-      className="group bg-surface-container-low hover:bg-surface-container border-outline-variant/30 hover:border-primary/40 relative flex cursor-pointer flex-col overflow-hidden rounded-2xl border transition-all duration-200 select-none hover:-translate-y-1 hover:shadow-xl"
+      className={`group bg-surface-container-low hover:bg-surface-container border-outline-variant/30 hover:border-primary/40 relative flex cursor-pointer flex-col rounded-2xl border transition-all duration-200 select-none hover:-translate-y-1 hover:shadow-xl ${
+        menuOpen ? 'z-40' : ''
+      }`}
     >
       {/* Cover Aspect Ratio 2:3 */}
-      <div className="bg-surface-container-high relative flex aspect-2/3 w-full items-center justify-center overflow-hidden">
-        {coverUrl ? (
-          <img
-            src={coverUrl}
-            alt={book.title}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-104"
-            loading="lazy"
-          />
-        ) : (
-          <div className="from-primary/15 via-secondary/10 to-tertiary/20 text-on-surface flex h-full w-full flex-col justify-between bg-linear-to-br p-4">
-            <div className="bg-primary/20 text-primary flex h-8 w-8 items-center justify-center rounded-full">
-              <BookOpen size={16} />
-            </div>
-            <div>
-              <h4 className="line-clamp-3 text-sm leading-snug font-bold">{book.title}</h4>
-              <p className="text-on-surface-variant mt-1 line-clamp-1 text-xs">{book.author}</p>
-            </div>
-            <div className="text-outline font-mono text-[10px] tracking-wider uppercase">
-              {book.publishedYear ? `Tahun ${book.publishedYear}` : 'MyShelf EPUB'}
-            </div>
-          </div>
-        )}
-
-        {/* Book spine light sheen */}
-        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-2.5 bg-linear-to-r from-black/25 via-white/10 to-transparent" />
-
-        {/* Format Badge (PDF / EPUB) */}
-        <div className="absolute top-1.5 left-1.5 z-20">
-          <span
-            className={`rounded px-1.5 py-0.5 font-mono text-[9px] font-bold tracking-wider uppercase shadow-xs ${
-              book.format === 'pdf'
-                ? 'bg-rose-600/90 text-white'
-                : 'bg-black/50 text-white/90 backdrop-blur-xs'
-            }`}
-          >
-            {book.format === 'pdf' ? 'PDF' : 'EPUB'}
-          </span>
-        </div>
-
-        {/* Progress badge at bottom of cover (only shown when reading progress exists) */}
-        {progressPercent > 0 && (
-          <div className="absolute inset-x-0 bottom-1.5 z-20 flex items-center justify-between px-2 text-[10px] text-white">
-            <span className="rounded bg-black/65 px-1.5 py-0.5 font-mono text-[9px] font-medium backdrop-blur-xs">
-              {progressPercent}%
-            </span>
-            {formatReadingTime(book.readingTimeSeconds) && (
-              <span className="hidden rounded bg-black/65 px-1.5 py-0.5 text-[9px] backdrop-blur-xs sm:inline-block">
-                {formatReadingTime(book.readingTimeSeconds)}
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* HOVER OVERLAY: Displays Full Title, Author, and Year */}
-        <div className="pointer-events-none absolute inset-0 z-10 flex flex-col justify-between bg-black/85 p-3.5 text-white opacity-0 backdrop-blur-xs transition-all duration-200 group-hover:opacity-100">
-          <div className="space-y-2 overflow-y-auto pr-1">
-            <div className="text-primary-container text-[10px] font-semibold tracking-wider uppercase">
-              Detail Buku
-            </div>
-            {/* Judul Lengkap Tanpa Terpotong */}
-            <h4 className="wrap-break-words text-xs leading-snug font-bold sm:text-sm">
-              {book.title}
-            </h4>
-            {/* Author */}
-            <div className="flex items-center gap-1.5 text-xs text-white/90">
-              <User size={12} className="text-primary-container shrink-0" />
-              <span className="line-clamp-2 leading-tight">{book.author}</span>
-            </div>
-            {/* Tahun Terbit */}
-            <div className="flex items-center gap-1.5 text-xs text-white/90">
-              <Calendar size={12} className="text-primary-container shrink-0" />
-              <span>
-                {book.publishedYear ? `Tahun ${book.publishedYear}` : 'Tahun tidak diketahui'}
-              </span>
-            </div>
-            {/* File Size */}
-            {book.fileSize ? (
-              <div className="flex items-center gap-1.5 text-xs text-white/90">
-                <HardDrive size={12} className="text-primary-container shrink-0" />
-                <span>{formatFileSize(book.fileSize)}</span>
+      <div className="relative aspect-2/3 w-full">
+        <div className="bg-surface-container-high relative flex h-full w-full items-center justify-center overflow-hidden rounded-t-2xl">
+          {coverUrl ? (
+            <img
+              src={coverUrl}
+              alt={book.title}
+              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-104"
+              loading="lazy"
+            />
+          ) : (
+            <div className="from-primary/15 via-secondary/10 to-tertiary/20 text-on-surface flex h-full w-full flex-col justify-between bg-linear-to-br p-4">
+              <div className="bg-primary/20 text-primary flex h-8 w-8 items-center justify-center rounded-full">
+                <BookOpen size={16} />
               </div>
-            ) : null}
+              <div>
+                <h4 className="line-clamp-3 text-sm leading-snug font-bold">{book.title}</h4>
+                <p className="text-on-surface-variant mt-1 line-clamp-1 text-xs">{book.author}</p>
+              </div>
+              <div className="text-outline font-mono text-[10px] tracking-wider uppercase">
+                {book.publishedYear ? `Tahun ${book.publishedYear}` : 'MyShelf EPUB'}
+              </div>
+            </div>
+          )}
+
+          {/* Book spine light sheen */}
+          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-2.5 bg-linear-to-r from-black/25 via-white/10 to-transparent" />
+
+          {/* Format Badge (PDF / EPUB) */}
+          <div className="absolute top-1.5 left-1.5 z-20">
+            <span
+              className={`rounded px-1.5 py-0.5 font-mono text-[9px] font-bold tracking-wider uppercase shadow-xs ${
+                book.format === 'pdf'
+                  ? 'bg-rose-600/90 text-white'
+                  : 'bg-black/50 text-white/90 backdrop-blur-xs'
+              }`}
+            >
+              {book.format === 'pdf' ? 'PDF' : 'EPUB'}
+            </span>
           </div>
 
-          <div className="flex items-center justify-between border-t border-white/15 pt-2 text-[11px] text-white/80">
-            <span>{progressPercent}% selesai</span>
-            <span className="text-primary-container font-semibold">Buka Buku →</span>
+          {/* Progress badge at bottom of cover (only shown when reading progress exists) */}
+          {progressPercent > 0 && (
+            <div className="absolute inset-x-0 bottom-1.5 z-20 flex items-center justify-between px-2 text-[10px] text-white">
+              <span className="rounded bg-black/65 px-1.5 py-0.5 font-mono text-[9px] font-medium backdrop-blur-xs">
+                {progressPercent}%
+              </span>
+              {formatReadingTime(book.readingTimeSeconds) && (
+                <span className="hidden rounded bg-black/65 px-1.5 py-0.5 text-[9px] backdrop-blur-xs sm:inline-block">
+                  {formatReadingTime(book.readingTimeSeconds)}
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* HOVER OVERLAY: Displays Full Title, Author, and Year */}
+          <div className="pointer-events-none absolute inset-0 z-10 flex flex-col justify-between bg-black/85 p-3.5 text-white opacity-0 backdrop-blur-xs transition-all duration-200 group-hover:opacity-100">
+            <div className="space-y-2 overflow-y-auto pr-1">
+              <div className="text-primary-container text-[10px] font-semibold tracking-wider uppercase">
+                Detail Buku
+              </div>
+              {/* Judul Lengkap Tanpa Terpotong */}
+              <h4 className="wrap-break-words text-xs leading-snug font-bold sm:text-sm">
+                {book.title}
+              </h4>
+              {/* Author */}
+              <div className="flex items-center gap-1.5 text-xs text-white/90">
+                <User size={12} className="text-primary-container shrink-0" />
+                <span className="line-clamp-2 leading-tight">{book.author}</span>
+              </div>
+              {/* Tahun Terbit */}
+              <div className="flex items-center gap-1.5 text-xs text-white/90">
+                <Calendar size={12} className="text-primary-container shrink-0" />
+                <span>
+                  {book.publishedYear ? `Tahun ${book.publishedYear}` : 'Tahun tidak diketahui'}
+                </span>
+              </div>
+              {/* File Size */}
+              {book.fileSize ? (
+                <div className="flex items-center gap-1.5 text-xs text-white/90">
+                  <HardDrive size={12} className="text-primary-container shrink-0" />
+                  <span>{formatFileSize(book.fileSize)}</span>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="flex items-center justify-between border-t border-white/15 pt-2 text-[11px] text-white/80">
+              <span>{progressPercent}% selesai</span>
+              <span className="text-primary-container font-semibold">Buka Buku →</span>
+            </div>
+          </div>
+
+          {/* Progress Bar Line */}
+          <div className="absolute inset-x-0 bottom-0 z-20 h-1 bg-black/40">
+            <div
+              className="bg-primary h-full transition-all duration-300"
+              style={{ width: `${progressPercent}%` }}
+            />
           </div>
         </div>
 
-        {/* Progress Bar Line */}
-        <div className="absolute inset-x-0 bottom-0 z-20 h-1 bg-black/40">
-          <div
-            className="bg-primary h-full transition-all duration-300"
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-
-        {/* More Actions Button */}
+        {/* More Actions Button (placed outside overflow-hidden so the dropdown is never clipped) */}
         <div
           ref={menuRef}
-          className="absolute top-1.5 right-1.5 z-20"
+          className="absolute top-1.5 right-1.5 z-30"
           onClick={(e) => e.stopPropagation()}
         >
           <button
@@ -218,23 +222,25 @@ export const BookCard: React.FC<BookCardProps> = ({ book, onDeleteRequest, onSho
           </button>
 
           {menuOpen && (
-            <div className="bg-surface-container-highest border-outline-variant/40 animate-fade-in pointer-events-auto absolute right-0 z-50 mt-1 w-44 rounded-xl border py-1.5 text-xs shadow-xl">
+            <div className="bg-surface-container-highest border-outline-variant/40 animate-fade-in pointer-events-auto absolute right-0 z-50 mt-1 w-36 rounded-xl border py-1.5 text-xs shadow-xl sm:w-44">
               <button
                 onClick={() => {
                   setMenuOpen(false);
                   onShowDetails?.(book);
                 }}
-                className="hover:bg-surface-container text-on-surface flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left"
+                className="hover:bg-surface-container text-on-surface flex w-full cursor-pointer items-center gap-2 px-2.5 py-2 text-left sm:px-3"
               >
-                <Info size={14} className="text-primary" />
-                <span>Tentang Buku</span>
+                <Info size={14} className="text-primary shrink-0" />
+                <span className="truncate">Tentang Buku</span>
               </button>
               <button
                 onClick={handleToggleCompleted}
-                className="hover:bg-surface-container text-on-surface flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left"
+                className="hover:bg-surface-container text-on-surface flex w-full cursor-pointer items-center gap-2 px-2.5 py-2 text-left sm:px-3"
               >
-                <CheckCircle2 size={14} className="text-emerald-500" />
-                <span>{book.status === 'completed' ? 'Batal Selesai' : 'Tandai Selesai'}</span>
+                <CheckCircle2 size={14} className="shrink-0 text-emerald-500" />
+                <span className="truncate">
+                  {book.status === 'completed' ? 'Batal Selesai' : 'Tandai Selesai'}
+                </span>
               </button>
               <div className="border-outline-variant/30 my-1 border-t" />
               <button
@@ -242,10 +248,10 @@ export const BookCard: React.FC<BookCardProps> = ({ book, onDeleteRequest, onSho
                   setMenuOpen(false);
                   onDeleteRequest(book);
                 }}
-                className="hover:bg-error-container/30 text-error flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left"
+                className="hover:bg-error-container/30 text-error flex w-full cursor-pointer items-center gap-2 px-2.5 py-2 text-left sm:px-3"
               >
-                <Trash2 size={14} />
-                <span>Hapus Buku</span>
+                <Trash2 size={14} className="shrink-0" />
+                <span className="truncate">Hapus Buku</span>
               </button>
             </div>
           )}
