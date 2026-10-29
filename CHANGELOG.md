@@ -7,15 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased]
+## [1.2.0]
 
-### Added
+### Added (v1.2.0)
 
 - **Pengaturan Khusus PDF**: Deteksi otomatis pengaturan reader sesuai format (PDF/EPUB), pilihan warna latar halaman PDF (terang, gelap, sepia, otomatis), dan preset zoom.
 - **Pemilihan Folder Ekspor**: Dialog pemilihan folder native di Desktop dan integrasi Android Storage Access Framework (SAF) tanpa share sheet.
 - **Katalog & Branding**: Ikon baru sumber katalog (Project Gutenberg, Standard Ebooks, Open Library) dan logo aplikasi transparan.
 
-### Fixed
+### Fixed (v1.2.0)
 
 - **Navigasi Drawer Reader**: Memperbaiki tombol "Cari Teks" yang keliru membuka Daftar Isi serta menambahkan autofocus input pencarian.
 - **Seleksi Teks & Selection Bar**: Memperbaiki kemunculan floating toolbar di Android WebView dan Linux desktop saat teks diblok.
@@ -27,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.1.0] - 2026-10-15
 
-### Added (V1.1.0)
+### Added (v1.1.0)
 
 - **Sistem Auto Updater (Desktop & Android)**:
   - Pengecekan pembaruan otomatis di latar belakang saat startup.
@@ -35,7 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Pengaturan toggle pembaruan otomatis dan tombol periksa pembaruan manual.
   - Dialog pembaruan dengan catatan rilis dan progress bar unduhan.
 
-### Fixed (V1.1.0)
+### Fixed (v1.1.0)
 
 - **Navigasi Mobile**: Menonaktifkan klik samping pada layar sentuh agar fokus pada swipe gesture dan seleksi teks.
 - **Cover Buku Linux**: Memperbaiki pemuatan cover thumbnail pada WebKitGTK.
@@ -49,6 +49,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release.
 
-[Unreleased]: https://github.com/dhaniaffa/myshelf_epub_reader/compare/v1.1.0...HEAD
-[1.1.0]: https://github.com/dhaniaffa/myshelf_epub_reader/compare/v1.0.0...v1.1.0
-[1.0.0]: https://github.com/dhaniaffa/myshelf_epub_reader/releases/tag/v1.0.0
+[1.2.0]: https://github.com/dhaniaffa/myshelf_epub_reader/releases#release-v1.2.0
+[1.1.0]: https://github.com/dhaniaffa/myshelf_epub_reader/releases#release-v1.1.0
+[1.0.0]: https://github.com/dhaniaffa/myshelf_epub_reader/releases#release-v1.0.0
