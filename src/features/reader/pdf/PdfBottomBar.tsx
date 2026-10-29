@@ -1,8 +1,6 @@
 import React from 'react';
 import { FileText, Maximize2, ScrollText, ZoomIn, ZoomOut } from 'lucide-react';
 
-import { IconButton } from '@/components/ui';
-
 export interface PdfBottomBarProps {
   show: boolean;
   isEink: boolean;
@@ -49,14 +47,14 @@ export const PdfBottomBar: React.FC<PdfBottomBarProps> = ({
         isEink
           ? 'bg-surface border-on-surface border-t-2'
           : 'bg-surface-container/95 border-outline-variant/30 border-t backdrop-blur-md'
-      } flex flex-col gap-2 px-4 py-2.5 transition-transform duration-300 ${
+      } flex flex-col gap-2 px-3 pt-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] transition-transform duration-300 sm:px-4 sm:py-2.5 ${
         show ? 'translate-y-0' : 'translate-y-full'
       }`}
     >
-      <div className="mx-auto flex w-full max-w-xl items-center gap-3">
-        {/* Jump to Page Slider */}
-        <span className="text-on-surface-variant shrink-0 font-mono text-[11px]">
-          {currentPage} / {totalPages}
+      {/* 1. Jump to Page & Reading Progress Slider */}
+      <div className="mx-auto flex w-full max-w-xl items-center gap-2 sm:gap-3">
+        <span className="text-on-surface-variant min-w-[48px] shrink-0 text-left font-mono text-[11px] font-medium">
+          {currentPage} <span className="opacity-60">/ {totalPages}</span>
         </span>
         <input
           type="range"
@@ -68,71 +66,87 @@ export const PdfBottomBar: React.FC<PdfBottomBarProps> = ({
           aria-label="Penggeser Halaman"
         />
         <div className="flex shrink-0 items-center gap-1.5">
-          <span className="text-on-surface-variant font-mono text-[11px]">
+          <span className="text-on-surface min-w-[30px] text-right font-mono text-[11px] font-semibold">
             {Math.round(percentage * 100)}%
           </span>
           {estimatedRemainingMinutes !== null && (
-            <span className="text-primary bg-primary/10 rounded-md px-1.5 py-0.5 font-sans text-[10px]">
+            <span className="text-primary bg-primary/10 rounded-md px-1.5 py-0.5 font-sans text-[10px] font-medium whitespace-nowrap">
               ~{estimatedRemainingMinutes} mnt
             </span>
           )}
         </div>
       </div>
 
-      {/* Zoom, Fit Mode & Scroll Mode Controls */}
-      <div className="border-outline-variant/20 flex flex-wrap items-center justify-center gap-2 border-t pt-1">
-        {/* Scroll Mode Toggle */}
-        <button
-          type="button"
-          onClick={onToggleScrollMode}
-          className="bg-surface-container-highest hover:bg-surface-container text-on-surface inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium"
-          title="Ganti Mode Tampilan (Scroll Vertikal / Per Halaman)"
-        >
-          {scrollMode === 'vertical' ? (
-            <>
-              <ScrollText size={14} className="text-primary" />
-              <span>Scroll Vertikal</span>
-            </>
-          ) : (
-            <>
-              <FileText size={14} className="text-primary" />
-              <span>Per Halaman</span>
-            </>
-          )}
-        </button>
+      {/* 2. Controls Toolbar: Scroll Mode, Fit Mode & Compact Zoom Stepper */}
+      <div className="border-outline-variant/20 mx-auto flex w-full max-w-xl items-center justify-between gap-1.5 border-t pt-1.5 sm:gap-2">
+        {/* Left: Reading Modes */}
+        <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
+          {/* Scroll Mode Toggle */}
+          <button
+            type="button"
+            onClick={onToggleScrollMode}
+            className="bg-surface-container-highest hover:bg-surface-container text-on-surface inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors"
+            title="Ganti Mode Tampilan (Scroll Vertikal / Per Halaman)"
+          >
+            {scrollMode === 'vertical' ? (
+              <>
+                <ScrollText size={14} className="text-primary shrink-0" />
+                <span className="hidden sm:inline">Scroll </span>
+                <span>Vertikal</span>
+              </>
+            ) : (
+              <>
+                <FileText size={14} className="text-primary shrink-0" />
+                <span>Per Halaman</span>
+              </>
+            )}
+          </button>
 
-        {/* Fit Width Button */}
-        <button
-          type="button"
-          onClick={onToggleFitMode}
-          className={`hover:bg-surface-container inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium ${
-            fitMode === 'width'
-              ? 'bg-primary/15 text-primary'
-              : 'bg-surface-container-highest text-on-surface'
-          }`}
-          title="Mode Lebar Halaman Penuh"
-        >
-          <Maximize2 size={13} />
-          <span>Pas Lebar</span>
-        </button>
+          {/* Fit Width Toggle */}
+          <button
+            type="button"
+            onClick={onToggleFitMode}
+            className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+              fitMode === 'width'
+                ? 'bg-primary/15 text-primary font-semibold'
+                : 'bg-surface-container-highest hover:bg-surface-container text-on-surface'
+            }`}
+            title="Mode Lebar Halaman Penuh"
+          >
+            <Maximize2 size={13} className="shrink-0" />
+            <span>Pas Lebar</span>
+          </button>
+        </div>
 
-        <div className="bg-outline-variant/30 mx-1 h-4 w-px" />
-
-        {/* Zoom Buttons */}
-        <IconButton size="sm" onClick={onZoomOut} title="Perkecil (-)">
-          <ZoomOut size={16} />
-        </IconButton>
-        <button
-          type="button"
-          onClick={onResetZoom}
-          className="bg-surface-container-highest hover:bg-surface-container text-on-surface cursor-pointer rounded px-2 py-1 font-mono text-xs font-medium"
-          title="Reset Ukuran (100%)"
-        >
-          {Math.round(scale * 100)}%
-        </button>
-        <IconButton size="sm" onClick={onZoomIn} title="Perbesar (+)">
-          <ZoomIn size={16} />
-        </IconButton>
+        {/* Right: Integrated Zoom Stepper Pill */}
+        <div className="bg-surface-container-highest border-outline-variant/30 flex shrink-0 items-center rounded-lg border p-0.5 shadow-2xs">
+          <button
+            type="button"
+            onClick={onZoomOut}
+            className="text-on-surface-variant hover:text-on-surface hover:bg-surface-container flex h-6 w-6 cursor-pointer items-center justify-center rounded transition-colors active:scale-95"
+            title="Perkecil (-)"
+            aria-label="Perkecil"
+          >
+            <ZoomOut size={13} />
+          </button>
+          <button
+            type="button"
+            onClick={onResetZoom}
+            className="text-on-surface hover:bg-surface-container cursor-pointer px-1.5 font-mono text-[11px] font-semibold transition-colors"
+            title="Reset Ukuran (100%)"
+          >
+            {Math.round(scale * 100)}%
+          </button>
+          <button
+            type="button"
+            onClick={onZoomIn}
+            className="text-on-surface-variant hover:text-on-surface hover:bg-surface-container flex h-6 w-6 cursor-pointer items-center justify-center rounded transition-colors active:scale-95"
+            title="Perbesar (+)"
+            aria-label="Perbesar"
+          >
+            <ZoomIn size={13} />
+          </button>
+        </div>
       </div>
     </footer>
   );
