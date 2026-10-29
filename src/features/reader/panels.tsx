@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Bookmark as BookmarkIcon,
   BookOpen,
@@ -82,6 +82,28 @@ export const Panels: React.FC<PanelsProps> = ({
   onSearch,
 }) => {
   const [tab, setTab] = useState<PanelTab>(initialTab);
+  const [prevOpen, setPrevOpen] = useState(open);
+  const [prevInitialTab, setPrevInitialTab] = useState(initialTab);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync active tab when sheet is opened or when initialTab changes while open
+  if (open && (!prevOpen || prevInitialTab !== initialTab)) {
+    setPrevOpen(open);
+    setPrevInitialTab(initialTab);
+    setTab(initialTab);
+  } else if (!open && prevOpen) {
+    setPrevOpen(false);
+  }
+
+  // Autofocus search input when opening directly to the search tab
+  useEffect(() => {
+    if (open && tab === 'search') {
+      const timer = window.setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 150);
+      return () => window.clearTimeout(timer);
+    }
+  }, [open, tab]);
 
   // State for Table of Contents (TOC)
   const [tocSearch, setTocSearch] = useState('');
@@ -381,6 +403,7 @@ export const Panels: React.FC<PanelsProps> = ({
         <div className="space-y-4">
           <form onSubmit={handleStartSearch} className="flex gap-2">
             <input
+              ref={searchInputRef}
               type="text"
               placeholder="Cari kata atau frasa dalam buku..."
               value={searchQuery}
