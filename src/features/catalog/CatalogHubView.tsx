@@ -43,21 +43,23 @@ export const CatalogHubView: React.FC<CatalogHubViewProps> = ({
 
       {/* 2. SOURCES GRID */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between px-1">
-          <h3 className="text-on-surface flex items-center gap-2 text-sm font-bold tracking-tight">
-            <span>Daftar Sumber Tersedia</span>
-            <span className="bg-surface-container-highest text-on-surface-variant rounded-md px-2 py-0.5 text-[11px] font-medium">
+        <div className="flex flex-col gap-1.5 px-1 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2">
+            <h3 className="text-on-surface text-sm font-bold tracking-tight">
+              Daftar Sumber Tersedia
+            </h3>
+            <span className="bg-surface-container-highest text-on-surface-variant shrink-0 rounded-md px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap">
               {CATALOG_SOURCES.length} Sumber
             </span>
-          </h3>
+          </div>
 
           <button
             type="button"
             onClick={onOpenAddSourceInfo}
-            className="text-primary flex cursor-pointer items-center gap-1 text-xs font-medium hover:underline"
+            className="text-primary hover:text-primary/80 flex w-fit cursor-pointer items-center gap-1.5 text-xs font-medium hover:underline active:opacity-75"
           >
-            <Code2 size={13} />
-            <span>Panduan Sumber Baru</span>
+            <Code2 size={13} className="shrink-0" />
+            <span className="whitespace-nowrap">Panduan Sumber Baru</span>
           </button>
         </div>
 
