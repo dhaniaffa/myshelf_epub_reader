@@ -90,7 +90,7 @@ export const CatalogHubView: React.FC<CatalogHubViewProps> = ({
                     <div
                       className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border shadow-xs transition-transform duration-200 group-hover:scale-105 ${src.iconBgColor}`}
                     >
-                      <Icon size={24} />
+                      <Icon size={28} />
                     </div>
 
                     {src.badge && (

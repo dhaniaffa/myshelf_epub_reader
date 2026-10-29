@@ -238,6 +238,9 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({ sourceId }) => {
 
               <div className="min-w-0">
                 <h1 className="text-on-surface flex items-center gap-2 truncate text-sm font-bold tracking-tight sm:text-base">
+                  {currentSourceConfig?.icon && (
+                    <currentSourceConfig.icon size={18} className="shrink-0" />
+                  )}
                   <span>{currentSourceConfig?.name || 'Katalog Sumber'}</span>
                   {currentSourceConfig?.badge && (
                     <span className="bg-primary/10 text-primary rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase">
