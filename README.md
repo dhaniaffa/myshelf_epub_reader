@@ -4,7 +4,7 @@
 
 ![MyShelf Banner](public/icons/icon-192.png)
 
-### Modern and Elegant EPUB Reader
+## Modern and Elegant EPUB Reader
 
 [![React 19](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -81,11 +81,14 @@ MyShelf dikompilasi menjadi aplikasi desktop native menggunakan **Tauri v2**.
 #### A. Prasyarat Sistem Desktop
 
 - **Rust Toolchain**: Pasang via [rustup.rs](https://rustup.rs/):
+
   ```bash
   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
   source "$HOME/.cargo/env"
   ```
+
 - **Dependensi Sistem Linux (Ubuntu / Debian)**:
+
   ```bash
   sudo apt update && sudo apt install -y \
     libwebkit2gtk-4.1-dev \
@@ -94,6 +97,7 @@ MyShelf dikompilasi menjadi aplikasi desktop native menggunakan **Tauri v2**.
     libxdo-dev libssl-dev \
     libayatana-appindicator3-dev librsvg2-dev
   ```
+
 - **Windows**: Pasang [Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) dan **WebView2**.
 - **macOS**: Jalankan `xcode-select --install`.
 
@@ -132,21 +136,26 @@ Dukungan mobile native Android tanpa memerlukan penulisan ulang kode antarmuka.
 #### A. Prasyarat Sistem Android
 
 1. **Java Development Kit (JDK 17 atau 21)**:
+
    ```bash
    sudo apt install -y openjdk-17-jdk
    ```
+
 2. **Android Studio & SDK**:
    Buka Android Studio → **SDK Manager**:
    - **SDK Platforms**: Pasang **Android 14 (API 34)** atau **Android 15 (API 35)**.
    - **SDK Tools**: Pasang **Android SDK Build-Tools**, **Command-line Tools**, **Platform-Tools**, **NDK (Side by side)**, dan **CMake**.
 3. **Environment Variables** (Tambahkan ke `~/.bashrc` lalu `source ~/.bashrc`):
+
    ```bash
    export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
    export ANDROID_HOME=$HOME/Android/Sdk
    export NDK_HOME=$ANDROID_HOME/ndk/$(ls $ANDROID_HOME/ndk 2>/dev/null | tail -n 1)
    export PATH=$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/cmdline-tools/latest/bin
    ```
+
 4. **Rust Target untuk Prosesor Ponsel**:
+
    ```bash
    rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
    ```
@@ -161,9 +170,11 @@ npx tauri android init
 
 1. Hubungkan ponsel fisik Anda menggunakan kabel USB dan aktifkan **USB Debugging** pada _Developer Options_ HP Anda.
 2. Jalankan:
+
    ```bash
    npm run tauri android dev
    ```
+
    _Vite otomatis mengekspos dev server ke jaringan lokal (`0.0.0.0`), mengompilasi APK debug, dan langsung meluncurkannya di layar HP._
 
 #### D. Membangun Berkas APK / AAB
@@ -178,6 +189,7 @@ npx tauri android init
   `src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk`
 
 - **Membangun Release AAB / APK (Siap Publikasi Google Play)**:
+
   ```bash
   npm run tauri android build
   ```
