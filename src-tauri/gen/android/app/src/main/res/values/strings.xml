@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name">"myshelf"</string>
-    <string name="main_activity_title">"myshelf"</string>
+    <string name="app_name">"MyShelf"</string>
+    <string name="main_activity_title">"MyShelf"</string>
 </resources>
