@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="14 14 36 36" fill="currentColor">
+  <!-- Left Page -->
+  <path d="M30.5 20.3c-3.7-2.8-9.1-3.7-14.5-3.3v27c5.4-.9 10.8 0 14.5 2.7V20.3Z" />
+  <!-- Right Page -->
+  <path d="M33.5 20.3v26.4c3.7-2.7 9.1-3.6 14.5-2.7v-27c-5.4-.4-10.8.5-14.5 3.3Z" />
+</svg>

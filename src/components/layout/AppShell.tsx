@@ -1,15 +1,8 @@
 import React, { useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import {
-  BarChart2,
-  BookMarked,
-  CheckCircle2,
-  Compass,
-  Flame,
-  Library,
-  Settings,
-} from 'lucide-react';
+import { BarChart2, CheckCircle2, Compass, Flame, Library, Settings } from 'lucide-react';
 
+import { AppLogo } from '@/components/icons/AppLogo';
 import { APP_NAME, APP_SUBTITLE, APP_VERSION } from '@/config';
 import { db, getLocalDateString } from '@/lib/db';
 import { navigate } from '@/lib/route';
@@ -93,7 +86,7 @@ export const AppShell: React.FC<AppShellProps> = ({ currentRoute, children }) =>
         {/* Header / Brand */}
         <div className="border-outline-variant/20 flex items-center gap-3 border-b p-6 pb-5">
           <div className="bg-primary text-on-primary flex h-10 w-10 items-center justify-center rounded-2xl shadow-sm">
-            <BookMarked size={22} />
+            <AppLogo size={24} className="text-on-primary" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">

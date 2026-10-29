@@ -19,6 +19,7 @@ import {
   Upload,
 } from 'lucide-react';
 
+import { AppLogo } from '@/components/icons/AppLogo';
 import { ThemeSegmented } from '@/components/ThemeSegmented';
 import { Button } from '@/components/ui';
 import { UpdateDialog } from '@/components/UpdateDialog';
@@ -820,7 +821,7 @@ export const SettingsPage: React.FC = () => {
         {/* 7. ABOUT MY SHELF */}
         <section className="bg-surface-container-low border-outline-variant/20 flex items-start gap-4 rounded-3xl border p-6">
           <div className="bg-primary/10 text-primary mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl">
-            <Info size={20} />
+            <AppLogo size={24} className="text-primary" />
           </div>
           <div className="min-w-0 flex-1 space-y-1.5">
             <div className="flex items-center gap-2">

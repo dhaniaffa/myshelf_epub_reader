@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import {
   ArrowUpDown,
-  BookMarked,
   BookOpen,
   Compass,
   FolderOpen,
@@ -18,6 +17,7 @@ import {
   X,
 } from 'lucide-react';
 
+import { AppLogo } from '@/components/icons/AppLogo';
 import { Button, Dialog } from '@/components/ui';
 import { APP_CONFIG, APP_NAME, APP_SUBTITLE } from '@/config';
 import { BookCard } from '@/features/library/BookCard';
@@ -211,7 +211,7 @@ export const LibraryPage: React.FC = () => {
       <header className="bg-surface/90 border-outline-variant/20 sticky top-0 z-30 flex items-center justify-between gap-3 border-b px-3.5 py-2.5 backdrop-blur-md sm:px-8 sm:py-3.5">
         <div className="flex items-center gap-2.5 sm:gap-3">
           <div className="bg-primary-container text-on-primary-container flex h-9 w-9 items-center justify-center rounded-xl shadow-xs sm:h-10 sm:w-10 sm:rounded-2xl lg:hidden">
-            <BookMarked size={20} />
+            <AppLogo size={22} className="text-on-primary-container" />
           </div>
           <div>
             <h1 className="text-on-surface flex items-center gap-2 text-base font-bold tracking-tight sm:text-lg">
