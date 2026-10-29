@@ -7,26 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.1.0] - 2026-10-15
+## [Unreleased]
 
 ### Added
 
-- **Sistem Auto Updater Lintas Platform (Desktop & Android)**:
-  - Pengecekan pembaruan otomatis di latar belakang saat aplikasi pertama kali dibuka (_startup_).
-  - Integrasi resmi Tauri v2 Updater untuk Desktop (Linux, Windows, macOS) dengan verifikasi kriptografi Ed25519 dan auto-relaunch.
-  - Integrasi GitHub Releases API updater dan auto installer APK via Android Intent/Opener.
-  - Pengaturan toggle **Pembaruan Otomatis** (_On / Off_) dengan penyimpanan persisten di menu Pengaturan.
-  - Tombol manual **"Periksa Pembaruan Sekarang"** di halaman Pengaturan dengan indikator status.
-  - Dialog modal pembaruan (`UpdateDialog`) dengan catatan rilis, progress bar pengunduhan (0% - 100%), dan aksi 1-klik pasang pembaruan.
-  - Konfigurasi izin `REQUEST_INSTALL_PACKAGES` dan pembaruan `FileProvider` paths untuk Android.
+- **Pengaturan Khusus PDF**: Deteksi otomatis pengaturan reader sesuai format (PDF/EPUB), pilihan warna latar halaman PDF (terang, gelap, sepia, otomatis), dan preset zoom.
+- **Pemilihan Folder Ekspor**: Dialog pemilihan folder native di Desktop dan integrasi Android Storage Access Framework (SAF) tanpa share sheet.
+- **Katalog & Branding**: Ikon baru sumber katalog (Project Gutenberg, Standard Ebooks, Open Library) dan logo aplikasi transparan.
 
 ### Fixed
 
-- **Reader (Touch & Mobile)**: Menonaktifkan zona klik navigasi samping pada perangkat sentuh agar seleksi dan penyalinan teks tidak memicu perpindahan halaman yang tidak disengaja. Navigasi mobile kini mengandalkan _swipe gesture_.
-- **Library (Cover Thumbnails di Linux/WebKitGTK)**: Menggunakan helper `useCoverUrl` untuk menormalisasi data Buffer/Blob dan mencegah race condition pencabutan Object URL prematur pada React 19 serta fallback ekstraksi arsip EPUB langsung.
-- **UI (Bottom Sheet)**: Menstabilkan tinggi panel lembar bawah (_bottom sheet_) ke `82vh` untuk mencegah lompatan tinggi (_bouncing_) pada pencarian Daftar Isi dan mencegah form pencarian tertutup keyboard virtual Android.
-- **Anotasi & Catatan Pribadi**: Memperbaiki pemuatan teks catatan tersimpan dan warna highlight saat diedit melalui `NoteDialogInner` dengan dynamic key serta menambahkan dukungan `background-color` pada CSS highlight.
-- **Text To Speech (TTS)**: Memperbaiki bug dimana TTS tidak dapat diputar.
+- **Navigasi Drawer Reader**: Memperbaiki tombol "Cari Teks" yang keliru membuka Daftar Isi serta menambahkan autofocus input pencarian.
+- **Seleksi Teks & Selection Bar**: Memperbaiki kemunculan floating toolbar di Android WebView dan Linux desktop saat teks diblok.
+- **Anotasi & Catatan**: Memperbaiki kegagalan simpan catatan dan duplikasi sorotan / highlight.
+- **Text-to-Speech (TTS)**: Dukungan native speech synthesis di Android dan perbaikan error pemutaran audio di Desktop.
+- **UI Responsif Mobile**: Memperbaiki posisi toast notifikasi agar tidak menimpa navigasi bawah dan dropdown menu buku agar tidak terpotong.
+
+---
+
+## [1.1.0] - 2026-10-15
+
+### Added (V1.1.0)
+
+- **Sistem Auto Updater (Desktop & Android)**:
+  - Pengecekan pembaruan otomatis di latar belakang saat startup.
+  - Integrasi Tauri v2 Updater di Desktop dan GitHub Releases APK updater di Android.
+  - Pengaturan toggle pembaruan otomatis dan tombol periksa pembaruan manual.
+  - Dialog pembaruan dengan catatan rilis dan progress bar unduhan.
+
+### Fixed (V1.1.0)
+
+- **Navigasi Mobile**: Menonaktifkan klik samping pada layar sentuh agar fokus pada swipe gesture dan seleksi teks.
+- **Cover Buku Linux**: Memperbaiki pemuatan cover thumbnail pada WebKitGTK.
+- **Bottom Sheet**: Menstabilkan tinggi panel agar tidak bouncing saat keyboard virtual terbuka.
+- **Anotasi & Catatan**: Memperbaiki pemuatan catatan tersimpan dan warna highlight saat diedit.
+- **TTS**: Memperbaiki kegagalan pemutaran audio.
 
 ---
 
@@ -34,5 +49,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release.
 
+[Unreleased]: https://github.com/dhaniaffa/myshelf_epub_reader/compare/v1.1.0...HEAD
 [1.1.0]: https://github.com/dhaniaffa/myshelf_epub_reader/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/dhaniaffa/myshelf_epub_reader/releases/tag/v1.0.0

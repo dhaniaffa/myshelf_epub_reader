@@ -1,6 +1,6 @@
 [package]
 name = "MyShelf"
-version = "1.1.0"
+version = "1.2.0"
 description = "Offline Library Epub Reader"
 authors = ["dhaniaffa"]
 license = ""
