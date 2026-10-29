@@ -33,7 +33,7 @@ export interface PdfReaderState {
   aspectRatio: number;
 }
 
-export function usePdfReader({ bookId }: UsePdfReaderOptions) {
+export function usePdfReader({ bookId, settings }: UsePdfReaderOptions) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const pdfDocRef = useRef<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -52,9 +52,9 @@ export function usePdfReader({ bookId }: UsePdfReaderOptions) {
     percentage: 0,
     outline: [],
     currentChapterTitle: '',
-    scale: 1.0,
-    fitMode: 'width',
-    scrollMode: 'vertical',
+    scale: settings.pdfScale || 1.0,
+    fitMode: settings.pdfFitMode || 'width',
+    scrollMode: settings.pdfScrollMode || 'vertical',
     aspectRatio: 1.414,
   });
 
@@ -327,6 +327,14 @@ export function usePdfReader({ bookId }: UsePdfReaderOptions) {
     }));
   }, []);
 
+  const setScale = useCallback((scale: number) => {
+    setState((prev) => ({
+      ...prev,
+      scale: Math.max(0.5, Math.min(3.0, Math.round(scale * 100) / 100)),
+      fitMode: 'custom',
+    }));
+  }, []);
+
   const resetZoom = useCallback(() => {
     setState((prev) => ({
       ...prev,
@@ -336,7 +344,11 @@ export function usePdfReader({ bookId }: UsePdfReaderOptions) {
   }, []);
 
   const setFitMode = useCallback((mode: 'page' | 'width') => {
-    setState((prev) => ({ ...prev, fitMode: mode }));
+    setState((prev) => ({
+      ...prev,
+      fitMode: mode,
+      ...(mode === 'width' ? { scale: 1.0 } : {}),
+    }));
   }, []);
 
   const setScrollMode = useCallback((mode: 'vertical' | 'single') => {
@@ -414,6 +426,7 @@ export function usePdfReader({ bookId }: UsePdfReaderOptions) {
     zoomIn,
     zoomOut,
     resetZoom,
+    setScale,
     setFitMode,
     setScrollMode,
     updateActivePage,

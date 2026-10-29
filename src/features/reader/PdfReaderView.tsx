@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { Panels } from '@/features/reader/panels';
 import { SettingsSheet } from '@/features/reader/SettingsSheet';
@@ -42,6 +42,7 @@ export const PdfReaderView: React.FC<PdfReaderViewProps> = ({ bookId }) => {
     zoomIn,
     zoomOut,
     resetZoom,
+    setScale,
     setFitMode,
     setScrollMode,
     updateActivePage,
@@ -78,14 +79,21 @@ export const PdfReaderView: React.FC<PdfReaderViewProps> = ({ bookId }) => {
   // Calculate width and height of each page for optimal reading size
   const targetPageWidth = useMemo(() => {
     const isMobile = containerWidth < 640;
-    if (isMobile) {
-      return Math.max(280, containerWidth - 16);
-    }
+    const baseWidth = isMobile
+      ? Math.max(280, containerWidth - 16)
+      : Math.min(containerWidth - 32, 1100);
+
     if (state.fitMode === 'width') {
-      return Math.max(320, Math.min(containerWidth - 32, 1100));
+      return baseWidth;
     }
-    const base = Math.min(containerWidth - 48, 860);
-    return Math.max(320, Math.round(base * state.scale));
+    if (state.fitMode === 'page') {
+      const base = isMobile
+        ? Math.max(260, containerWidth - 48)
+        : Math.min(containerWidth - 48, 860);
+      return Math.max(240, Math.round(base * 0.9));
+    }
+    // fitMode === 'custom' (Zoom in/out, atau preset persentase)
+    return Math.max(200, Math.round(baseWidth * state.scale));
   }, [containerWidth, state.fitMode, state.scale]);
 
   const targetPageHeight = useMemo(() => {
@@ -102,10 +110,10 @@ export const PdfReaderView: React.FC<PdfReaderViewProps> = ({ bookId }) => {
   const isEink =
     settings.einkMode || resolvedTheme === 'eink-light' || resolvedTheme === 'eink-dark';
 
-  // Adaptive canvas color filter effect based on reader theme
+  // Adaptive canvas color filter effect based on reader theme, e-ink, and independent PDF page color
   const canvasFilterStyle = useMemo<React.CSSProperties>(() => {
-    return getPdfCanvasFilterStyle(resolvedTheme, isEink);
-  }, [resolvedTheme, isEink]);
+    return getPdfCanvasFilterStyle(resolvedTheme, isEink, settings.pdfPageColor || 'auto');
+  }, [resolvedTheme, isEink, settings.pdfPageColor]);
 
   // Flash refresh for E-Ink
   const triggerFlashRefresh = useCallback(() => {
@@ -115,11 +123,35 @@ export const PdfReaderView: React.FC<PdfReaderViewProps> = ({ bookId }) => {
     }, 200);
   }, []);
 
+  // Temporary suppression of scroll-driven page index recalculations during mode switches or zoom jumps
+  const isSwitchingModeRef = useRef(false);
+  const pendingTargetPageRef = useRef<number | null>(null);
+  const switchTimeoutRef = useRef<number | null>(null);
+  const currentPageRef = useRef<number>(state.currentPage);
+
+  useEffect(() => {
+    currentPageRef.current = state.currentPage;
+  }, [state.currentPage]);
+
+  useEffect(() => {
+    return () => {
+      if (switchTimeoutRef.current) {
+        clearTimeout(switchTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // Scroll handler for vertical scroll mode
   const handleScroll = useCallback(() => {
-    if (!containerRef.current || state.scrollMode !== 'vertical') return;
+    if (!containerRef.current || state.scrollMode !== 'vertical' || isSwitchingModeRef.current)
+      return;
     const top = containerRef.current.scrollTop;
     const vh = containerRef.current.clientHeight || window.innerHeight;
+
+    // Guard against premature 0 scroll position while target page is greater than 1
+    if (top === 0 && (currentPageRef.current || 1) > 1) {
+      return;
+    }
 
     // Page in eye focus (35% from viewport top)
     const activePg = Math.max(
@@ -128,33 +160,104 @@ export const PdfReaderView: React.FC<PdfReaderViewProps> = ({ bookId }) => {
     );
     updateActivePage(activePg);
 
-    // 800px render buffer above and below viewport
-    const start = Math.max(1, Math.floor((top - 800) / itemTotalHeight) + 1);
-    const end = Math.min(state.totalPages, Math.ceil((top + vh + 800) / itemTotalHeight));
+    // Dynamic buffer above and below viewport
+    const buffer = Math.max(1200, itemTotalHeight * 1.5);
+    const start = Math.max(1, Math.floor((top - buffer) / itemTotalHeight) + 1);
+    const end = Math.min(state.totalPages, Math.ceil((top + vh + buffer) / itemTotalHeight));
+    const safeStart = Math.min(start, activePg);
+    const safeEnd = Math.max(end, activePg);
+
     setVisibleRange((prev) => {
-      if (prev[0] === start && prev[1] === end) return prev;
-      return [start, end];
+      if (prev[0] === safeStart && prev[1] === safeEnd) return prev;
+      return [safeStart, safeEnd];
     });
   }, [state.scrollMode, state.totalPages, itemTotalHeight, updateActivePage]);
 
-  // Automatically scroll to page position when book is first ready
-  const initialScrollDoneRef = useRef(false);
+  // Keep visibleRange & scroll position synced immediately when itemTotalHeight changes (zoom / resize)
+  const prevItemHeightRef = useRef<number>(itemTotalHeight);
   useEffect(() => {
-    if (
-      state.isReady &&
-      state.scrollMode === 'vertical' &&
-      containerRef.current &&
-      !initialScrollDoneRef.current
-    ) {
-      initialScrollDoneRef.current = true;
-      const targetTop = (state.currentPage - 1) * itemTotalHeight;
-      containerRef.current.scrollTop = targetTop;
+    if (!state.isReady || state.scrollMode !== 'vertical' || !containerRef.current) return;
+
+    const prevHeight = prevItemHeightRef.current;
+    prevItemHeightRef.current = itemTotalHeight;
+
+    if (prevHeight !== itemTotalHeight) {
+      // Keep current active page centered / aligned in view
+      const newTop = (state.currentPage - 1) * itemTotalHeight;
+      containerRef.current.scrollTop = newTop;
+
       const vh = containerRef.current.clientHeight || window.innerHeight;
-      const start = Math.max(1, Math.floor((targetTop - 800) / itemTotalHeight) + 1);
-      const end = Math.min(state.totalPages, Math.ceil((targetTop + vh + 800) / itemTotalHeight));
-      setVisibleRange([start, end]);
+      const buffer = Math.max(1200, itemTotalHeight * 1.5);
+      const start = Math.max(1, Math.floor((newTop - buffer) / itemTotalHeight) + 1);
+      const end = Math.min(state.totalPages, Math.ceil((newTop + vh + buffer) / itemTotalHeight));
+      const safeStart = Math.min(start, state.currentPage);
+      const safeEnd = Math.max(end, state.currentPage);
+
+      setVisibleRange([safeStart, safeEnd]);
     }
-  }, [state.isReady, state.scrollMode, state.currentPage, itemTotalHeight, state.totalPages]);
+  }, [itemTotalHeight, state.isReady, state.scrollMode, state.currentPage, state.totalPages]);
+
+  // Automatically scroll to active page position when book is ready OR when switching from 'single' to 'vertical' mode
+  const initialScrollDoneRef = useRef(false);
+
+  useLayoutEffect(() => {
+    if (!state.isReady || state.scrollMode !== 'vertical' || !containerRef.current) return;
+
+    const targetPage =
+      pendingTargetPageRef.current ?? (!initialScrollDoneRef.current ? state.currentPage : null);
+
+    if (targetPage !== null) {
+      pendingTargetPageRef.current = null;
+      initialScrollDoneRef.current = true;
+      isSwitchingModeRef.current = true;
+
+      const targetTop = (targetPage - 1) * itemTotalHeight;
+      containerRef.current.scrollTop = targetTop;
+
+      const vh = containerRef.current.clientHeight || window.innerHeight;
+      const buffer = Math.max(1200, itemTotalHeight * 1.5);
+      const start = Math.max(1, Math.floor((targetTop - buffer) / itemTotalHeight) + 1);
+      const end = Math.min(
+        state.totalPages,
+        Math.ceil((targetTop + vh + buffer) / itemTotalHeight)
+      );
+      const safeStart = Math.min(start, targetPage);
+      const safeEnd = Math.max(end, targetPage);
+      setVisibleRange([safeStart, safeEnd]);
+
+      const raf = requestAnimationFrame(() => {
+        if (containerRef.current) {
+          containerRef.current.scrollTop = targetTop;
+        }
+        if (switchTimeoutRef.current) {
+          clearTimeout(switchTimeoutRef.current);
+        }
+        switchTimeoutRef.current = window.setTimeout(() => {
+          isSwitchingModeRef.current = false;
+        }, 350);
+      });
+
+      return () => {
+        cancelAnimationFrame(raf);
+      };
+    }
+  }, [state.isReady, state.scrollMode, itemTotalHeight, state.totalPages, state.currentPage]);
+
+  // Handler to safely switch scroll mode with instant scroll lock
+  const handleScrollModeChange = useCallback(
+    (mode: 'vertical' | 'single') => {
+      if (mode === state.scrollMode) return;
+      isSwitchingModeRef.current = true;
+      if (switchTimeoutRef.current) {
+        clearTimeout(switchTimeoutRef.current);
+      }
+      if (mode === 'vertical') {
+        pendingTargetPageRef.current = state.currentPage;
+      }
+      setScrollMode(mode);
+    },
+    [state.scrollMode, state.currentPage, setScrollMode]
+  );
 
   // Jump navigation to specific page
   const handleJumpToPage = useCallback(
@@ -163,9 +266,17 @@ export const PdfReaderView: React.FC<PdfReaderViewProps> = ({ bookId }) => {
       if (state.scrollMode === 'vertical' && containerRef.current) {
         const targetTop = (pageNumber - 1) * itemTotalHeight;
         containerRef.current.scrollTo({ top: targetTop, behavior: 'smooth' });
+        const vh = containerRef.current.clientHeight || window.innerHeight;
+        const buffer = Math.max(1200, itemTotalHeight * 1.5);
+        const start = Math.max(1, Math.floor((targetTop - buffer) / itemTotalHeight) + 1);
+        const end = Math.min(
+          state.totalPages,
+          Math.ceil((targetTop + vh + buffer) / itemTotalHeight)
+        );
+        setVisibleRange([Math.min(start, pageNumber), Math.max(end, pageNumber)]);
       }
     },
-    [goToPage, state.scrollMode, itemTotalHeight]
+    [goToPage, state.scrollMode, itemTotalHeight, state.totalPages]
   );
 
   // Adaptive prev/next navigation for vertical scroll or per-page view
@@ -320,7 +431,7 @@ export const PdfReaderView: React.FC<PdfReaderViewProps> = ({ bookId }) => {
         scale={state.scale}
         onJumpToPage={handleJumpToPage}
         onToggleScrollMode={() =>
-          setScrollMode(state.scrollMode === 'vertical' ? 'single' : 'vertical')
+          handleScrollModeChange(state.scrollMode === 'vertical' ? 'single' : 'vertical')
         }
         onToggleFitMode={() => setFitMode(state.fitMode === 'width' ? 'page' : 'width')}
         onZoomIn={zoomIn}
@@ -384,6 +495,16 @@ export const PdfReaderView: React.FC<PdfReaderViewProps> = ({ bookId }) => {
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
         onFlashRefresh={triggerFlashRefresh}
+        format="pdf"
+        pdfScrollMode={state.scrollMode}
+        onPdfScrollModeChange={handleScrollModeChange}
+        pdfFitMode={state.fitMode}
+        onPdfFitModeChange={setFitMode}
+        pdfScale={state.scale}
+        onPdfScaleChange={setScale}
+        onPdfZoomIn={zoomIn}
+        onPdfZoomOut={zoomOut}
+        onPdfResetZoom={resetZoom}
       />
     </div>
   );

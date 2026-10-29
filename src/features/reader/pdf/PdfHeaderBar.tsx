@@ -5,7 +5,7 @@ import {
   List,
   RefreshCw,
   Search,
-  Sliders,
+  Settings,
 } from 'lucide-react';
 
 import { IconButton } from '@/components/ui';
@@ -95,7 +95,7 @@ export const PdfHeaderBar: React.FC<PdfHeaderBarProps> = ({
         </IconButton>
 
         <IconButton size="sm" onClick={onOpenSettings} title="Pengaturan Tampilan">
-          <Sliders size={18} />
+          <Settings size={18} />
         </IconButton>
       </div>
     </header>

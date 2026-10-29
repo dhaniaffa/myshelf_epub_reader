@@ -9,6 +9,9 @@ import {
   Columns2,
   FileText,
   FoldVertical,
+  Maximize2,
+  Minimize2,
+  Monitor,
   RefreshCw,
   RotateCcw,
   Scroll,
@@ -16,14 +19,19 @@ import {
   Tablet,
   UnfoldVertical,
   Volume2,
+  ZoomIn,
+  ZoomOut,
 } from 'lucide-react';
 
 import { ThemeSegmented } from '@/components/ThemeSegmented';
 import { Button, Sheet } from '@/components/ui';
 import { FONT_FAMILIES } from '@/lib/theme';
 import { useSettingsStore } from '@/store/settings';
+import { toast } from '@/store/toast';
 
 import type {
+  PdfFitMode,
+  PdfScrollMode,
   ReaderFlowMode,
   ReaderFontFamily,
   ReaderPageMargin,
@@ -71,10 +79,21 @@ const THEME_LABELS: Record<ReaderTheme, string> = {
   auto: 'Otomatis (Sistem)',
 };
 
-interface SettingsSheetProps {
+export interface SettingsSheetProps {
   open: boolean;
   onClose: () => void;
   onFlashRefresh?: () => void;
+  format?: 'epub' | 'pdf';
+  // PDF specific controls (when opened from PDF reader)
+  pdfScrollMode?: 'vertical' | 'single';
+  onPdfScrollModeChange?: (mode: 'vertical' | 'single') => void;
+  pdfFitMode?: 'width' | 'page' | 'custom';
+  onPdfFitModeChange?: (mode: 'width' | 'page') => void;
+  pdfScale?: number;
+  onPdfScaleChange?: (scale: number) => void;
+  onPdfZoomIn?: () => void;
+  onPdfZoomOut?: () => void;
+  onPdfResetZoom?: () => void;
 }
 
 interface FontOptionItem {
@@ -84,8 +103,61 @@ interface FontOptionItem {
   fontClass: string;
 }
 
-export const SettingsSheet: React.FC<SettingsSheetProps> = ({ open, onClose, onFlashRefresh }) => {
+export const SettingsSheet: React.FC<SettingsSheetProps> = ({
+  open,
+  onClose,
+  onFlashRefresh,
+  format = 'epub',
+  pdfScrollMode,
+  onPdfScrollModeChange,
+  pdfFitMode,
+  onPdfFitModeChange,
+  pdfScale,
+  onPdfScaleChange,
+  onPdfZoomIn,
+  onPdfZoomOut,
+  onPdfResetZoom,
+}) => {
   const settings = useSettingsStore();
+  const isPdf = format === 'pdf';
+
+  const currentPdfScrollMode: PdfScrollMode = pdfScrollMode || settings.pdfScrollMode || 'vertical';
+  const currentPdfFitMode: 'width' | 'page' | 'custom' =
+    pdfFitMode || settings.pdfFitMode || 'width';
+  const currentPdfScale: number = pdfScale !== undefined ? pdfScale : settings.pdfScale || 1.0;
+
+  const handlePdfScrollModeSelect = (mode: PdfScrollMode) => {
+    settings.setPdfScrollMode(mode);
+    onPdfScrollModeChange?.(mode);
+  };
+
+  const handlePdfFitModeSelect = (mode: PdfFitMode) => {
+    settings.setPdfFitMode(mode);
+    onPdfFitModeChange?.(mode);
+  };
+
+  const handlePdfScaleChange = (scale: number) => {
+    const clamped = Math.max(0.5, Math.min(3.0, Math.round(scale * 100) / 100));
+    settings.setPdfScale(clamped);
+    if (onPdfScaleChange) {
+      onPdfScaleChange(clamped);
+    } else if (clamped === 1.0 && onPdfResetZoom) {
+      onPdfResetZoom();
+    }
+  };
+
+  const handleResetSettings = () => {
+    if (!isPdf) {
+      settings.resetEpubSettings();
+      toast.info('Pengaturan EPUB dikembalikan ke bawaan');
+    } else {
+      settings.resetPdfSettings();
+      onPdfResetZoom?.();
+      onPdfFitModeChange?.('width');
+      onPdfScrollModeChange?.('vertical');
+      toast.info('Pengaturan PDF dikembalikan ke bawaan');
+    }
+  };
 
   const fontOptions: FontOptionItem[] = [
     { id: 'sans', name: 'Sans', sub: 'Sistem Bersih', fontClass: 'font-sans' },
@@ -179,14 +251,14 @@ export const SettingsSheet: React.FC<SettingsSheetProps> = ({ open, onClose, onF
     <Sheet
       open={open}
       onClose={onClose}
-      title="Pengaturan Tampilan"
+      title={isPdf ? 'Pengaturan PDF' : 'Pengaturan EPUB'}
       footer={
         <div className="flex w-full items-center justify-between">
           <Button
             variant="text"
             size="sm"
             icon={<RotateCcw size={14} />}
-            onClick={() => settings.resetSettings()}
+            onClick={handleResetSettings}
           >
             Atur Ulang
           </Button>
@@ -197,446 +269,901 @@ export const SettingsSheet: React.FC<SettingsSheetProps> = ({ open, onClose, onF
       }
     >
       <div className="space-y-6 pb-2">
-        {/* 1. COLOR THEME */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <label className="text-on-surface text-xs font-semibold tracking-wider uppercase">
-              Tema Tampilan
-            </label>
-            <span className="text-on-surface-variant text-[10px] font-medium">
-              {THEME_LABELS[settings.theme] || settings.theme}
-            </span>
-          </div>
-          <ThemeSegmented theme={settings.theme} onChange={settings.setTheme} compact />
-        </div>
+        {/* PENGATURAN EPUB */}
+        {!isPdf && (
+          <div className="animate-fade-in space-y-6">
+            {/* 1. COLOR THEME */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-on-surface text-xs font-semibold tracking-wider uppercase">
+                  Tema Tampilan
+                </label>
+                <span className="text-on-surface-variant text-[10px] font-medium">
+                  {THEME_LABELS[settings.theme] || settings.theme}
+                </span>
+              </div>
+              <ThemeSegmented theme={settings.theme} onChange={settings.setTheme} compact />
+            </div>
 
-        {/* 2. MODE MEMBACA */}
-        <div className="space-y-2">
-          <label className="text-on-surface block text-xs font-semibold tracking-wider uppercase">
-            Mode Membaca
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            {flowOptions.map((f) => {
-              const isSelected = settings.flowMode === f.mode;
-              return (
+            {/* 2. MODE MEMBACA */}
+            <div className="space-y-2">
+              <label className="text-on-surface block text-xs font-semibold tracking-wider uppercase">
+                Mode Membaca
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {flowOptions.map((f) => {
+                  const isSelected = settings.flowMode === f.mode;
+                  return (
+                    <button
+                      key={f.mode}
+                      type="button"
+                      onClick={() => settings.setFlowMode(f.mode)}
+                      className={`flex cursor-pointer items-center gap-3 rounded-2xl border p-3 text-left transition-all ${
+                        isSelected
+                          ? 'bg-primary-container text-on-primary-container border-primary ring-primary font-semibold shadow-xs ring-1'
+                          : 'bg-surface-container-low text-on-surface border-outline-variant/30 hover:bg-surface-container-high'
+                      }`}
+                    >
+                      <div
+                        className={`shrink-0 rounded-xl p-2 transition-colors ${
+                          isSelected
+                            ? 'bg-primary text-on-primary'
+                            : 'bg-surface-container-highest text-on-surface-variant'
+                        }`}
+                      >
+                        {f.icon}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs leading-tight font-bold">{f.title}</div>
+                        <div
+                          className={`mt-0.5 text-[10px] leading-tight ${
+                            isSelected ? 'text-on-primary-container/80' : 'text-on-surface-variant'
+                          }`}
+                        >
+                          {f.desc}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 2B. COLUMN LAYOUT (Paged mode only) */}
+            {settings.flowMode === 'paginated' && (
+              <div className="animate-fade-in space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-on-surface block text-xs font-semibold tracking-wider uppercase">
+                    Kolom Tampilan
+                  </label>
+                  <span className="text-on-surface-variant text-[10px] font-medium">
+                    {settings.spreadMode === 'double'
+                      ? 'Buku Terbuka'
+                      : settings.spreadMode === 'single'
+                        ? '1 Halaman'
+                        : 'Adaptif'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {spreadOptions.map((s) => {
+                    const isSelected = (settings.spreadMode || 'auto') === s.mode;
+                    return (
+                      <button
+                        key={s.mode}
+                        type="button"
+                        onClick={() => settings.setSpreadMode(s.mode)}
+                        className={`flex cursor-pointer flex-col gap-1.5 rounded-2xl border p-2.5 text-left transition-all ${
+                          isSelected
+                            ? 'bg-primary-container text-on-primary-container border-primary ring-primary font-semibold shadow-xs ring-1'
+                            : 'bg-surface-container-low text-on-surface border-outline-variant/30 hover:bg-surface-container-high'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div
+                            className={`shrink-0 rounded-lg p-1.5 ${
+                              isSelected
+                                ? 'bg-primary text-on-primary'
+                                : 'bg-surface-container-highest text-on-surface-variant'
+                            }`}
+                          >
+                            {s.icon}
+                          </div>
+                          {isSelected && <Check size={13} className="text-primary font-bold" />}
+                        </div>
+                        <div>
+                          <div className="text-xs leading-tight font-bold">{s.title}</div>
+                          <div
+                            className={`mt-0.5 text-[9px] leading-tight ${
+                              isSelected
+                                ? 'text-on-primary-container/80'
+                                : 'text-on-surface-variant'
+                            }`}
+                          >
+                            {s.desc}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* 3. JENIS HURUF */}
+            <div className="space-y-2">
+              <label className="text-on-surface block text-xs font-semibold tracking-wider uppercase">
+                Jenis Huruf
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {fontOptions.map((f, idx) => {
+                  const isSelected = settings.fontFamily === f.id;
+                  const isLastOdd = idx === fontOptions.length - 1 && fontOptions.length % 2 !== 0;
+                  return (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => settings.setFontFamily(f.id)}
+                      className={`flex cursor-pointer items-center gap-2.5 rounded-2xl border p-2.5 text-left transition-all ${
+                        isLastOdd ? 'col-span-2' : ''
+                      } ${
+                        isSelected
+                          ? 'bg-primary-container text-on-primary-container border-primary ring-primary font-semibold shadow-xs ring-1'
+                          : 'bg-surface-container-low text-on-surface border-outline-variant/30 hover:bg-surface-container-high'
+                      }`}
+                    >
+                      <span className={`w-7 shrink-0 text-center text-lg font-bold ${f.fontClass}`}>
+                        Aa
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs leading-tight font-bold">{f.name}</div>
+                        <div
+                          className={`mt-0.5 text-[10px] leading-tight ${
+                            isSelected ? 'text-on-primary-container/80' : 'text-on-surface-variant'
+                          }`}
+                        >
+                          {f.sub}
+                        </div>
+                      </div>
+                      {isSelected && (
+                        <Check size={14} className="text-primary shrink-0 font-bold" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 4. FONT SIZE */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <label className="text-on-surface font-semibold tracking-wider uppercase">
+                  Ukuran Huruf
+                </label>
+                <span className="text-primary bg-primary/10 rounded-full px-2.5 py-0.5 text-xs font-bold">
+                  {settings.fontSize} px
+                </span>
+              </div>
+
+              <div className="bg-surface-container-low border-outline-variant/30 flex items-center gap-3 rounded-2xl border p-2">
                 <button
-                  key={f.mode}
                   type="button"
-                  onClick={() => settings.setFlowMode(f.mode)}
+                  onClick={() => settings.setFontSize(settings.fontSize - 1)}
+                  disabled={settings.fontSize <= 14}
+                  className="bg-surface-container-high hover:bg-surface-container-highest text-on-surface flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-30"
+                  title="Perkecil Ukuran"
+                >
+                  A-
+                </button>
+                <input
+                  type="range"
+                  min={14}
+                  max={32}
+                  step={1}
+                  value={settings.fontSize}
+                  onChange={(e) => settings.setFontSize(parseInt(e.target.value))}
+                  className="accent-primary bg-surface-container-highest h-2 flex-1 cursor-pointer appearance-none rounded-lg"
+                />
+                <button
+                  type="button"
+                  onClick={() => settings.setFontSize(settings.fontSize + 1)}
+                  disabled={settings.fontSize >= 32}
+                  className="bg-surface-container-high hover:bg-surface-container-highest text-on-surface flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl text-sm font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-30"
+                  title="Perbesar Ukuran"
+                >
+                  A+
+                </button>
+              </div>
+            </div>
+
+            {/* 5. LINE SPACING & TEXT ALIGNMENT */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {/* Jarak Baris */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <label className="text-on-surface font-semibold tracking-wider uppercase">
+                    Jarak Baris
+                  </label>
+                  <span className="text-primary text-[10px] font-bold">
+                    {settings.lineHeight.toFixed(1)}x
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {lineHeightOptions.map((lh) => {
+                    const isSelected = Math.abs(settings.lineHeight - lh.val) < 0.1;
+                    return (
+                      <button
+                        key={lh.val}
+                        type="button"
+                        onClick={() => settings.setLineHeight(lh.val)}
+                        className={`flex cursor-pointer flex-col items-center gap-1 rounded-xl border px-1 py-2 text-center transition-all ${
+                          isSelected
+                            ? 'bg-secondary-container text-on-secondary-container border-secondary font-bold shadow-2xs'
+                            : 'bg-surface-container-low text-on-surface-variant border-outline-variant/30 hover:bg-surface-container-high'
+                        }`}
+                      >
+                        {lh.icon}
+                        <span className="text-[10px]">{lh.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Rata Paragraf */}
+              <div className="space-y-2">
+                <label className="text-on-surface block text-xs font-semibold tracking-wider uppercase">
+                  Rata Paragraf
+                </label>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {[
+                    { val: 'left', label: 'Kiri', icon: <AlignLeft size={16} /> },
+                    { val: 'justify', label: 'Penuh', icon: <AlignJustify size={16} /> },
+                  ].map((align) => {
+                    const isSelected = settings.textAlign === align.val;
+                    return (
+                      <button
+                        key={align.val}
+                        type="button"
+                        onClick={() => settings.setTextAlign(align.val as ReaderTextAlign)}
+                        className={`flex cursor-pointer flex-col items-center gap-1 rounded-xl border px-2 py-2 text-center transition-all ${
+                          isSelected
+                            ? 'bg-secondary-container text-on-secondary-container border-secondary font-bold shadow-2xs'
+                            : 'bg-surface-container-low text-on-surface-variant border-outline-variant/30 hover:bg-surface-container-high'
+                        }`}
+                      >
+                        {align.icon}
+                        <span className="text-[10px] font-semibold">{align.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* 6. BATAS TEPI (MARGIN) */}
+            <div className="space-y-2">
+              <label className="text-on-surface block text-xs font-semibold tracking-wider uppercase">
+                Batas Tepi (Margin)
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {marginOptions.map((m) => {
+                  const isSelected = settings.pageMargin === m.val;
+                  return (
+                    <button
+                      key={m.val}
+                      type="button"
+                      onClick={() => settings.setPageMargin(m.val)}
+                      className={`cursor-pointer rounded-2xl border p-2.5 text-center transition-all ${
+                        isSelected
+                          ? 'bg-secondary-container text-on-secondary-container border-secondary font-bold shadow-2xs'
+                          : 'bg-surface-container-low text-on-surface border-outline-variant/30 hover:bg-surface-container-high'
+                      }`}
+                    >
+                      <div className="text-xs leading-tight font-bold">{m.label}</div>
+                      <div className="text-on-surface-variant mt-0.5 text-[10px] opacity-80">
+                        {m.sub}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 7. KOTAK PRATINJAU LANGSUNG */}
+            <div className="bg-surface-container border-outline-variant/30 space-y-1.5 rounded-2xl border p-3.5">
+              <div className="text-primary flex items-center gap-1.5 text-[10px] font-semibold tracking-wider uppercase">
+                <Sparkles size={12} /> Pratinjau Tampilan EPUB
+              </div>
+              <p
+                className="text-on-surface leading-relaxed transition-all"
+                style={{
+                  fontSize: `${Math.min(22, Math.max(13, settings.fontSize * 0.9))}px`,
+                  lineHeight: settings.lineHeight,
+                  textAlign: settings.textAlign,
+                  fontFamily: FONT_FAMILIES[settings.fontFamily] || 'sans-serif',
+                }}
+              >
+                "Membaca buku membuka jendela imajinasi dan memperluas pengetahuan tanpa batas."
+              </p>
+            </div>
+
+            {/* 8. OPTIMASI E-INK & E-READER */}
+            <div className="border-outline-variant/30 space-y-3 border-t pt-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Tablet size={15} className="text-primary" />
+                  <label className="text-on-surface text-xs font-bold tracking-wider uppercase">
+                    Optimasi E-Ink & E-Reader
+                  </label>
+                </div>
+                {settings.einkMode && (
+                  <span className="text-primary bg-primary/10 rounded-full px-2 py-0.5 text-[10px] font-semibold">
+                    Mode E-Ink Aktif
+                  </span>
+                )}
+              </div>
+
+              {/* Toggle Mode E-Ink */}
+              <div className="bg-surface-container-low border-outline-variant/30 flex items-center justify-between gap-3 rounded-2xl border p-3">
+                <div>
+                  <div className="text-on-surface text-xs font-bold">
+                    Mode Layar E-Ink (Bebas Animasi)
+                  </div>
+                  <div className="text-on-surface-variant mt-0.5 text-[10px]">
+                    Menonaktifkan animasi & transisi CSS untuk mencegah flicker dan ghosting pada
+                    layar e-paper.
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextVal = !settings.einkMode;
+                    settings.setEinkMode(nextVal);
+                    if (
+                      nextVal &&
+                      settings.theme !== 'eink-light' &&
+                      settings.theme !== 'eink-dark'
+                    ) {
+                      settings.setTheme('eink-light');
+                    }
+                  }}
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    settings.einkMode ? 'bg-primary' : 'bg-surface-container-highest'
+                  }`}
+                >
+                  <span
+                    className={`bg-surface pointer-events-none inline-block h-5 w-5 transform rounded-full shadow-xs ring-0 transition duration-200 ease-in-out ${
+                      settings.einkMode ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Volume Button Navigation Toggle */}
+              <div className="bg-surface-container-low border-outline-variant/30 flex items-center justify-between gap-3 rounded-2xl border p-3">
+                <div className="flex items-start gap-2.5">
+                  <Volume2 size={16} className="text-primary mt-0.5 shrink-0" />
+                  <div>
+                    <div className="text-on-surface text-xs font-bold">
+                      Navigasi Tombol Volume Fisik
+                    </div>
+                    <div className="text-on-surface-variant mt-0.5 text-[10px]">
+                      Tombol Volume Turun = Halaman Maju, Volume Naik = Halaman Mundur.
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => settings.setVolumeKeysNavigation(!settings.volumeKeysNavigation)}
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    settings.volumeKeysNavigation ? 'bg-primary' : 'bg-surface-container-highest'
+                  }`}
+                >
+                  <span
+                    className={`bg-surface pointer-events-none inline-block h-5 w-5 transform rounded-full shadow-xs ring-0 transition duration-200 ease-in-out ${
+                      settings.volumeKeysNavigation ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Font Boldness Options */}
+              <div className="space-y-1.5">
+                <div className="text-on-surface flex items-center gap-1.5 text-xs font-semibold">
+                  <Bold size={13} className="text-primary" />
+                  <span>Ketebalan Teks (Font Boldness)</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { val: 'normal', label: 'Normal', desc: 'Standar' },
+                    { val: 'high', label: 'Tebal', desc: 'Kontras Tinggi' },
+                    { val: 'maximum', label: 'Maksimum', desc: 'Sangat Pekat' },
+                  ].map((opt) => {
+                    const isSelected = (settings.textContrast || 'normal') === opt.val;
+                    return (
+                      <button
+                        key={opt.val}
+                        type="button"
+                        onClick={() =>
+                          settings.setTextContrast(
+                            opt.val as NonNullable<typeof settings.textContrast>
+                          )
+                        }
+                        className={`cursor-pointer rounded-xl border p-2 text-center transition-all ${
+                          isSelected
+                            ? 'bg-primary-container text-on-primary-container border-primary font-bold shadow-2xs'
+                            : 'bg-surface-container-low text-on-surface border-outline-variant/30 hover:bg-surface-container-high'
+                        }`}
+                      >
+                        <div className="text-xs leading-tight font-bold">{opt.label}</div>
+                        <div className="text-on-surface-variant mt-0.5 text-[9px] opacity-80">
+                          {opt.desc}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Clear Screen Button (Flash Screen Refresh) */}
+              {onFlashRefresh && (
+                <div className="pt-1">
+                  <Button
+                    variant="outlined"
+                    size="sm"
+                    icon={<RefreshCw size={14} />}
+                    onClick={() => {
+                      onFlashRefresh();
+                    }}
+                    className="w-full justify-center"
+                  >
+                    Bersihkan Layar E-Ink (Hapus Ghosting)
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* PENGATURAN PDF */}
+        {isPdf && (
+          <div className="animate-fade-in space-y-6">
+            {/* 1. PDF COLOR THEME & FILTER */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-on-surface text-xs font-semibold tracking-wider uppercase">
+                  Tema Pembaca
+                </label>
+                <span className="text-on-surface-variant text-[10px] font-medium">
+                  {THEME_LABELS[settings.theme] || settings.theme}
+                </span>
+              </div>
+              <p className="text-on-surface-variant text-[11px]">
+                Warna tema untuk antarmuka pembaca dan bilah menu.
+              </p>
+              <ThemeSegmented theme={settings.theme} onChange={settings.setTheme} compact />
+            </div>
+
+            {/* 1B. WARNA LATAR HALAMAN PDF (INDEPENDEN DARI TEMA) */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-on-surface text-xs font-semibold tracking-wider uppercase">
+                  Warna Halaman PDF
+                </label>
+                <span className="text-on-surface-variant text-[10px] font-medium">
+                  {(settings.pdfPageColor || 'auto') === 'light'
+                    ? 'Putih / Terang (Asli)'
+                    : (settings.pdfPageColor || 'auto') === 'dark'
+                      ? 'Gelap / Malam (Invert)'
+                      : (settings.pdfPageColor || 'auto') === 'sepia'
+                        ? 'Sepia Hangat'
+                        : 'Otomatis (Ikuti Tema)'}
+                </span>
+              </div>
+              <p className="text-on-surface-variant text-[11px]">
+                Warna lembar dokumen PDF (halaman bisa tetap putih meski tema gelap, atau
+                sebaliknya).
+              </p>
+              <div className="grid grid-cols-4 gap-2.5">
+                {[
+                  {
+                    id: 'light' as const,
+                    name: 'Putih',
+                    fullName: 'Putih / Terang (Halaman Asli)',
+                    bg: '#FFFFFF',
+                    fg: '#18181B',
+                    accent: '#3B82F6',
+                  },
+                  {
+                    id: 'dark' as const,
+                    name: 'Gelap',
+                    fullName: 'Gelap / Malam (Latar Hitam)',
+                    bg: '#18181B',
+                    fg: '#F4F4F5',
+                    accent: '#6366F1',
+                  },
+                  {
+                    id: 'sepia' as const,
+                    name: 'Sepia',
+                    fullName: 'Sepia Hangat (Kertas Krem)',
+                    bg: '#F4ECD8',
+                    fg: '#46392B',
+                    accent: '#A66B3F',
+                  },
+                  {
+                    id: 'auto' as const,
+                    name: 'Otomatis',
+                    fullName: 'Ikuti Tema Pembaca',
+                    isAuto: true,
+                  },
+                ].map((opt) => {
+                  const isSelected = (settings.pdfPageColor || 'auto') === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      title={opt.fullName}
+                      onClick={() => settings.setPdfPageColor(opt.id)}
+                      className={`group flex cursor-pointer flex-col items-center gap-1.5 rounded-2xl p-1 transition-all ${
+                        isSelected ? 'scale-102' : 'opacity-85 hover:scale-101 hover:opacity-100'
+                      }`}
+                    >
+                      <div
+                        className={`relative flex aspect-square w-full items-center justify-center rounded-2xl border text-sm font-bold shadow-xs transition-all ${
+                          isSelected
+                            ? 'ring-primary ring-offset-surface-container border-primary shadow-sm ring-2 ring-offset-2'
+                            : 'border-outline-variant/40 hover:border-outline'
+                        } ${opt.isAuto ? 'bg-surface-container-high text-on-surface' : ''}`}
+                        style={
+                          opt.bg && opt.fg
+                            ? {
+                                backgroundColor: opt.bg,
+                                color: opt.fg,
+                              }
+                            : undefined
+                        }
+                      >
+                        {opt.isAuto ? (
+                          <Monitor size={18} className="opacity-80" />
+                        ) : (
+                          <>
+                            <span className="font-serif text-base tracking-tight">Aa</span>
+                            {opt.accent && (
+                              <span
+                                className="absolute bottom-1.5 left-1.5 h-2 w-2 rounded-full shadow-xs"
+                                style={{ backgroundColor: opt.accent }}
+                              />
+                            )}
+                          </>
+                        )}
+                        {isSelected && (
+                          <div className="bg-primary text-on-primary absolute top-1.5 right-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full shadow-xs">
+                            <Check size={9} strokeWidth={3.5} />
+                          </div>
+                        )}
+                      </div>
+                      <span
+                        className={`max-w-full truncate text-center text-[11px] ${
+                          isSelected
+                            ? 'text-primary font-bold'
+                            : 'text-on-surface-variant font-medium'
+                        }`}
+                      >
+                        {opt.name}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 2. PDF SCROLL MODE */}
+            <div className="space-y-2">
+              <label className="text-on-surface block text-xs font-semibold tracking-wider uppercase">
+                Mode Aliran Halaman PDF
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => handlePdfScrollModeSelect('vertical')}
                   className={`flex cursor-pointer items-center gap-3 rounded-2xl border p-3 text-left transition-all ${
-                    isSelected
+                    currentPdfScrollMode === 'vertical'
                       ? 'bg-primary-container text-on-primary-container border-primary ring-primary font-semibold shadow-xs ring-1'
                       : 'bg-surface-container-low text-on-surface border-outline-variant/30 hover:bg-surface-container-high'
                   }`}
                 >
                   <div
                     className={`shrink-0 rounded-xl p-2 transition-colors ${
-                      isSelected
+                      currentPdfScrollMode === 'vertical'
                         ? 'bg-primary text-on-primary'
                         : 'bg-surface-container-highest text-on-surface-variant'
                     }`}
                   >
-                    {f.icon}
+                    <Scroll size={16} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-xs leading-tight font-bold">{f.title}</div>
+                    <div className="text-xs leading-tight font-bold">Scroll Vertikal</div>
                     <div
                       className={`mt-0.5 text-[10px] leading-tight ${
-                        isSelected ? 'text-on-primary-container/80' : 'text-on-surface-variant'
+                        currentPdfScrollMode === 'vertical'
+                          ? 'text-on-primary-container/80'
+                          : 'text-on-surface-variant'
                       }`}
                     >
-                      {f.desc}
+                      Halaman mengalir ke bawah
                     </div>
                   </div>
                 </button>
-              );
-            })}
-          </div>
-        </div>
 
-        {/* 2B. COLUMN LAYOUT (Paged mode only) */}
-        {settings.flowMode === 'paginated' && (
-          <div className="animate-fade-in space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-on-surface block text-xs font-semibold tracking-wider uppercase">
-                Kolom Tampilan
-              </label>
-              <span className="text-on-surface-variant text-[10px] font-medium">
-                {settings.spreadMode === 'double'
-                  ? 'Buku Terbuka'
-                  : settings.spreadMode === 'single'
-                    ? '1 Halaman'
-                    : 'Adaptif'}
-              </span>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              {spreadOptions.map((s) => {
-                const isSelected = (settings.spreadMode || 'auto') === s.mode;
-                return (
-                  <button
-                    key={s.mode}
-                    type="button"
-                    onClick={() => settings.setSpreadMode(s.mode)}
-                    className={`flex cursor-pointer flex-col gap-1.5 rounded-2xl border p-2.5 text-left transition-all ${
-                      isSelected
-                        ? 'bg-primary-container text-on-primary-container border-primary ring-primary font-semibold shadow-xs ring-1'
-                        : 'bg-surface-container-low text-on-surface border-outline-variant/30 hover:bg-surface-container-high'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div
-                        className={`shrink-0 rounded-lg p-1.5 ${
-                          isSelected
-                            ? 'bg-primary text-on-primary'
-                            : 'bg-surface-container-highest text-on-surface-variant'
-                        }`}
-                      >
-                        {s.icon}
-                      </div>
-                      {isSelected && <Check size={13} className="text-primary font-bold" />}
-                    </div>
-                    <div>
-                      <div className="text-xs leading-tight font-bold">{s.title}</div>
-                      <div
-                        className={`mt-0.5 text-[9px] leading-tight ${
-                          isSelected ? 'text-on-primary-container/80' : 'text-on-surface-variant'
-                        }`}
-                      >
-                        {s.desc}
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* 3. JENIS HURUF */}
-        <div className="space-y-2">
-          <label className="text-on-surface block text-xs font-semibold tracking-wider uppercase">
-            Jenis Huruf
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            {fontOptions.map((f, idx) => {
-              const isSelected = settings.fontFamily === f.id;
-              const isLastOdd = idx === fontOptions.length - 1 && fontOptions.length % 2 !== 0;
-              return (
                 <button
-                  key={f.id}
                   type="button"
-                  onClick={() => settings.setFontFamily(f.id)}
-                  className={`flex cursor-pointer items-center gap-2.5 rounded-2xl border p-2.5 text-left transition-all ${
-                    isLastOdd ? 'col-span-2' : ''
-                  } ${
-                    isSelected
+                  onClick={() => handlePdfScrollModeSelect('single')}
+                  className={`flex cursor-pointer items-center gap-3 rounded-2xl border p-3 text-left transition-all ${
+                    currentPdfScrollMode === 'single'
                       ? 'bg-primary-container text-on-primary-container border-primary ring-primary font-semibold shadow-xs ring-1'
                       : 'bg-surface-container-low text-on-surface border-outline-variant/30 hover:bg-surface-container-high'
                   }`}
                 >
-                  <span className={`w-7 shrink-0 text-center text-lg font-bold ${f.fontClass}`}>
-                    Aa
-                  </span>
+                  <div
+                    className={`shrink-0 rounded-xl p-2 transition-colors ${
+                      currentPdfScrollMode === 'single'
+                        ? 'bg-primary text-on-primary'
+                        : 'bg-surface-container-highest text-on-surface-variant'
+                    }`}
+                  >
+                    <BookOpen size={16} />
+                  </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-xs leading-tight font-bold">{f.name}</div>
+                    <div className="text-xs leading-tight font-bold">Per Halaman</div>
                     <div
                       className={`mt-0.5 text-[10px] leading-tight ${
-                        isSelected ? 'text-on-primary-container/80' : 'text-on-surface-variant'
+                        currentPdfScrollMode === 'single'
+                          ? 'text-on-primary-container/80'
+                          : 'text-on-surface-variant'
                       }`}
                     >
-                      {f.sub}
+                      Buka satu demi satu
                     </div>
                   </div>
-                  {isSelected && <Check size={14} className="text-primary shrink-0 font-bold" />}
                 </button>
-              );
-            })}
-          </div>
-        </div>
+              </div>
+            </div>
 
-        {/* 4. FONT SIZE */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs">
-            <label className="text-on-surface font-semibold tracking-wider uppercase">
-              Ukuran Huruf
-            </label>
-            <span className="text-primary bg-primary/10 rounded-full px-2.5 py-0.5 text-xs font-bold">
-              {settings.fontSize} px
-            </span>
-          </div>
-
-          <div className="bg-surface-container-low border-outline-variant/30 flex items-center gap-3 rounded-2xl border p-2">
-            <button
-              type="button"
-              onClick={() => settings.setFontSize(settings.fontSize - 1)}
-              disabled={settings.fontSize <= 14}
-              className="bg-surface-container-high hover:bg-surface-container-highest text-on-surface flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-30"
-              title="Perkecil Ukuran"
-            >
-              A-
-            </button>
-            <input
-              type="range"
-              min={14}
-              max={32}
-              step={1}
-              value={settings.fontSize}
-              onChange={(e) => settings.setFontSize(parseInt(e.target.value))}
-              className="accent-primary bg-surface-container-highest h-2 flex-1 cursor-pointer appearance-none rounded-lg"
-            />
-            <button
-              type="button"
-              onClick={() => settings.setFontSize(settings.fontSize + 1)}
-              disabled={settings.fontSize >= 32}
-              className="bg-surface-container-high hover:bg-surface-container-highest text-on-surface flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl text-sm font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-30"
-              title="Perbesar Ukuran"
-            >
-              A+
-            </button>
-          </div>
-        </div>
-
-        {/* 5. LINE SPACING & TEXT ALIGNMENT */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {/* Jarak Baris */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <label className="text-on-surface font-semibold tracking-wider uppercase">
-                Jarak Baris
+            {/* 3. PDF PAGE FIT MODE */}
+            <div className="space-y-2">
+              <label className="text-on-surface block text-xs font-semibold tracking-wider uppercase">
+                Kesesuaian Ukuran Layar (Fit Mode)
               </label>
-              <span className="text-primary text-[10px] font-bold">
-                {settings.lineHeight.toFixed(1)}x
-              </span>
-            </div>
-            <div className="grid grid-cols-3 gap-1.5">
-              {lineHeightOptions.map((lh) => {
-                const isSelected = Math.abs(settings.lineHeight - lh.val) < 0.1;
-                return (
-                  <button
-                    key={lh.val}
-                    type="button"
-                    onClick={() => settings.setLineHeight(lh.val)}
-                    className={`flex cursor-pointer flex-col items-center gap-1 rounded-xl border px-1 py-2 text-center transition-all ${
-                      isSelected
-                        ? 'bg-secondary-container text-on-secondary-container border-secondary font-bold shadow-2xs'
-                        : 'bg-surface-container-low text-on-surface-variant border-outline-variant/30 hover:bg-surface-container-high'
-                    }`}
-                  >
-                    {lh.icon}
-                    <span className="text-[10px]">{lh.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Rata Paragraf */}
-          <div className="space-y-2">
-            <label className="text-on-surface block text-xs font-semibold tracking-wider uppercase">
-              Rata Paragraf
-            </label>
-            <div className="grid grid-cols-2 gap-1.5">
-              {[
-                { val: 'left', label: 'Kiri', icon: <AlignLeft size={16} /> },
-                { val: 'justify', label: 'Penuh', icon: <AlignJustify size={16} /> },
-              ].map((align) => {
-                const isSelected = settings.textAlign === align.val;
-                return (
-                  <button
-                    key={align.val}
-                    type="button"
-                    onClick={() => settings.setTextAlign(align.val as ReaderTextAlign)}
-                    className={`flex cursor-pointer flex-col items-center gap-1 rounded-xl border px-2 py-2 text-center transition-all ${
-                      isSelected
-                        ? 'bg-secondary-container text-on-secondary-container border-secondary font-bold shadow-2xs'
-                        : 'bg-surface-container-low text-on-surface-variant border-outline-variant/30 hover:bg-surface-container-high'
-                    }`}
-                  >
-                    {align.icon}
-                    <span className="text-[10px] font-semibold">{align.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* 6. BATAS TEPI (MARGIN) */}
-        <div className="space-y-2">
-          <label className="text-on-surface block text-xs font-semibold tracking-wider uppercase">
-            Batas Tepi (Margin)
-          </label>
-          <div className="grid grid-cols-3 gap-2">
-            {marginOptions.map((m) => {
-              const isSelected = settings.pageMargin === m.val;
-              return (
+              <div className="grid grid-cols-2 gap-2">
                 <button
-                  key={m.val}
                   type="button"
-                  onClick={() => settings.setPageMargin(m.val)}
-                  className={`cursor-pointer rounded-2xl border p-2.5 text-center transition-all ${
-                    isSelected
-                      ? 'bg-secondary-container text-on-secondary-container border-secondary font-bold shadow-2xs'
+                  onClick={() => handlePdfFitModeSelect('width')}
+                  className={`flex cursor-pointer items-center gap-3 rounded-2xl border p-3 text-left transition-all ${
+                    currentPdfFitMode === 'width'
+                      ? 'bg-primary-container text-on-primary-container border-primary ring-primary font-semibold shadow-xs ring-1'
                       : 'bg-surface-container-low text-on-surface border-outline-variant/30 hover:bg-surface-container-high'
                   }`}
                 >
-                  <div className="text-xs leading-tight font-bold">{m.label}</div>
-                  <div className="text-on-surface-variant mt-0.5 text-[10px] opacity-80">
-                    {m.sub}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* 7. KOTAK PRATINJAU LANGSUNG */}
-        <div className="bg-surface-container border-outline-variant/30 space-y-1.5 rounded-2xl border p-3.5">
-          <div className="text-primary flex items-center gap-1.5 text-[10px] font-semibold tracking-wider uppercase">
-            <Sparkles size={12} /> Pratinjau Tampilan
-          </div>
-          <p
-            className="text-on-surface leading-relaxed transition-all"
-            style={{
-              fontSize: `${Math.min(22, Math.max(13, settings.fontSize * 0.9))}px`,
-              lineHeight: settings.lineHeight,
-              textAlign: settings.textAlign,
-              fontFamily: FONT_FAMILIES[settings.fontFamily] || 'sans-serif',
-            }}
-          >
-            "Membaca buku membuka jendela imajinasi dan memperluas pengetahuan tanpa batas."
-          </p>
-        </div>
-
-        {/* 8. OPTIMASI E-INK & E-READER */}
-        <div className="border-outline-variant/30 space-y-3 border-t pt-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <Tablet size={15} className="text-primary" />
-              <label className="text-on-surface text-xs font-bold tracking-wider uppercase">
-                Optimasi E-Ink & E-Reader
-              </label>
-            </div>
-            {settings.einkMode && (
-              <span className="text-primary bg-primary/10 rounded-full px-2 py-0.5 text-[10px] font-semibold">
-                Mode E-Ink Aktif
-              </span>
-            )}
-          </div>
-
-          {/* Toggle Mode E-Ink */}
-          <div className="bg-surface-container-low border-outline-variant/30 flex items-center justify-between gap-3 rounded-2xl border p-3">
-            <div>
-              <div className="text-on-surface text-xs font-bold">
-                Mode Layar E-Ink (Bebas Animasi)
-              </div>
-              <div className="text-on-surface-variant mt-0.5 text-[10px]">
-                Menonaktifkan animasi & transisi CSS untuk mencegah flicker dan ghosting pada layar
-                e-paper.
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                const nextVal = !settings.einkMode;
-                settings.setEinkMode(nextVal);
-                if (nextVal && settings.theme !== 'eink-light' && settings.theme !== 'eink-dark') {
-                  settings.setTheme('eink-light');
-                }
-              }}
-              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                settings.einkMode ? 'bg-primary' : 'bg-surface-container-highest'
-              }`}
-            >
-              <span
-                className={`bg-surface pointer-events-none inline-block h-5 w-5 transform rounded-full shadow-xs ring-0 transition duration-200 ease-in-out ${
-                  settings.einkMode ? 'translate-x-5' : 'translate-x-0'
-                }`}
-              />
-            </button>
-          </div>
-
-          {/* Volume Button Navigation Toggle */}
-          <div className="bg-surface-container-low border-outline-variant/30 flex items-center justify-between gap-3 rounded-2xl border p-3">
-            <div className="flex items-start gap-2.5">
-              <Volume2 size={16} className="text-primary mt-0.5 shrink-0" />
-              <div>
-                <div className="text-on-surface text-xs font-bold">
-                  Navigasi Tombol Volume Fisik
-                </div>
-                <div className="text-on-surface-variant mt-0.5 text-[10px]">
-                  Tombol Volume Turun = Halaman Maju, Volume Naik = Halaman Mundur.
-                </div>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => settings.setVolumeKeysNavigation(!settings.volumeKeysNavigation)}
-              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                settings.volumeKeysNavigation ? 'bg-primary' : 'bg-surface-container-highest'
-              }`}
-            >
-              <span
-                className={`bg-surface pointer-events-none inline-block h-5 w-5 transform rounded-full shadow-xs ring-0 transition duration-200 ease-in-out ${
-                  settings.volumeKeysNavigation ? 'translate-x-5' : 'translate-x-0'
-                }`}
-              />
-            </button>
-          </div>
-
-          {/* Font Boldness Options */}
-          <div className="space-y-1.5">
-            <div className="text-on-surface flex items-center gap-1.5 text-xs font-semibold">
-              <Bold size={13} className="text-primary" />
-              <span>Ketebalan Teks (Font Boldness)</span>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { val: 'normal', label: 'Normal', desc: 'Standar' },
-                { val: 'high', label: 'Tebal', desc: 'Kontras Tinggi' },
-                { val: 'maximum', label: 'Maksimum', desc: 'Sangat Pekat' },
-              ].map((opt) => {
-                const isSelected = (settings.textContrast || 'normal') === opt.val;
-                return (
-                  <button
-                    key={opt.val}
-                    type="button"
-                    onClick={() =>
-                      settings.setTextContrast(opt.val as NonNullable<typeof settings.textContrast>)
-                    }
-                    className={`cursor-pointer rounded-xl border p-2 text-center transition-all ${
-                      isSelected
-                        ? 'bg-primary-container text-on-primary-container border-primary font-bold shadow-2xs'
-                        : 'bg-surface-container-low text-on-surface border-outline-variant/30 hover:bg-surface-container-high'
+                  <div
+                    className={`shrink-0 rounded-xl p-2 transition-colors ${
+                      currentPdfFitMode === 'width'
+                        ? 'bg-primary text-on-primary'
+                        : 'bg-surface-container-highest text-on-surface-variant'
                     }`}
                   >
-                    <div className="text-xs leading-tight font-bold">{opt.label}</div>
-                    <div className="text-on-surface-variant mt-0.5 text-[9px] opacity-80">
-                      {opt.desc}
+                    <Maximize2 size={16} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs leading-tight font-bold">Pas Lebar (Fit Width)</div>
+                    <div
+                      className={`mt-0.5 text-[10px] leading-tight ${
+                        currentPdfFitMode === 'width'
+                          ? 'text-on-primary-container/80'
+                          : 'text-on-surface-variant'
+                      }`}
+                    >
+                      Teks maksimal selebar layar
                     </div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handlePdfFitModeSelect('page')}
+                  className={`flex cursor-pointer items-center gap-3 rounded-2xl border p-3 text-left transition-all ${
+                    currentPdfFitMode === 'page'
+                      ? 'bg-primary-container text-on-primary-container border-primary ring-primary font-semibold shadow-xs ring-1'
+                      : 'bg-surface-container-low text-on-surface border-outline-variant/30 hover:bg-surface-container-high'
+                  }`}
+                >
+                  <div
+                    className={`shrink-0 rounded-xl p-2 transition-colors ${
+                      currentPdfFitMode === 'page'
+                        ? 'bg-primary text-on-primary'
+                        : 'bg-surface-container-highest text-on-surface-variant'
+                    }`}
+                  >
+                    <Minimize2 size={16} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs leading-tight font-bold">Satu Lembar (Fit Page)</div>
+                    <div
+                      className={`mt-0.5 text-[10px] leading-tight ${
+                        currentPdfFitMode === 'page'
+                          ? 'text-on-primary-container/80'
+                          : 'text-on-surface-variant'
+                      }`}
+                    >
+                      Seluruh halaman terlihat utuh
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* 4. PDF ZOOM / SCALE LEVEL */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <label className="text-on-surface font-semibold tracking-wider uppercase">
+                  Perbesaran Dokumen (Zoom)
+                </label>
+                <span className="text-primary bg-primary/10 rounded-full px-2.5 py-0.5 font-mono text-xs font-bold">
+                  {Math.round(currentPdfScale * 100)}%
+                </span>
+              </div>
+
+              <div className="bg-surface-container-low border-outline-variant/30 flex items-center justify-between gap-3 rounded-2xl border p-2.5">
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onPdfZoomOut) {
+                        onPdfZoomOut();
+                      } else {
+                        settings.setPdfScale(Math.max(0.5, currentPdfScale - 0.15));
+                      }
+                    }}
+                    className="bg-surface-container-high hover:bg-surface-container-highest text-on-surface flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition-colors"
+                    title="Perkecil Dokumen (Zoom Out)"
+                  >
+                    <ZoomOut size={16} />
                   </button>
-                );
-              })}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onPdfZoomIn) {
+                        onPdfZoomIn();
+                      } else {
+                        settings.setPdfScale(Math.min(3.0, currentPdfScale + 0.15));
+                      }
+                    }}
+                    className="bg-surface-container-high hover:bg-surface-container-highest text-on-surface flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition-colors"
+                    title="Perbesar Dokumen (Zoom In)"
+                  >
+                    <ZoomIn size={16} />
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  {[0.8, 1.0, 1.25, 1.5].map((s) => {
+                    const isSelected = Math.abs(currentPdfScale - s) < 0.05;
+                    return (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => handlePdfScaleChange(s)}
+                        className={`cursor-pointer rounded-lg px-2 py-1 font-mono text-[11px] font-semibold transition-all ${
+                          isSelected
+                            ? 'bg-primary text-on-primary shadow-xs'
+                            : 'bg-surface-container-highest text-on-surface-variant hover:text-on-surface'
+                        }`}
+                      >
+                        {Math.round(s * 100)}%
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* 5. E-INK & PHYSICAL BUTTON NAVIGATION FOR PDF */}
+            <div className="border-outline-variant/30 space-y-3 border-t pt-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Tablet size={15} className="text-primary" />
+                  <label className="text-on-surface text-xs font-bold tracking-wider uppercase">
+                    Navigasi & Layar E-Ink PDF
+                  </label>
+                </div>
+                {settings.einkMode && (
+                  <span className="text-primary bg-primary/10 rounded-full px-2 py-0.5 text-[10px] font-semibold">
+                    Mode E-Ink Aktif
+                  </span>
+                )}
+              </div>
+
+              {/* Volume Button Navigation Toggle */}
+              <div className="bg-surface-container-low border-outline-variant/30 flex items-center justify-between gap-3 rounded-2xl border p-3">
+                <div className="flex items-start gap-2.5">
+                  <Volume2 size={16} className="text-primary mt-0.5 shrink-0" />
+                  <div>
+                    <div className="text-on-surface text-xs font-bold">
+                      Navigasi Tombol Volume Fisik
+                    </div>
+                    <div className="text-on-surface-variant mt-0.5 text-[10px]">
+                      Tombol Volume Turun = Halaman Maju, Volume Naik = Halaman Mundur.
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => settings.setVolumeKeysNavigation(!settings.volumeKeysNavigation)}
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    settings.volumeKeysNavigation ? 'bg-primary' : 'bg-surface-container-highest'
+                  }`}
+                >
+                  <span
+                    className={`bg-surface pointer-events-none inline-block h-5 w-5 transform rounded-full shadow-xs ring-0 transition duration-200 ease-in-out ${
+                      settings.volumeKeysNavigation ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Toggle Mode E-Ink */}
+              <div className="bg-surface-container-low border-outline-variant/30 flex items-center justify-between gap-3 rounded-2xl border p-3">
+                <div>
+                  <div className="text-on-surface text-xs font-bold">
+                    Mode Layar E-Ink (Bebas Animasi)
+                  </div>
+                  <div className="text-on-surface-variant mt-0.5 text-[10px]">
+                    Optimasi pembacaan PDF monokrom tanpa transisi berat untuk mencegah ghosting.
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextVal = !settings.einkMode;
+                    settings.setEinkMode(nextVal);
+                    if (
+                      nextVal &&
+                      settings.theme !== 'eink-light' &&
+                      settings.theme !== 'eink-dark'
+                    ) {
+                      settings.setTheme('eink-light');
+                    }
+                  }}
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    settings.einkMode ? 'bg-primary' : 'bg-surface-container-highest'
+                  }`}
+                >
+                  <span
+                    className={`bg-surface pointer-events-none inline-block h-5 w-5 transform rounded-full shadow-xs ring-0 transition duration-200 ease-in-out ${
+                      settings.einkMode ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Clear Screen Button (Flash Screen Refresh) */}
+              {onFlashRefresh && (
+                <div className="pt-1">
+                  <Button
+                    variant="outlined"
+                    size="sm"
+                    icon={<RefreshCw size={14} />}
+                    onClick={() => {
+                      onFlashRefresh();
+                    }}
+                    className="w-full justify-center"
+                  >
+                    Bersihkan Layar E-Ink (Hapus Ghosting)
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
-
-          {/* Clear Screen Button (Flash Screen Refresh) */}
-          {onFlashRefresh && (
-            <div className="pt-1">
-              <Button
-                variant="outlined"
-                size="sm"
-                icon={<RefreshCw size={14} />}
-                onClick={() => {
-                  onFlashRefresh();
-                }}
-                className="w-full justify-center"
-              >
-                Bersihkan Layar E-Ink (Hapus Ghosting)
-              </Button>
-            </div>
-          )}
-        </div>
+        )}
       </div>
     </Sheet>
   );

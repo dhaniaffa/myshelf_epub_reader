@@ -9,7 +9,7 @@ import {
   List,
   RefreshCw,
   Search,
-  Sliders,
+  Settings,
 } from 'lucide-react';
 
 import { IconButton } from '@/components/ui';
@@ -610,7 +610,7 @@ const EpubReaderView: React.FC<ReaderPageProps> = ({ bookId }) => {
           </IconButton>
 
           <IconButton size="sm" onClick={() => setSettingsOpen(true)} title="Pengaturan Tampilan">
-            <Sliders size={18} />
+            <Settings size={18} />
           </IconButton>
         </div>
       </header>
@@ -874,6 +874,7 @@ const EpubReaderView: React.FC<ReaderPageProps> = ({ bookId }) => {
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
         onFlashRefresh={triggerFlashRefresh}
+        format="epub"
       />
 
       {/* PANELS SHEET (TOC, SEARCH, BOOKMARKS, ANNOTATIONS) */}

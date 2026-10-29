@@ -1,7 +1,7 @@
 import React from 'react';
 
 import type { PdfOutlineItem } from '@/lib/pdf';
-import type { ReaderTheme, SearchResult, TocItem } from '@/types';
+import type { PdfPageColor, ReaderTheme, SearchResult, TocItem } from '@/types';
 
 /**
  * Maps PDF document outline items recursively to TOC items.
@@ -56,15 +56,29 @@ export async function resolvePdfDestination(pdfDoc: any, dest: any): Promise<num
 }
 
 /**
- * Returns adaptive canvas CSS filter style based on reader theme and E-Ink mode.
+ * Returns adaptive canvas CSS filter style based on reader theme, E-Ink mode, and independent PDF page color.
  */
 export function getPdfCanvasFilterStyle(
   resolvedTheme: Exclude<ReaderTheme, 'auto'>,
-  isEink: boolean
+  isEink: boolean,
+  pdfPageColor: PdfPageColor = 'auto'
 ): React.CSSProperties {
   if (isEink) {
     return { filter: 'grayscale(1) contrast(1.2)' };
   }
+
+  // Independent PDF page background color overrides
+  if (pdfPageColor === 'light') {
+    return {};
+  }
+  if (pdfPageColor === 'dark') {
+    return { filter: 'invert(0.9) hue-rotate(180deg) contrast(1.05) brightness(0.95)' };
+  }
+  if (pdfPageColor === 'sepia') {
+    return { filter: 'sepia(0.35) contrast(0.96) brightness(0.98)' };
+  }
+
+  // 'auto' follows the reader color theme
   switch (resolvedTheme) {
     case 'dark':
     case 'oled':

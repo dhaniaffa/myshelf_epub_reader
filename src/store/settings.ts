@@ -20,6 +20,12 @@ interface SettingsState extends ReaderSettings {
   setDailyGoalMinutes: (minutes: number) => void;
   setReadingSpeedWpm: (wpm: number) => void;
   setAutoUpdateEnabled: (autoUpdateEnabled: boolean) => void;
+  setPdfScrollMode: (pdfScrollMode: NonNullable<ReaderSettings['pdfScrollMode']>) => void;
+  setPdfFitMode: (pdfFitMode: NonNullable<ReaderSettings['pdfFitMode']>) => void;
+  setPdfScale: (pdfScale: number) => void;
+  setPdfPageColor: (pdfPageColor: NonNullable<ReaderSettings['pdfPageColor']>) => void;
+  resetEpubSettings: () => void;
+  resetPdfSettings: () => void;
   resetSettings: () => void;
 }
 
@@ -38,6 +44,10 @@ const DEFAULT_SETTINGS: ReaderSettings = {
   dailyGoalMinutes: 20,
   readingSpeedWpm: 220,
   autoUpdateEnabled: true,
+  pdfScrollMode: 'vertical',
+  pdfFitMode: 'width',
+  pdfScale: 1.0,
+  pdfPageColor: 'auto',
 };
 
 export const useSettingsStore = create<SettingsState>()(
@@ -60,6 +70,28 @@ export const useSettingsStore = create<SettingsState>()(
       setReadingSpeedWpm: (readingSpeedWpm) =>
         set({ readingSpeedWpm: Math.max(50, Math.min(600, readingSpeedWpm)) }),
       setAutoUpdateEnabled: (autoUpdateEnabled) => set({ autoUpdateEnabled }),
+      setPdfScrollMode: (pdfScrollMode) => set({ pdfScrollMode }),
+      setPdfFitMode: (pdfFitMode) => set({ pdfFitMode }),
+      setPdfScale: (pdfScale) => set({ pdfScale: Math.max(0.5, Math.min(3.0, pdfScale)) }),
+      setPdfPageColor: (pdfPageColor) => set({ pdfPageColor }),
+      resetEpubSettings: () =>
+        set({
+          fontFamily: DEFAULT_SETTINGS.fontFamily,
+          fontSize: DEFAULT_SETTINGS.fontSize,
+          lineHeight: DEFAULT_SETTINGS.lineHeight,
+          textAlign: DEFAULT_SETTINGS.textAlign,
+          flowMode: DEFAULT_SETTINGS.flowMode,
+          pageMargin: DEFAULT_SETTINGS.pageMargin,
+          spreadMode: DEFAULT_SETTINGS.spreadMode,
+          textContrast: DEFAULT_SETTINGS.textContrast,
+        }),
+      resetPdfSettings: () =>
+        set({
+          pdfScrollMode: DEFAULT_SETTINGS.pdfScrollMode,
+          pdfFitMode: DEFAULT_SETTINGS.pdfFitMode,
+          pdfScale: DEFAULT_SETTINGS.pdfScale,
+          pdfPageColor: DEFAULT_SETTINGS.pdfPageColor,
+        }),
       resetSettings: () => set(DEFAULT_SETTINGS),
     }),
     {

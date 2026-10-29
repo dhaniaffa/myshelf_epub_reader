@@ -110,6 +110,9 @@ export type ReaderFlowMode = 'paginated' | 'scrolled';
 export type ReaderPageMargin = 'narrow' | 'normal' | 'wide';
 export type ReaderSpreadMode = 'auto' | 'single' | 'double';
 export type ReaderTextContrast = 'normal' | 'high' | 'maximum';
+export type PdfScrollMode = 'vertical' | 'single';
+export type PdfFitMode = 'width' | 'page';
+export type PdfPageColor = 'auto' | 'light' | 'dark' | 'sepia';
 
 export interface ReaderSettings {
   theme: ReaderTheme;
@@ -126,6 +129,10 @@ export interface ReaderSettings {
   dailyGoalMinutes?: number; // Daily reading goal (default: 20 minutes)
   readingSpeedWpm?: number; // Average reading speed in words per minute (default: 220 WPM)
   autoUpdateEnabled?: boolean; // Check and prompt/install updates automatically on launch (default: true)
+  pdfScrollMode?: PdfScrollMode; // Default scroll mode for PDF files
+  pdfFitMode?: PdfFitMode; // Default page fit mode for PDF files
+  pdfScale?: number; // Default zoom scale for PDF files (default: 1.0)
+  pdfPageColor?: PdfPageColor; // Independent background / invert color mode for PDF pages ('auto' | 'light' | 'dark' | 'sepia')
 }
 
 export interface FootnoteData {

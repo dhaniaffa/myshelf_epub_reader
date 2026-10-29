@@ -164,9 +164,10 @@ export const PdfStage: React.FC<PdfStageProps> = ({
       {/* Main Container: Vertical Scroll Mode or Single Page Mode */}
       {scrollMode === 'vertical' ? (
         <div
+          key="pdf-vertical-container"
           ref={containerRef}
           onScroll={onScroll}
-          className="relative h-full w-full flex-1 overflow-x-hidden overflow-y-auto scroll-smooth"
+          className="relative h-full w-full flex-1 overflow-x-hidden overflow-y-auto"
         >
           <div className="mx-auto flex min-h-full flex-col items-center px-2 pt-16 pb-24 sm:px-4">
             {pagesArray.map((pageNum) => {
@@ -205,8 +206,9 @@ export const PdfStage: React.FC<PdfStageProps> = ({
         </div>
       ) : (
         <div
+          key="pdf-single-container"
           ref={containerRef}
-          className="relative flex h-full w-full flex-1 items-center justify-center overflow-hidden px-2 pt-14 pb-16"
+          className="relative flex h-full w-full flex-1 items-center justify-center overflow-auto px-2 pt-14 pb-16"
         >
           <div
             className="bg-surface-container relative rounded-md shadow-md"
