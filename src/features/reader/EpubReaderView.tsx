@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, X } from 'lucide-react';
 
 import { READER_EVENTS } from '@/config';
 import { EpubBottomBar } from '@/features/reader/components/epub/EpubBottomBar';
@@ -76,12 +76,30 @@ export const EpubReaderView: React.FC<EpubReaderViewProps> = ({ bookId }) => {
   const [activeFootnote, setActiveFootnote] = useState<FootnoteData | null>(null);
   const [activeImage, setActiveImage] = useState<ImageViewData | null>(null);
   const [activeFollowLink, setActiveFollowLink] = useState<FollowLinkData | null>(null);
+  const [returnLocation, setReturnLocation] = useState<{
+    cfi: string;
+    chapterTitle?: string;
+  } | null>(null);
 
   // Audio (TTS) & Dictionary states
   const [showTTSBar, setShowTTSBar] = useState(false);
   const [dictionaryWord, setDictionaryWord] = useState<string | null>(null);
 
   const ttsRef = useRef<UseTTSReturn | null>(null);
+
+  // Jump from footnote to source chapter while keeping return location
+  const handleJumpToFootnoteSource = useCallback(
+    (targetHref: string) => {
+      if (state.currentCfi) {
+        setReturnLocation({
+          cfi: state.currentCfi,
+          chapterTitle: state.chapterTitle || undefined,
+        });
+      }
+      goTo(targetHref);
+    },
+    [goTo, state.currentCfi, state.chapterTitle]
+  );
 
   // Callback when all sentences on active page finish speaking
   const handleTTSPageNext = useCallback(() => {
@@ -535,6 +553,7 @@ export const EpubReaderView: React.FC<EpubReaderViewProps> = ({ bookId }) => {
         onDeleteNote={handleDeleteHighlight}
         activeFootnote={activeFootnote}
         onCloseFootnote={() => setActiveFootnote(null)}
+        onJumpToFootnoteSource={handleJumpToFootnoteSource}
         activeImage={activeImage}
         onCloseImage={() => setActiveImage(null)}
         isDark={isDark}
@@ -543,6 +562,33 @@ export const EpubReaderView: React.FC<EpubReaderViewProps> = ({ bookId }) => {
         dictionaryWord={dictionaryWord}
         onCloseDictionary={() => setDictionaryWord(null)}
       />
+
+      {/* FLOATING RETURN TO READING LOCATION PILL */}
+      {returnLocation && (
+        <div className="animate-in fade-in slide-in-from-bottom fixed bottom-16 left-1/2 z-40 -translate-x-1/2 duration-200">
+          <div className="bg-surface-container-highest/95 text-on-surface border-outline-variant/30 flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs shadow-xl backdrop-blur-md select-none">
+            <button
+              type="button"
+              onClick={() => {
+                goTo(returnLocation.cfi);
+                setReturnLocation(null);
+              }}
+              className="text-primary hover:text-primary/80 flex cursor-pointer items-center gap-1.5 font-medium hover:underline"
+            >
+              <ArrowLeft size={13} />
+              <span>Kembali ke teks asal</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setReturnLocation(null)}
+              className="text-on-surface-variant hover:text-on-surface cursor-pointer rounded-full p-0.5 transition-colors"
+              aria-label="Tutup notifikasi kembali"
+            >
+              <X size={12} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

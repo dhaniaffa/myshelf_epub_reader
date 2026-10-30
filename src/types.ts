@@ -148,6 +148,18 @@ export interface FootnoteData {
   title: string;
   content: string;
   targetHref?: string;
+  x?: number;
+  y?: number;
+  anchorRect?: {
+    top: number;
+    bottom: number;
+    left: number;
+    right: number;
+    width: number;
+    height: number;
+  };
+  noteNumber?: string;
+  sourceCfi?: string;
 }
 
 export interface ImageViewData {

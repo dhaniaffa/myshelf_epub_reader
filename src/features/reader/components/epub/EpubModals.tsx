@@ -53,6 +53,7 @@ export interface EpubModalsProps {
   // Footnote dialog
   activeFootnote: FootnoteData | null;
   onCloseFootnote: () => void;
+  onJumpToFootnoteSource?: (href: string) => void;
 
   // Image viewer lightbox
   activeImage: ImageViewData | null;
@@ -92,6 +93,7 @@ export const EpubModals: React.FC<EpubModalsProps> = ({
   onDeleteNote,
   activeFootnote,
   onCloseFootnote,
+  onJumpToFootnoteSource,
   activeImage,
   onCloseImage,
   isDark,
@@ -148,7 +150,11 @@ export const EpubModals: React.FC<EpubModalsProps> = ({
       )}
 
       {/* FOOTNOTE LIGHT-DISMISS DIALOG */}
-      <FootnoteDialog footnote={activeFootnote} onClose={onCloseFootnote} onJumpToSource={onGoTo} />
+      <FootnoteDialog
+        footnote={activeFootnote}
+        onClose={onCloseFootnote}
+        onJumpToSource={onJumpToFootnoteSource || onGoTo}
+      />
 
       {/* IMAGE VIEWER LIGHTBOX */}
       <ImageViewerDialog image={activeImage} onClose={onCloseImage} isDark={isDark} />

@@ -2,6 +2,7 @@ import { EpubCFI } from 'epubjs';
 
 import { READER_EVENTS, THEME_STYLE_ID } from '@/config';
 import { buildCss } from '@/lib/theme';
+import { extractFootnote } from './footnoteExtractor';
 import { createNativeSwipeHandler } from './swipePhysics';
 
 import type { ReaderSettings, ReaderTheme } from '@/types';
@@ -113,81 +114,17 @@ export function setupIframeListeners({
       const href = link.getAttribute('href');
       if (!href || href === '#' || href.startsWith('javascript:')) return;
 
-      const epubType = link.getAttribute('epub:type') || '';
-      const role = link.getAttribute('role') || '';
-      const className = link.className || '';
-      const isNoteref =
-        epubType.includes('noteref') ||
-        role.includes('doc-noteref') ||
-        className.includes('footnote') ||
-        className.includes('noteref') ||
-        className.includes('fn-') ||
-        link.querySelector('sup') !== null ||
-        link.parentElement?.tagName === 'SUP';
-
-      if (isNoteref || href.includes('#')) {
-        const [, targetId] = href.split('#');
-        if (targetId) {
-          const footnoteEl: HTMLElement | null = contents.document.getElementById(targetId);
-          let footnoteHtml = '';
-
-          if (footnoteEl) {
-            const clone = footnoteEl.cloneNode(true) as HTMLElement;
-            clone.querySelectorAll('a').forEach((a) => {
-              const text = a.textContent?.trim() || '';
-              if (
-                text === '↩' ||
-                text === '↑' ||
-                a.getAttribute('role')?.includes('doc-backlink')
-              ) {
-                a.remove();
-              }
-            });
-            footnoteHtml = clone.innerHTML;
-          } else if (bookRef.current) {
-            try {
-              const [targetFile] = href.split('#');
-              const item = bookRef.current.spine.get(targetFile || href);
-              if (item) {
-                const doc = await item.load(bookRef.current.load.bind(bookRef.current));
-                const el = (doc as Document).getElementById(targetId);
-                if (el) {
-                  const clone = el.cloneNode(true) as HTMLElement;
-                  clone.querySelectorAll('a').forEach((a) => {
-                    const text = a.textContent?.trim() || '';
-                    if (
-                      text === '↩' ||
-                      text === '↑' ||
-                      a.getAttribute('role')?.includes('doc-backlink')
-                    ) {
-                      a.remove();
-                    }
-                  });
-                  footnoteHtml = clone.innerHTML;
-                }
-              }
-            } catch {
-              // ignore
-            }
-          }
-
-          if (footnoteHtml.trim().length > 0) {
-            e.preventDefault();
-            e.stopPropagation();
-            window.dispatchEvent(
-              new CustomEvent(READER_EVENTS.openFootnote, {
-                detail: {
-                  title: link.textContent?.trim()
-                    ? `Catatan ${link.textContent.trim()}`
-                    : 'Catatan Kaki',
-                  content: footnoteHtml,
-                  targetHref: href,
-                },
-              })
-            );
-            return;
-          }
-        }
+      // Attempt smart footnote extraction without jumping chapters
+      const footnoteData = await extractFootnote(link, contents, bookRef.current);
+      if (footnoteData) {
+        e.preventDefault();
+        e.stopPropagation();
+        window.dispatchEvent(
+          new CustomEvent(READER_EVENTS.openFootnote, {
+            detail: footnoteData,
+          })
+        );
+        return;
       }
 
       // Not a footnote / no footnote content -> Open Follow Link popover
