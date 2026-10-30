@@ -1,5 +1,5 @@
 import React, { lazy, Suspense, useEffect, useMemo, useState } from 'react';
-import { RefreshCw } from 'lucide-react';
+import { BookOpen, RefreshCw } from 'lucide-react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 
 import { AppShell } from '@/components/layout/AppShell';
@@ -7,7 +7,10 @@ import { GlobalSyncIndicator } from '@/components/sync/GlobalSyncIndicator';
 import { ToastContainer } from '@/components/ToastContainer';
 import { Button } from '@/components/ui';
 import { UpdateDialog } from '@/components/UpdateDialog';
+import { CatalogPage } from '@/features/catalog/CatalogPage';
 import { LibraryPage } from '@/features/library/LibraryPage';
+import { SettingsPage } from '@/features/settings/SettingsPage';
+import { StatsPage } from '@/features/stats/StatsPage';
 import { useHashRoute } from '@/lib/route';
 import { THEME_PALETTES } from '@/lib/theme';
 import { checkForAppUpdate } from '@/lib/updater';
@@ -20,17 +23,17 @@ const ReaderPage = lazy(() =>
   import('@/features/reader/ReaderPage').then((m) => ({ default: m.ReaderPage }))
 );
 
-const CatalogPage = lazy(() =>
-  import('@/features/catalog/CatalogPage').then((m) => ({ default: m.CatalogPage }))
-);
-
-const StatsPage = lazy(() =>
-  import('@/features/stats/StatsPage').then((m) => ({ default: m.StatsPage }))
-);
-
-const SettingsPage = lazy(() =>
-  import('@/features/settings/SettingsPage').then((m) => ({ default: m.SettingsPage }))
-);
+// Preload ReaderPage in background idle time so opening books feels instant
+if (typeof window !== 'undefined') {
+  const preloadReader = () => {
+    import('@/features/reader/ReaderPage');
+  };
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(preloadReader, { timeout: 3000 });
+  } else {
+    setTimeout(preloadReader, 1500);
+  }
+}
 
 export const App: React.FC = () => {
   const route = useHashRoute();
@@ -97,9 +100,17 @@ export const App: React.FC = () => {
       {route.type === 'reader' ? (
         <Suspense
           fallback={
-            <div className="bg-surface text-on-surface flex h-screen w-screen flex-col items-center justify-center gap-3">
-              <div className="border-primary h-8 w-8 animate-spin rounded-full border-3 border-t-transparent" />
-              <p className="text-on-surface-variant text-xs font-medium">Memuat pembaca buku...</p>
+            <div className="bg-surface text-on-surface flex h-screen w-screen flex-col items-center justify-center gap-4 select-none">
+              <div className="relative flex items-center justify-center">
+                <div className="border-primary/20 border-t-primary h-14 w-14 animate-spin rounded-full border-3" />
+                <BookOpen size={22} className="text-primary absolute animate-pulse" />
+              </div>
+              <div className="flex flex-col items-center gap-1 text-center">
+                <p className="text-on-surface text-sm font-semibold tracking-wide">
+                  Membuka Buku...
+                </p>
+                <p className="text-on-surface-variant text-xs">Menyiapkan halaman bacaan</p>
+              </div>
             </div>
           }
         >
@@ -107,46 +118,15 @@ export const App: React.FC = () => {
         </Suspense>
       ) : route.type === 'catalog' ? (
         <AppShell currentRoute="catalog">
-          <Suspense
-            fallback={
-              <div className="bg-surface text-on-surface flex min-h-[60vh] flex-1 flex-col items-center justify-center gap-3">
-                <div className="border-primary h-8 w-8 animate-spin rounded-full border-3 border-t-transparent" />
-                <p className="text-on-surface-variant text-xs font-medium">
-                  Memuat katalog buku...
-                </p>
-              </div>
-            }
-          >
-            <CatalogPage sourceId={route.sourceId} />
-          </Suspense>
+          <CatalogPage sourceId={route.sourceId} />
         </AppShell>
       ) : route.type === 'stats' ? (
         <AppShell currentRoute="stats">
-          <Suspense
-            fallback={
-              <div className="bg-surface text-on-surface flex min-h-[60vh] flex-1 flex-col items-center justify-center gap-3">
-                <div className="border-primary h-8 w-8 animate-spin rounded-full border-3 border-t-transparent" />
-                <p className="text-on-surface-variant text-xs font-medium">
-                  Memuat data statistik...
-                </p>
-              </div>
-            }
-          >
-            <StatsPage />
-          </Suspense>
+          <StatsPage />
         </AppShell>
       ) : route.type === 'settings' ? (
         <AppShell currentRoute="settings">
-          <Suspense
-            fallback={
-              <div className="bg-surface text-on-surface flex min-h-[60vh] flex-1 flex-col items-center justify-center gap-3">
-                <div className="border-primary h-8 w-8 animate-spin rounded-full border-3 border-t-transparent" />
-                <p className="text-on-surface-variant text-xs font-medium">Memuat pengaturan...</p>
-              </div>
-            }
-          >
-            <SettingsPage />
-          </Suspense>
+          <SettingsPage />
         </AppShell>
       ) : (
         <AppShell currentRoute="library">

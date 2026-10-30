@@ -11,7 +11,7 @@
   --sar: env(safe-area-inset-right, 0px);
 }
 
-/* Eliminate WebView browser overscroll glow and synthetic pull-to-refresh */
+/* Eliminate WebView browser overscroll glow, rubber-band stretch, and synthetic pull-to-refresh */
 html,
 body,
 #root {

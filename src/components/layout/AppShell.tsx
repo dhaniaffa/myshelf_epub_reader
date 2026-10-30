@@ -4,7 +4,6 @@ import { BarChart2, CheckCircle2, Compass, Flame, Library, Settings } from 'luci
 
 import { AppLogo } from '@/components/icons/AppLogo';
 import { APP_NAME, APP_SUBTITLE, APP_VERSION } from '@/config';
-import { useRubberBandScroll } from '@/hooks/useRubberBandScroll';
 import { db, getLocalDateString } from '@/lib/db';
 import { navigate } from '@/lib/route';
 import { calculateStreak } from '@/lib/statistics';
@@ -24,7 +23,6 @@ interface NavItem {
 }
 
 export const AppShell: React.FC<AppShellProps> = ({ currentRoute, children }) => {
-  const contentRef = useRubberBandScroll<HTMLDivElement>();
   const { dailyGoalMinutes } = useSettingsStore();
 
   // Fetch reading logs for goal & streak widgets in sidebar
@@ -161,9 +159,7 @@ export const AppShell: React.FC<AppShellProps> = ({ currentRoute, children }) =>
       </aside>
 
       {/* MAIN CONTENT AREA */}
-      <div ref={contentRef} className="flex min-w-0 flex-1 flex-col pb-20 lg:pb-0 lg:pl-64">
-        {children}
-      </div>
+      <div className="flex min-w-0 flex-1 flex-col pb-20 lg:pb-0 lg:pl-64">{children}</div>
 
       {/* MOBILE BOTTOM NAVIGATION BAR (< 1024px) */}
       <nav

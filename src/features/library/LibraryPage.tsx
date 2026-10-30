@@ -41,6 +41,7 @@ import type { Book, BookStatus, BookViewMode } from '@/types';
 
 export const LibraryPage: React.FC = () => {
   const rawBooks = useLiveQuery(() => db.books.toArray(), []);
+  const isLoadingBooks = rawBooks === undefined;
   const books = useMemo(() => rawBooks || [], [rawBooks]);
   const syncFolder = useLiveQuery(() => getLocalFolder(), []);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -493,8 +494,61 @@ export const LibraryPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Book Grid / Empty States */}
-        {books.length === 0 ? (
+        {/* Book Grid / Loading / Empty States */}
+        {isLoadingBooks ? (
+          /* Shimmer Skeleton Loader matching active viewMode */
+          <div className="space-y-6">
+            {viewMode === 'grid' && (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-6 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                {Array.from({ length: 12 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="bg-surface-container-low border-outline-variant/30 flex flex-col overflow-hidden rounded-2xl border"
+                  >
+                    <div className="bg-surface-container-high/80 aspect-2/3 w-full animate-pulse" />
+                    <div className="space-y-2 p-3">
+                      <div className="bg-surface-container-highest/80 h-3.5 w-4/5 animate-pulse rounded" />
+                      <div className="bg-surface-container-high h-2.5 w-1/2 animate-pulse rounded" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {viewMode === 'list' && (
+              <div className="space-y-3">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="bg-surface-container-low border-outline-variant/30 flex items-center gap-4 rounded-2xl border p-3.5"
+                  >
+                    <div className="bg-surface-container-high/80 h-20 w-14 shrink-0 animate-pulse rounded-xl" />
+                    <div className="flex-1 space-y-2.5">
+                      <div className="bg-surface-container-highest/80 h-4 w-3/5 animate-pulse rounded" />
+                      <div className="bg-surface-container-high h-3 w-2/5 animate-pulse rounded" />
+                      <div className="bg-surface-container-high/60 h-2.5 w-1/4 animate-pulse rounded" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {viewMode === 'compact' && (
+              <div className="space-y-1.5">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="bg-surface-container-low border-outline-variant/20 flex items-center justify-between rounded-xl border px-3.5 py-3"
+                  >
+                    <div className="flex w-2/3 items-center gap-3">
+                      <div className="bg-surface-container-high h-4 w-4 shrink-0 animate-pulse rounded-full" />
+                      <div className="bg-surface-container-highest/80 h-3.5 w-3/4 animate-pulse rounded" />
+                    </div>
+                    <div className="bg-surface-container-high h-3 w-1/5 animate-pulse rounded" />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : books.length === 0 ? (
           /* Empty Library State */
           <div className="mx-auto flex max-w-xl flex-col items-center justify-center space-y-5 px-4 py-16 text-center">
             <div className="bg-surface-container-high text-primary mb-1 flex h-20 w-20 items-center justify-center rounded-full shadow-inner">
