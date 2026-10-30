@@ -152,19 +152,14 @@ const BookDetailsContent: React.FC<BookDetailsContentProps> = ({ book, onClose }
             {book.status === 'completed' ? 'Batal Selesai' : 'Tandai Selesai'}
           </Button>
 
-          <div className="flex items-center gap-2">
-            <Button variant="text" size="sm" onClick={onClose}>
-              Tutup
-            </Button>
-            <Button
-              variant="filled"
-              size="sm"
-              onClick={handleStartReading}
-              icon={<Play size={15} fill="currentColor" />}
-            >
-              {book.progress && book.progress > 0 ? 'Lanjutkan Membaca' : 'Mulai Membaca'}
-            </Button>
-          </div>
+          <Button
+            variant="filled"
+            size="sm"
+            onClick={handleStartReading}
+            icon={<Play size={15} fill="currentColor" />}
+          >
+            {book.progress && book.progress > 0 ? 'Lanjutkan Membaca' : 'Mulai Membaca'}
+          </Button>
         </div>
       }
     >
