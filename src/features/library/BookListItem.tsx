@@ -8,6 +8,7 @@ import {
   Info,
   MoreVertical,
   Play,
+  Tag,
   Trash2,
   User,
 } from 'lucide-react';
@@ -208,6 +209,18 @@ export const BookListItem: React.FC<BookListItemProps> = ({
               Belum Dibaca
             </span>
           )}
+
+          {/* Tag Badges */}
+          {book.tags &&
+            book.tags.slice(0, 3).map((t) => (
+              <span
+                key={t}
+                className="bg-primary/10 text-primary border-primary/20 hidden items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-medium sm:inline-flex"
+              >
+                <Tag size={9} />
+                <span>{t}</span>
+              </span>
+            ))}
         </div>
 
         {/* Progress bar */}
@@ -262,6 +275,16 @@ export const BookListItem: React.FC<BookListItemProps> = ({
               >
                 <Info size={14} className="text-primary" />
                 <span>Tentang Buku</span>
+              </button>
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  onShowDetails?.(book);
+                }}
+                className="hover:bg-surface-container text-on-surface flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left"
+              >
+                <Tag size={14} className="text-primary" />
+                <span>Kelola Tag</span>
               </button>
               <button
                 onClick={handleToggleCompleted}

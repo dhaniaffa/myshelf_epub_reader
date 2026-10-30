@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
 import {
   Bookmark,
   BookOpen,
@@ -16,6 +17,7 @@ import {
 } from 'lucide-react';
 
 import { Button, Dialog } from '@/components/ui';
+import { BookTagSection } from '@/features/library/BookTagSection';
 import { useCoverUrl } from '@/lib/cover';
 import { db } from '@/lib/db';
 import { formatFileSize, readFullMetadata } from '@/lib/epub';
@@ -37,7 +39,8 @@ interface BookDetailsContentProps {
 }
 
 const BookDetailsContent: React.FC<BookDetailsContentProps> = ({ book, onClose }) => {
-  const coverUrl = useCoverUrl(book.cover);
+  const liveBook = useLiveQuery(() => db.books.get(book.id), [book.id]) || book;
+  const coverUrl = useCoverUrl(liveBook.cover);
   const [extraMeta, setExtraMeta] = useState<FullBookMetadata | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -232,6 +235,9 @@ const BookDetailsContent: React.FC<BookDetailsContentProps> = ({ book, onClose }
             </div>
           </div>
         </div>
+
+        {/* Koleksi & Tag Buku */}
+        <BookTagSection bookId={liveBook.id} tags={liveBook.tags} />
 
         {/* Grid Metadata Terperinci */}
         <div className="bg-surface-container/60 border-outline-variant/20 grid grid-cols-2 gap-3.5 rounded-2xl border p-4 text-xs sm:grid-cols-3">

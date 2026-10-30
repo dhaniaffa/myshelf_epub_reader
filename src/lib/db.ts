@@ -5,6 +5,7 @@ import { APP_CONFIG } from '@/config';
 import type {
   Annotation,
   Book,
+  BookCollection,
   BookFile,
   BookLocations,
   Bookmark,
@@ -25,6 +26,7 @@ export class Database extends Dexie {
   opds_feeds!: Table<OpdsFeed, string>;
   reading_logs!: Table<ReadingLog, string>;
   sync_folders!: Table<LocalSyncFolder, string>;
+  collections!: Table<BookCollection, string>;
 
   constructor(dbName: string = APP_CONFIG.databaseName) {
     super(dbName);
@@ -46,6 +48,10 @@ export class Database extends Dexie {
     });
     this.version(5).stores({
       sync_folders: 'id, name, connectedAt, lastSyncedAt',
+    });
+    this.version(6).stores({
+      books: 'id, status, lastReadAt, addedAt, *tags',
+      collections: 'id, name, createdAt',
     });
   }
 }
@@ -194,4 +200,81 @@ export async function requestPersistentStorage(): Promise<boolean> {
     return await navigator.storage.persist();
   }
   return false;
+}
+
+/**
+ * Create a new collection or return existing one if name matches
+ */
+export async function createCollection(name: string, color?: string): Promise<BookCollection> {
+  const trimmed = name.trim();
+  if (!trimmed) throw new Error('Nama koleksi tidak boleh kosong');
+  const existing = await db.collections.where('name').equalsIgnoreCase(trimmed).first();
+  if (existing) return existing;
+
+  const newCol: BookCollection = {
+    id: `col_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+    name: trimmed,
+    color,
+    createdAt: Date.now(),
+  };
+  await db.collections.add(newCol);
+  return newCol;
+}
+
+/**
+ * Delete a collection and remove its tag from all books
+ */
+export async function deleteCollection(id: string): Promise<void> {
+  const col = await db.collections.get(id);
+  if (!col) return;
+
+  await db.transaction('rw', [db.collections, db.books], async () => {
+    await db.collections.delete(id);
+    // Remove this tag from any books that have it
+    const affectedBooks = await db.books
+      .filter((b) => Boolean(b.tags?.includes(col.name)))
+      .toArray();
+    for (const b of affectedBooks) {
+      const updatedTags = (b.tags || []).filter((t) => t !== col.name);
+      await db.books.update(b.id, { tags: updatedTags });
+    }
+  });
+}
+
+/**
+ * Add a tag to a book, ensuring the collection also exists in the collections table
+ */
+export async function addTagToBook(bookId: string, tagName: string): Promise<void> {
+  const trimmed = tagName.trim();
+  if (!trimmed) return;
+
+  await db.transaction('rw', [db.books, db.collections], async () => {
+    // 1. Ensure collection exists in collections table
+    const existingCol = await db.collections.where('name').equalsIgnoreCase(trimmed).first();
+    if (!existingCol) {
+      await db.collections.add({
+        id: `col_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        name: trimmed,
+        createdAt: Date.now(),
+      });
+    }
+
+    // 2. Add tag to book
+    const book = await db.books.get(bookId);
+    if (!book) return;
+    const currentTags = book.tags || [];
+    if (!currentTags.includes(trimmed)) {
+      await db.books.update(bookId, { tags: [...currentTags, trimmed] });
+    }
+  });
+}
+
+/**
+ * Remove a tag from a specific book
+ */
+export async function removeTagFromBook(bookId: string, tagName: string): Promise<void> {
+  const book = await db.books.get(bookId);
+  if (!book || !book.tags) return;
+  const updatedTags = book.tags.filter((t) => t !== tagName);
+  await db.books.update(bookId, { tags: updatedTags });
 }

@@ -6,6 +6,7 @@ import {
   HardDrive,
   Info,
   MoreVertical,
+  Tag,
   Trash2,
   User,
 } from 'lucide-react';
@@ -234,6 +235,16 @@ export const BookCard: React.FC<BookCardProps> = ({ book, onDeleteRequest, onSho
                 <span className="truncate">Tentang Buku</span>
               </button>
               <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  onShowDetails?.(book);
+                }}
+                className="hover:bg-surface-container text-on-surface flex w-full cursor-pointer items-center gap-2 px-2.5 py-2 text-left sm:px-3"
+              >
+                <Tag size={14} className="text-primary shrink-0" />
+                <span className="truncate">Kelola Tag</span>
+              </button>
+              <button
                 onClick={handleToggleCompleted}
                 className="hover:bg-surface-container text-on-surface flex w-full cursor-pointer items-center gap-2 px-2.5 py-2 text-left sm:px-3"
               >
@@ -267,6 +278,23 @@ export const BookCard: React.FC<BookCardProps> = ({ book, onDeleteRequest, onSho
           <p className="text-on-surface-variant truncate text-[11px] sm:text-xs">
             {book.author || 'Penulis Tidak Diketahui'}
           </p>
+          {book.tags && book.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 pt-1">
+              {book.tags.slice(0, 2).map((t) => (
+                <span
+                  key={t}
+                  className="bg-primary/10 text-primary rounded-md px-1.5 py-0.5 text-[9px] font-medium"
+                >
+                  {t}
+                </span>
+              ))}
+              {book.tags.length > 2 && (
+                <span className="text-on-surface-variant/60 self-center text-[9px] font-medium">
+                  +{book.tags.length - 2}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="border-outline-variant/15 text-on-surface-variant mt-2 flex items-center justify-between gap-1 border-t pt-1.5 text-[10px]">

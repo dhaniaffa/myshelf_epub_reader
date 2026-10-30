@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { BarChart2, CheckCircle2, Compass, Flame, Library, Settings } from 'lucide-react';
+import { BarChart2, CheckCircle2, Compass, Flame, Folders, Library, Settings } from 'lucide-react';
 
 import { AppLogo } from '@/components/icons/AppLogo';
 import { APP_NAME, APP_SUBTITLE, APP_VERSION } from '@/config';
@@ -10,7 +10,7 @@ import { calculateStreak } from '@/lib/statistics';
 import { useSettingsStore } from '@/store/settings';
 
 interface AppShellProps {
-  currentRoute: 'library' | 'catalog' | 'stats' | 'settings';
+  currentRoute: 'library' | 'collections' | 'catalog' | 'stats' | 'settings';
   children: React.ReactNode;
 }
 
@@ -57,8 +57,15 @@ export const AppShell: React.FC<AppShellProps> = ({ currentRoute, children }) =>
       active: currentRoute === 'library',
     },
     {
+      id: 'collections' as const,
+      label: 'Koleksi',
+      icon: <Folders size={20} />,
+      onClick: () => navigate('collections'),
+      active: currentRoute === 'collections',
+    },
+    {
       id: 'catalog' as const,
-      label: 'Katalog Buku',
+      label: 'Katalog',
       icon: <Compass size={20} />,
       onClick: () => navigate('catalog'),
       active: currentRoute === 'catalog',
@@ -181,7 +188,7 @@ export const AppShell: React.FC<AppShellProps> = ({ currentRoute, children }) =>
             }`}
           >
             <div
-              className={`flex h-8 w-14 items-center justify-center rounded-full transition-all duration-200 sm:w-16 ${
+              className={`flex h-8 w-12 items-center justify-center rounded-full transition-all duration-200 sm:w-16 ${
                 item.active
                   ? 'bg-primary-container text-on-primary-container scale-100 shadow-2xs'
                   : 'text-on-surface-variant'
@@ -189,7 +196,7 @@ export const AppShell: React.FC<AppShellProps> = ({ currentRoute, children }) =>
             >
               {item.icon}
             </div>
-            <span className="mt-1 max-w-full truncate px-1 text-[11px] leading-tight tracking-tight">
+            <span className="mt-1 max-w-full truncate px-0.5 text-[10.5px] leading-tight tracking-tight sm:text-[11px]">
               {item.label}
             </span>
           </button>

@@ -8,6 +8,7 @@ import { ToastContainer } from '@/components/ToastContainer';
 import { Button } from '@/components/ui';
 import { UpdateDialog } from '@/components/UpdateDialog';
 import { CatalogPage } from '@/features/catalog/CatalogPage';
+import { CollectionsPage } from '@/features/collections/CollectionsPage';
 import { LibraryPage } from '@/features/library/LibraryPage';
 import { SettingsPage } from '@/features/settings/SettingsPage';
 import { StatsPage } from '@/features/stats/StatsPage';
@@ -111,6 +112,16 @@ export const App: React.FC = () => {
       const currentHash = window.location.hash;
       const currentRoute = parseRoute(currentHash);
 
+      if (currentRoute.type === 'collections' && currentRoute.collectionId) {
+        navigate('collections');
+        return true;
+      }
+
+      if (currentRoute.type === 'catalog' && currentRoute.sourceId) {
+        navigate('catalog');
+        return true;
+      }
+
       if (currentRoute.type !== 'library') {
         navigate('');
         return true;
@@ -183,6 +194,10 @@ export const App: React.FC = () => {
         >
           <ReaderPage bookId={route.bookId} />
         </Suspense>
+      ) : route.type === 'collections' ? (
+        <AppShell currentRoute="collections">
+          <CollectionsPage collectionId={route.collectionId} />
+        </AppShell>
       ) : route.type === 'catalog' ? (
         <AppShell currentRoute="catalog">
           <CatalogPage sourceId={route.sourceId} />

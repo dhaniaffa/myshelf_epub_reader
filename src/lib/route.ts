@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 export type AppRoute =
   | { type: 'library' }
+  | { type: 'collections'; collectionId?: string }
   | { type: 'reader'; bookId: string }
   | { type: 'catalog'; sourceId?: string }
   | { type: 'stats' }
@@ -14,6 +15,19 @@ export function parseRoute(hash: string): AppRoute {
     if (bookId) {
       return { type: 'reader', bookId };
     }
+  }
+  if (clean.startsWith('collections/') || clean.startsWith('koleksi/')) {
+    const rawCol = clean.replace(/^(collections|koleksi)\//, '').trim();
+    let colId: string | undefined;
+    try {
+      colId = rawCol ? decodeURIComponent(rawCol) : undefined;
+    } catch {
+      colId = rawCol || undefined;
+    }
+    return { type: 'collections', collectionId: colId };
+  }
+  if (clean === 'collections' || clean === 'koleksi') {
+    return { type: 'collections' };
   }
   if (clean.startsWith('catalog/')) {
     const sourceId = clean.replace('catalog/', '').trim();

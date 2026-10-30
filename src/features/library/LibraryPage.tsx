@@ -11,8 +11,10 @@ import {
   List,
   Loader,
   Loader2,
+  Plus,
   Rows3,
   Search,
+  Tag,
   UploadCloud,
   X,
 } from 'lucide-react';
@@ -25,6 +27,7 @@ import { BookCompactRow } from '@/features/library/BookCompactRow';
 import { BookDetailsDialog } from '@/features/library/BookDetailsDialog';
 import { BookListItem } from '@/features/library/BookListItem';
 import { HeroCard } from '@/features/library/HeroCard';
+import { ManageCollectionsDialog } from '@/features/library/ManageCollectionsDialog';
 import { db, deleteBook } from '@/lib/db';
 import {
   connectLocalFolder,
@@ -44,10 +47,13 @@ export const LibraryPage: React.FC = () => {
   const isLoadingBooks = rawBooks === undefined;
   const books = useMemo(() => rawBooks || [], [rawBooks]);
   const syncFolder = useLiveQuery(() => getLocalFolder(), []);
+  const collections = useLiveQuery(() => db.collections.orderBy('createdAt').toArray(), []);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | BookStatus>('all');
+  const [selectedCollection, setSelectedCollection] = useState<string | 'all'>('all');
+  const [manageCollectionsOpen, setManageCollectionsOpen] = useState(false);
   const [sortBy, setSortBy] = useState<'lastRead' | 'title' | 'added'>('lastRead');
   const [viewMode, setViewMode] = useState<BookViewMode>(() => {
     const saved = localStorage.getItem(APP_CONFIG.storageKeys.viewMode);
@@ -121,7 +127,10 @@ export const LibraryPage: React.FC = () => {
           book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
           book.author.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesStatus = statusFilter === 'all' || book.status === statusFilter;
-        return matchesSearch && matchesStatus;
+        const matchesCollection =
+          selectedCollection === 'all' ||
+          (book.tags && Array.isArray(book.tags) && book.tags.includes(selectedCollection));
+        return matchesSearch && matchesStatus && matchesCollection;
       })
       .sort((a, b) => {
         if (sortBy === 'lastRead') {
@@ -132,7 +141,7 @@ export const LibraryPage: React.FC = () => {
         }
         return b.addedAt - a.addedAt;
       });
-  }, [books, searchQuery, statusFilter, sortBy]);
+  }, [books, searchQuery, statusFilter, selectedCollection, sortBy]);
 
   const handleFiles = async (files: FileList | File[]) => {
     if (!files || files.length === 0) return;
@@ -492,6 +501,63 @@ export const LibraryPage: React.FC = () => {
               );
             })}
           </div>
+
+          {/* Collection / Tag Filter Bar */}
+          <div className="flex scrollbar-none items-center gap-1.5 overflow-x-auto pb-0.5 select-none sm:gap-2 sm:pb-1">
+            <button
+              type="button"
+              onClick={() => setSelectedCollection('all')}
+              className={`inline-flex h-7 shrink-0 cursor-pointer items-center gap-1 rounded-full px-2.5 text-[11px] transition-all select-none sm:h-8 sm:px-3 sm:text-xs ${
+                selectedCollection === 'all'
+                  ? 'bg-secondary-container text-on-secondary-container font-semibold shadow-2xs'
+                  : 'bg-surface-container-low hover:bg-surface-container text-on-surface-variant hover:text-on-surface border-outline-variant/30 border'
+              }`}
+            >
+              <span>Semua Koleksi</span>
+            </button>
+
+            {collections?.map((col) => {
+              const isSelected = selectedCollection === col.name;
+              const count = books.filter((b) => b.tags?.includes(col.name)).length;
+              return (
+                <button
+                  key={col.id}
+                  type="button"
+                  onClick={() => setSelectedCollection(isSelected ? 'all' : col.name)}
+                  className={`inline-flex h-7 shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-2.5 text-[11px] transition-all select-none sm:h-8 sm:px-3 sm:text-xs ${
+                    isSelected
+                      ? 'bg-secondary-container text-on-secondary-container font-semibold shadow-2xs'
+                      : 'bg-surface-container-low hover:bg-surface-container text-on-surface-variant hover:text-on-surface border-outline-variant/30 border'
+                  }`}
+                >
+                  <Tag
+                    size={11}
+                    className={isSelected ? 'text-on-secondary-container' : 'text-primary/70'}
+                  />
+                  <span>{col.name}</span>
+                  <span
+                    className={`py-0.2 rounded-full px-1.5 text-[9px] font-bold ${
+                      isSelected
+                        ? 'bg-on-secondary-container/20 text-on-secondary-container'
+                        : 'bg-surface-container-highest text-on-surface-variant'
+                    }`}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+
+            <button
+              type="button"
+              onClick={() => setManageCollectionsOpen(true)}
+              className="hover:border-primary/50 hover:text-primary text-on-surface-variant/80 border-outline-variant/40 bg-surface-container-low/60 inline-flex h-7 shrink-0 cursor-pointer items-center gap-1 rounded-full border border-dashed px-2.5 text-[11px] font-medium transition-all sm:h-8 sm:px-3 sm:text-xs"
+              title="Kelola Koleksi & Rak Kustom"
+            >
+              <Plus size={12} />
+              <span>Kelola Koleksi</span>
+            </button>
+          </div>
         </div>
 
         {/* Book Grid / Loading / Empty States */}
@@ -709,6 +775,12 @@ export const LibraryPage: React.FC = () => {
       <BookDetailsDialog
         book={selectedBookForDetails}
         onClose={() => setSelectedBookForDetails(null)}
+      />
+
+      {/* Manage Custom Collections Dialog */}
+      <ManageCollectionsDialog
+        open={manageCollectionsOpen}
+        onClose={() => setManageCollectionsOpen(false)}
       />
     </div>
   );

@@ -17,6 +17,14 @@ export interface Book {
   publishedYear?: string | null;
   fileSize?: number;
   format?: BookFormat;
+  tags?: string[];
+}
+
+export interface BookCollection {
+  id: string; // unique slug e.g. 'filsafat' or uuid
+  name: string; // Display label
+  color?: string; // Optional hex or theme color code
+  createdAt: number;
 }
 
 export interface BookFile {
