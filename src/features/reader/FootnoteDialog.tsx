@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Bookmark, Check, Copy, ExternalLink, Square, Volume2, X } from 'lucide-react';
+import { createPortal } from 'react-dom';
 
 import { registerBackHandler } from '@/lib/backHandler';
 
@@ -178,8 +179,8 @@ export const FootnoteDialog: React.FC<FootnoteDialogProps> = ({
   // Triangle pointer offset relative to popover center
   const arrowOffsetX = rawX - clampedX;
 
-  return (
-    <div className="fixed inset-0 z-60 overflow-hidden">
+  const content = (
+    <div className="fixed inset-0 z-70 overflow-hidden">
       {/* Light backdrop (allows reader context to be visible) */}
       <div
         className="animate-fade-in fixed inset-0 bg-black/35 backdrop-blur-[1px] transition-opacity duration-200"
@@ -400,4 +401,6 @@ export const FootnoteDialog: React.FC<FootnoteDialogProps> = ({
       )}
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(content, document.body) : content;
 };

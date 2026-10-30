@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Contrast, RotateCcw, RotateCw, X, ZoomIn, ZoomOut } from 'lucide-react';
+import { createPortal } from 'react-dom';
 
 import { triggerHaptic } from './utils/swipePhysics';
 
@@ -215,13 +216,13 @@ const ImageViewerModal: React.FC<{
     }
   };
 
-  return (
+  const modalContent = (
     <div
       role="dialog"
       aria-modal="true"
       aria-label="Penampil Gambar"
       style={{ touchAction: 'none' }}
-      className="animate-fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md select-none"
+      className="animate-fade-in fixed inset-0 z-70 flex items-center justify-center bg-black/85 backdrop-blur-md select-none"
       onClick={(e) => {
         if (e.target === e.currentTarget && scale === 1) {
           onClose();
@@ -338,6 +339,8 @@ const ImageViewerModal: React.FC<{
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 };
 
 export const ImageViewerDialog: React.FC<ImageViewerDialogProps> = ({ image, onClose, isDark }) => {
