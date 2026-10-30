@@ -164,7 +164,7 @@ export const AppShell: React.FC<AppShellProps> = ({ currentRoute, children }) =>
       {/* MOBILE BOTTOM NAVIGATION BAR (< 1024px) */}
       <nav
         style={{
-          height: 'calc(4rem + env(safe-area-inset-bottom, 0px))',
+          height: 'calc(4.25rem + env(safe-area-inset-bottom, 0px))',
           paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         }}
         className="bg-surface-container/95 border-outline-variant/30 fixed inset-x-0 bottom-0 z-40 flex items-center justify-around border-t px-2 backdrop-blur-lg select-none lg:hidden"
@@ -174,20 +174,24 @@ export const AppShell: React.FC<AppShellProps> = ({ currentRoute, children }) =>
             key={item.id}
             type="button"
             onClick={item.onClick}
-            className={`flex h-full flex-1 cursor-pointer flex-col items-center justify-center py-1 text-[11px] font-medium transition-colors ${
+            className={`flex h-full flex-1 cursor-pointer flex-col items-center justify-center py-1 transition-colors ${
               item.active
                 ? 'text-primary font-bold'
-                : 'text-on-surface-variant hover:text-on-surface'
+                : 'text-on-surface-variant hover:text-on-surface font-medium'
             }`}
           >
             <div
-              className={`rounded-xl p-1 transition-all ${
-                item.active ? 'bg-primary-container text-on-primary-container scale-105' : ''
+              className={`flex h-8 w-14 items-center justify-center rounded-full transition-all duration-200 sm:w-16 ${
+                item.active
+                  ? 'bg-primary-container text-on-primary-container scale-100 shadow-2xs'
+                  : 'text-on-surface-variant'
               }`}
             >
               {item.icon}
             </div>
-            <span className="mt-0.5">{item.label}</span>
+            <span className="mt-1 max-w-full truncate px-1 text-[11px] leading-tight tracking-tight">
+              {item.label}
+            </span>
           </button>
         ))}
       </nav>
