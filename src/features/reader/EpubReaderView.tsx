@@ -42,6 +42,9 @@ export const EpubReaderView: React.FC<EpubReaderViewProps> = ({ bookId }) => {
     return isDarkTheme(palette.bg);
   }, [resolvedTheme]);
 
+  const isEink =
+    settings.einkMode || resolvedTheme === 'eink-light' || resolvedTheme === 'eink-dark';
+
   // Core reader hook
   const {
     containerRef,
@@ -223,13 +226,16 @@ export const EpubReaderView: React.FC<EpubReaderViewProps> = ({ bookId }) => {
     stageCursor,
     handleStageMouseMove,
     handleStageTouchStart,
+    handleStageTouchMove,
     handleStageTouchEnd,
+    handleStageTouchCancel,
     handleStageClick,
   } = useReaderGestures({
     containerRef,
     flowMode: settings.flowMode,
     hasSelection: Boolean(state.selection),
     activeFollowLink,
+    isEink,
     onClearSelection: handleClearSelection,
     onDismissFollowLink: () => setActiveFollowLink(null),
     onToggleBars: () => setShowBars((prev) => !prev),
@@ -320,9 +326,6 @@ export const EpubReaderView: React.FC<EpubReaderViewProps> = ({ bookId }) => {
     wide: 'px-6 sm:px-14',
   }[settings.pageMargin];
 
-  const isEink =
-    settings.einkMode || resolvedTheme === 'eink-light' || resolvedTheme === 'eink-dark';
-
   return (
     <div
       className={`bg-surface text-on-surface relative flex h-screen w-screen flex-col overflow-hidden ${
@@ -365,8 +368,13 @@ export const EpubReaderView: React.FC<EpubReaderViewProps> = ({ bookId }) => {
         onClick={handleStageClick}
         onMouseMove={handleStageMouseMove}
         onTouchStart={handleStageTouchStart}
+        onTouchMove={handleStageTouchMove}
         onTouchEnd={handleStageTouchEnd}
-        style={{ cursor: stageCursor }}
+        onTouchCancel={handleStageTouchCancel}
+        style={{
+          cursor: stageCursor,
+          touchAction: settings.flowMode === 'paginated' ? 'pan-y' : 'auto',
+        }}
         className={`h-full w-full flex-1 pt-16 ${
           showTTSBar ? 'pb-24 sm:pb-28' : 'pb-20 sm:pb-24'
         } ${stagePaddingClass} relative box-border flex items-center justify-center overflow-hidden`}
@@ -396,7 +404,10 @@ export const EpubReaderView: React.FC<EpubReaderViewProps> = ({ bookId }) => {
 
         <div
           ref={containerRef}
-          className={`h-full w-full ${maxWidthClass} relative mx-auto transition-all duration-200 select-text`}
+          style={{
+            touchAction: settings.flowMode === 'paginated' ? 'pan-y' : 'auto',
+          }}
+          className={`h-full w-full ${maxWidthClass} relative mx-auto select-text`}
         ></div>
 
         {/* Loading Spinner */}

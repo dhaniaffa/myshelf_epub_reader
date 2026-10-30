@@ -1,12 +1,16 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+
+import { createNativeSwipeHandler } from '../utils/swipePhysics';
 
 import type { FollowLinkData, ReaderFlowMode } from '@/types';
+import type { NativeSwipeHandler } from '../utils/swipePhysics';
 
 export interface UseReaderGesturesOptions {
   containerRef: React.RefObject<HTMLDivElement | null>;
   flowMode: ReaderFlowMode;
   hasSelection: boolean;
   activeFollowLink: FollowLinkData | null;
+  isEink?: boolean;
   onClearSelection: () => void;
   onDismissFollowLink: () => void;
   onToggleBars: () => void;
@@ -18,18 +22,22 @@ export interface UseReaderGesturesReturn {
   stageCursor: 'default' | 'pointer';
   handleStageMouseMove: (e: React.MouseEvent<HTMLDivElement>) => void;
   handleStageTouchStart: (e: React.TouchEvent<HTMLDivElement>) => void;
+  handleStageTouchMove: (e: React.TouchEvent<HTMLDivElement>) => void;
   handleStageTouchEnd: (e: React.TouchEvent<HTMLDivElement>) => void;
+  handleStageTouchCancel: (e: React.TouchEvent<HTMLDivElement>) => void;
   handleStageClick: (e: React.MouseEvent<HTMLDivElement>) => void;
 }
 
 /**
- * Custom hook to handle swipe gestures, dynamic cursor, and margin click zones on the reader stage.
+ * Custom hook to handle native-like physics swipe gestures, dynamic cursor,
+ * and margin click zones on the reader stage.
  */
 export function useReaderGestures({
   containerRef,
   flowMode,
   hasSelection,
   activeFollowLink,
+  isEink = false,
   onClearSelection,
   onDismissFollowLink,
   onToggleBars,
@@ -37,12 +45,20 @@ export function useReaderGestures({
   prev,
 }: UseReaderGesturesOptions): UseReaderGesturesReturn {
   const [stageCursor, setStageCursor] = useState<'default' | 'pointer'>('default');
+  const swipeHandlerRef = useRef<NativeSwipeHandler | null>(null);
 
-  const stageTouchRef = useRef<{ startX: number; startY: number; startTime: number }>({
-    startX: 0,
-    startY: 0,
-    startTime: 0,
-  });
+  useEffect(() => {
+    swipeHandlerRef.current = createNativeSwipeHandler({
+      getContainer: () => containerRef.current,
+      canSwipe: () => flowMode === 'paginated' && !hasSelection,
+      isEink: () => isEink,
+      onNext: next,
+      onPrev: prev,
+    });
+    return () => {
+      swipeHandlerRef.current?.cancel();
+    };
+  }, [containerRef, flowMode, hasSelection, isEink, next, prev]);
 
   const handleStageMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (flowMode !== 'paginated') {
@@ -66,36 +82,27 @@ export function useReaderGestures({
   };
 
   const handleStageTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (e.touches.length !== 1) return;
-    stageTouchRef.current = {
-      startX: e.touches[0].clientX,
-      startY: e.touches[0].clientY,
-      startTime: Date.now(),
-    };
+    swipeHandlerRef.current?.handleTouchStart(e);
+  };
+
+  const handleStageTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    swipeHandlerRef.current?.handleTouchMove(e);
   };
 
   const handleStageTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
-    const touch = e.changedTouches[0];
-    if (!touch) return;
-    const deltaX = touch.clientX - stageTouchRef.current.startX;
-    const deltaY = touch.clientY - stageTouchRef.current.startY;
-    const elapsed = Date.now() - stageTouchRef.current.startTime;
+    swipeHandlerRef.current?.handleTouchEnd(e);
+  };
 
-    if (
-      flowMode === 'paginated' &&
-      Math.abs(deltaX) >= 40 &&
-      Math.abs(deltaX) > Math.abs(deltaY) * 1.2 &&
-      elapsed <= 500
-    ) {
-      if (deltaX < 0) {
-        next();
-      } else {
-        prev();
-      }
-    }
+  const handleStageTouchCancel = (e: React.TouchEvent<HTMLDivElement>) => {
+    swipeHandlerRef.current?.handleTouchCancel(e);
   };
 
   const handleStageClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // If a horizontal swipe drag just occurred, suppress click event completely
+    if (swipeHandlerRef.current?.wasSwipeGesture()) {
+      return;
+    }
+
     if (activeFollowLink) {
       onDismissFollowLink();
     }
@@ -139,7 +146,9 @@ export function useReaderGestures({
     stageCursor,
     handleStageMouseMove,
     handleStageTouchStart,
+    handleStageTouchMove,
     handleStageTouchEnd,
+    handleStageTouchCancel,
     handleStageClick,
   };
 }

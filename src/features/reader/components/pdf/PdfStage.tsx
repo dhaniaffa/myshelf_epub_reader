@@ -1,10 +1,13 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { navigate } from '@/lib/route';
+import { createNativeSwipeHandler } from '../../utils/swipePhysics';
 import { PdfPageCanvas } from './PdfPageCanvas';
 import { PdfRunningFooter } from './PdfRunningFooter';
 import { PdfErrorOverlay, PdfLoadingOverlay } from './PdfStateOverlays';
+
+import type { NativeSwipeHandler } from '../../utils/swipePhysics';
 
 export interface PdfStageProps {
   scrollMode: 'vertical' | 'single';
@@ -56,44 +59,33 @@ export const PdfStage: React.FC<PdfStageProps> = ({
   onJumpToPage,
   onToggleBars,
 }) => {
-  // Swipe gesture detection on PDF stage
-  const pdfTouchRef = useRef<{ startX: number; startY: number; startTime: number }>({
-    startX: 0,
-    startY: 0,
-    startTime: 0,
-  });
+  // Native physics swipe gesture handler for single page mode
+  const swipeHandlerRef = useRef<NativeSwipeHandler | null>(null);
 
-  const handlePdfTouchStart = (e: React.TouchEvent) => {
-    if (e.touches.length !== 1) return;
-    pdfTouchRef.current = {
-      startX: e.touches[0].clientX,
-      startY: e.touches[0].clientY,
-      startTime: Date.now(),
+  useEffect(() => {
+    swipeHandlerRef.current = createNativeSwipeHandler({
+      getContainer: () => containerRef.current,
+      canSwipe: () => {
+        const selection = window.getSelection();
+        const hasSel = Boolean(selection && selection.toString().trim().length > 0);
+        return scrollMode === 'single' && !hasSel;
+      },
+      isEink: () => isEink,
+      onNext: onScrollNext,
+      onPrev: onScrollPrev,
+    });
+    return () => {
+      swipeHandlerRef.current?.cancel();
     };
-  };
-
-  const handlePdfTouchEnd = (e: React.TouchEvent) => {
-    const selection = window.getSelection();
-    if (selection && selection.toString().trim().length > 0) return;
-
-    const touch = e.changedTouches[0];
-    if (!touch) return;
-    const deltaX = touch.clientX - pdfTouchRef.current.startX;
-    const deltaY = touch.clientY - pdfTouchRef.current.startY;
-    const elapsed = Date.now() - pdfTouchRef.current.startTime;
-
-    // Minimum 45px horizontal swipe to change page
-    if (Math.abs(deltaX) >= 45 && Math.abs(deltaX) > Math.abs(deltaY) * 1.3 && elapsed <= 500) {
-      if (deltaX < 0) {
-        onScrollNext();
-      } else {
-        onScrollPrev();
-      }
-    }
-  };
+  }, [containerRef, scrollMode, isEink, onScrollNext, onScrollPrev]);
 
   // Click stage to toggle navigation bars or handle tap navigation
   const handleStageClick = (e: React.MouseEvent) => {
+    // If a horizontal swipe drag just occurred, suppress click event completely
+    if (swipeHandlerRef.current?.wasSwipeGesture()) {
+      return;
+    }
+
     // Do not toggle bar if user is currently selecting text
     const selection = window.getSelection();
     if (selection && selection.toString().trim().length > 0) {
@@ -132,8 +124,13 @@ export const PdfStage: React.FC<PdfStageProps> = ({
   return (
     <main
       onClick={handleStageClick}
-      onTouchStart={handlePdfTouchStart}
-      onTouchEnd={handlePdfTouchEnd}
+      onTouchStart={(e) => swipeHandlerRef.current?.handleTouchStart(e)}
+      onTouchMove={(e) => swipeHandlerRef.current?.handleTouchMove(e)}
+      onTouchEnd={(e) => swipeHandlerRef.current?.handleTouchEnd(e)}
+      onTouchCancel={(e) => swipeHandlerRef.current?.handleTouchCancel(e)}
+      style={{
+        touchAction: scrollMode === 'single' ? 'pan-y' : 'auto',
+      }}
       className="relative box-border flex h-full w-full flex-1 flex-col overflow-hidden"
     >
       {/* Desktop Navigation Buttons (Visible with subtle opacity on non-mobile screens) */}
@@ -208,6 +205,7 @@ export const PdfStage: React.FC<PdfStageProps> = ({
         <div
           key="pdf-single-container"
           ref={containerRef}
+          style={{ touchAction: 'pan-y' }}
           className="relative flex h-full w-full flex-1 items-center justify-center overflow-auto px-2 pt-14 pb-16"
         >
           <div

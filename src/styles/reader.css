@@ -179,6 +179,7 @@ body {
   -webkit-user-select: text !important;
   user-select: text !important;
   -webkit-touch-callout: default !important;
+  touch-action: pan-y !important;
   box-sizing: border-box !important;
   margin: 0 !important;
   padding: 16px var(--reader-horizontal-padding) 20px !important;

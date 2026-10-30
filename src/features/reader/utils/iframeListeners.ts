@@ -2,6 +2,7 @@ import { EpubCFI } from 'epubjs';
 
 import { READER_EVENTS, THEME_STYLE_ID } from '@/config';
 import { buildCss } from '@/lib/theme';
+import { createNativeSwipeHandler } from './swipePhysics';
 
 import type { ReaderSettings, ReaderTheme } from '@/types';
 import type { Contents, Book as EpubBook, Rendition } from 'epubjs';
@@ -25,6 +26,7 @@ export function setupIframeListeners({
   contents,
   bookRef,
   renditionRef,
+  containerRef,
   settingsRef,
   themeRef,
   checkIsSelectionActive,
@@ -41,9 +43,15 @@ export function setupIframeListeners({
   try {
     contents.document.documentElement.style.webkitUserSelect = 'text';
     contents.document.documentElement.style.userSelect = 'text';
+    if (settingsRef.current.flowMode === 'paginated') {
+      contents.document.documentElement.style.touchAction = 'pan-y';
+    }
     if (contents.document.body) {
       contents.document.body.style.webkitUserSelect = 'text';
       contents.document.body.style.userSelect = 'text';
+      if (settingsRef.current.flowMode === 'paginated') {
+        contents.document.body.style.touchAction = 'pan-y';
+      }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (contents.document.body.style as any).webkitTouchCallout = 'default';
     }
@@ -354,21 +362,31 @@ export function setupIframeListeners({
     }
   });
 
-  // 5. Detect touch swipe gestures inside book iframe
-  let touchStartX = 0;
-  let touchStartY = 0;
+  // 5. Detect touch swipe gestures inside book iframe with native continuous physics
   let touchStartTime = 0;
-  let isSwipeGesture = false;
+
+  const swipeHandler = createNativeSwipeHandler({
+    getContainer: () => containerRef?.current ?? null,
+    canSwipe: () => {
+      const hasSelection = checkIsSelectionActive ? checkIsSelectionActive() : false;
+      const isPaginated = settingsRef.current.flowMode === 'paginated';
+      return isPaginated && !hasSelection;
+    },
+    isEink: () => {
+      const theme = themeRef.current;
+      return settingsRef.current.einkMode || theme === 'eink-light' || theme === 'eink-dark';
+    },
+    onNext: () => renditionRef.current?.next(),
+    onPrev: () => renditionRef.current?.prev(),
+  });
 
   contents.document.addEventListener(
     'touchstart',
     (e: TouchEvent) => {
-      if (e.touches.length !== 1) return;
-      const touch = e.touches[0];
-      touchStartX = touch.clientX;
-      touchStartY = touch.clientY;
+      const sel = getSelectionObj();
+      if (sel && sel.toString().trim().length > 0) return;
       touchStartTime = Date.now();
-      isSwipeGesture = false;
+      swipeHandler.handleTouchStart(e);
     },
     { passive: true }
   );
@@ -376,15 +394,9 @@ export function setupIframeListeners({
   contents.document.addEventListener(
     'touchmove',
     (e: TouchEvent) => {
-      if (e.touches.length !== 1) return;
-      const touch = e.touches[0];
-      const deltaX = touch.clientX - touchStartX;
-      const deltaY = touch.clientY - touchStartY;
-      if (Math.abs(deltaX) > 20 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
-        isSwipeGesture = true;
-      }
+      swipeHandler.handleTouchMove(e);
     },
-    { passive: true }
+    { passive: false }
   );
 
   contents.document.addEventListener(
@@ -395,37 +407,24 @@ export function setupIframeListeners({
         handleSelection();
         return;
       }
+      swipeHandler.handleTouchEnd(e);
+    },
+    { passive: true }
+  );
 
-      const touch = e.changedTouches[0];
-      if (!touch) return;
-
-      const deltaX = touch.clientX - touchStartX;
-      const deltaY = touch.clientY - touchStartY;
-      const elapsed = Date.now() - touchStartTime;
-      const isPaginated = settingsRef.current.flowMode === 'paginated';
-
-      // Minimum 40px horizontal swipe in < 500ms
-      if (
-        isPaginated &&
-        Math.abs(deltaX) >= 40 &&
-        Math.abs(deltaX) > Math.abs(deltaY) * 1.2 &&
-        elapsed <= 500
-      ) {
-        isSwipeGesture = true;
-        if (deltaX < 0) {
-          renditionRef.current?.next();
-        } else {
-          renditionRef.current?.prev();
-        }
-      }
+  contents.document.addEventListener(
+    'touchcancel',
+    (e: TouchEvent) => {
+      swipeHandler.handleTouchCancel(e);
     },
     { passive: true }
   );
 
   // 6. Click handler for navigation and toggling control bars from within iframe
   contents.document.addEventListener('click', (e: MouseEvent) => {
-    if (isSwipeGesture) {
-      isSwipeGesture = false;
+    if (swipeHandler.wasSwipeGesture()) {
+      e.preventDefault();
+      e.stopPropagation();
       return;
     }
 
