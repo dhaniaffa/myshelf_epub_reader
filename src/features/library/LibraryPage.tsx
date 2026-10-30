@@ -6,13 +6,14 @@ import {
   Compass,
   FolderOpen,
   FolderSync,
+  Grid3X3,
+  Image,
   LayoutGrid,
   Library,
   List,
   Loader,
   Loader2,
   Plus,
-  Rows3,
   Search,
   Tag,
   UploadCloud,
@@ -23,7 +24,8 @@ import { AppLogo } from '@/components/icons/AppLogo';
 import { Button, Dialog } from '@/components/ui';
 import { APP_CONFIG, APP_NAME, APP_SUBTITLE } from '@/config';
 import { BookCard } from '@/features/library/BookCard';
-import { BookCompactRow } from '@/features/library/BookCompactRow';
+import { BookCompactCard } from '@/features/library/BookCompactCard';
+import { BookCoverCard } from '@/features/library/BookCoverCard';
 import { BookDetailsDialog } from '@/features/library/BookDetailsDialog';
 import { BookListItem } from '@/features/library/BookListItem';
 import { HeroCard } from '@/features/library/HeroCard';
@@ -57,8 +59,17 @@ export const LibraryPage: React.FC = () => {
   const [sortBy, setSortBy] = useState<'lastRead' | 'title' | 'added'>('lastRead');
   const [viewMode, setViewMode] = useState<BookViewMode>(() => {
     const saved = localStorage.getItem(APP_CONFIG.storageKeys.viewMode);
-    if (saved === 'list' || saved === 'compact' || saved === 'grid') return saved;
-    return 'grid';
+    if (
+      saved === 'compact' ||
+      saved === 'comfortable' ||
+      saved === 'cover-only' ||
+      saved === 'list'
+    ) {
+      return saved;
+    }
+    // Backward compatibility with legacy 'grid' setting
+    if (saved === 'grid') return 'comfortable';
+    return 'comfortable';
   });
   const [isImporting, setIsImporting] = useState(false);
   const isFolderSyncing = useSyncStore((s) => s.isSyncing);
@@ -417,10 +428,22 @@ export const LibraryPage: React.FC = () => {
               <div className="bg-surface-container-low border-outline-variant/30 flex h-9 shrink-0 items-center rounded-xl border p-0.5 shadow-2xs sm:h-11 sm:rounded-2xl sm:p-1 sm:shadow-xs">
                 <button
                   type="button"
-                  title="Tampilan Kisi (Grid View)"
-                  onClick={() => handleViewModeChange('grid')}
+                  title="Compact Grid"
+                  onClick={() => handleViewModeChange('compact')}
                   className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg transition-all sm:h-9 sm:w-9 sm:rounded-xl ${
-                    viewMode === 'grid'
+                    viewMode === 'compact'
+                      ? 'bg-primary text-on-primary shadow-xs'
+                      : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
+                  }`}
+                >
+                  <Grid3X3 size={15} className="sm:size-4.25" />
+                </button>
+                <button
+                  type="button"
+                  title="Comfortable Grid"
+                  onClick={() => handleViewModeChange('comfortable')}
+                  className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg transition-all sm:h-9 sm:w-9 sm:rounded-xl ${
+                    viewMode === 'comfortable'
                       ? 'bg-primary text-on-primary shadow-xs'
                       : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
                   }`}
@@ -429,7 +452,19 @@ export const LibraryPage: React.FC = () => {
                 </button>
                 <button
                   type="button"
-                  title="Tampilan Daftar (List View)"
+                  title="Cover Only"
+                  onClick={() => handleViewModeChange('cover-only')}
+                  className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg transition-all sm:h-9 sm:w-9 sm:rounded-xl ${
+                    viewMode === 'cover-only'
+                      ? 'bg-primary text-on-primary shadow-xs'
+                      : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
+                  }`}
+                >
+                  <Image size={15} className="sm:size-4.25" />
+                </button>
+                <button
+                  type="button"
+                  title="List View"
                   onClick={() => handleViewModeChange('list')}
                   className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg transition-all sm:h-9 sm:w-9 sm:rounded-xl ${
                     viewMode === 'list'
@@ -438,18 +473,6 @@ export const LibraryPage: React.FC = () => {
                   }`}
                 >
                   <List size={15} className="sm:size-4.25" />
-                </button>
-                <button
-                  type="button"
-                  title="Tampilan Ringkas (Compact View)"
-                  onClick={() => handleViewModeChange('compact')}
-                  className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg transition-all sm:h-9 sm:w-9 sm:rounded-xl ${
-                    viewMode === 'compact'
-                      ? 'bg-primary text-on-primary shadow-xs'
-                      : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
-                  }`}
-                >
-                  <Rows3 size={15} className="sm:size-4.25" />
                 </button>
               </div>
             </div>
@@ -564,8 +587,24 @@ export const LibraryPage: React.FC = () => {
         {isLoadingBooks ? (
           /* Shimmer Skeleton Loader matching active viewMode */
           <div className="space-y-6">
-            {viewMode === 'grid' && (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-6 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            {viewMode === 'compact' && (
+              <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4 sm:gap-3.5 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8">
+                {Array.from({ length: 14 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="bg-surface-container-low border-outline-variant/30 flex flex-col overflow-hidden rounded-xl border"
+                  >
+                    <div className="bg-surface-container-high/80 aspect-2/3 w-full animate-pulse" />
+                    <div className="space-y-1.5 p-2">
+                      <div className="bg-surface-container-highest/80 h-3 w-4/5 animate-pulse rounded" />
+                      <div className="bg-surface-container-high h-2 w-1/2 animate-pulse rounded" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {viewMode === 'comfortable' && (
+              <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 sm:gap-5 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                 {Array.from({ length: 12 }).map((_, i) => (
                   <div
                     key={i}
@@ -577,6 +616,16 @@ export const LibraryPage: React.FC = () => {
                       <div className="bg-surface-container-high h-2.5 w-1/2 animate-pulse rounded" />
                     </div>
                   </div>
+                ))}
+              </div>
+            )}
+            {viewMode === 'cover-only' && (
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-5">
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="bg-surface-container-high/80 aspect-2/3 w-full animate-pulse rounded-2xl shadow-md"
+                  />
                 ))}
               </div>
             )}
@@ -593,22 +642,6 @@ export const LibraryPage: React.FC = () => {
                       <div className="bg-surface-container-high h-3 w-2/5 animate-pulse rounded" />
                       <div className="bg-surface-container-high/60 h-2.5 w-1/4 animate-pulse rounded" />
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            {viewMode === 'compact' && (
-              <div className="space-y-1.5">
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="bg-surface-container-low border-outline-variant/20 flex items-center justify-between rounded-xl border px-3.5 py-3"
-                  >
-                    <div className="flex w-2/3 items-center gap-3">
-                      <div className="bg-surface-container-high h-4 w-4 shrink-0 animate-pulse rounded-full" />
-                      <div className="bg-surface-container-highest/80 h-3.5 w-3/4 animate-pulse rounded" />
-                    </div>
-                    <div className="bg-surface-container-high h-3 w-1/5 animate-pulse rounded" />
                   </div>
                 ))}
               </div>
@@ -694,10 +727,36 @@ export const LibraryPage: React.FC = () => {
         ) : (
           /* Book List Render based on viewMode */
           <>
-            {viewMode === 'grid' && (
-              <div className="animate-fade-in grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-6 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            {viewMode === 'compact' && (
+              <div className="animate-fade-in grid grid-cols-3 gap-2.5 sm:grid-cols-4 sm:gap-3.5 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8">
+                {filteredBooks.map((book) => (
+                  <BookCompactCard
+                    key={book.id}
+                    book={book}
+                    onDeleteRequest={setBookToDelete}
+                    onShowDetails={setSelectedBookForDetails}
+                  />
+                ))}
+              </div>
+            )}
+
+            {viewMode === 'comfortable' && (
+              <div className="animate-fade-in grid grid-cols-2 gap-3.5 sm:grid-cols-3 sm:gap-5 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                 {filteredBooks.map((book) => (
                   <BookCard
+                    key={book.id}
+                    book={book}
+                    onDeleteRequest={setBookToDelete}
+                    onShowDetails={setSelectedBookForDetails}
+                  />
+                ))}
+              </div>
+            )}
+
+            {viewMode === 'cover-only' && (
+              <div className="animate-fade-in grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-5">
+                {filteredBooks.map((book) => (
+                  <BookCoverCard
                     key={book.id}
                     book={book}
                     onDeleteRequest={setBookToDelete}
@@ -711,27 +770,6 @@ export const LibraryPage: React.FC = () => {
               <div className="animate-fade-in flex flex-col gap-3">
                 {filteredBooks.map((book) => (
                   <BookListItem
-                    key={book.id}
-                    book={book}
-                    onDeleteRequest={setBookToDelete}
-                    onShowDetails={setSelectedBookForDetails}
-                  />
-                ))}
-              </div>
-            )}
-
-            {viewMode === 'compact' && (
-              <div className="bg-surface-container-low border-outline-variant/30 divide-outline-variant/20 animate-fade-in divide-y rounded-2xl border shadow-xs">
-                <div className="bg-surface-container/50 text-on-surface-variant flex items-center gap-3 rounded-t-2xl px-3.5 py-2 text-[11px] font-semibold tracking-wider uppercase select-none sm:gap-4 sm:px-4">
-                  <span className="w-8 shrink-0">Buku</span>
-                  <span className="flex-1">Judul & Penulis</span>
-                  <span className="hidden w-16 shrink-0 text-center sm:block">Tahun</span>
-                  <span className="w-16 shrink-0 text-right sm:w-20">Ukuran</span>
-                  <span className="w-18 shrink-0 text-right sm:w-24">Progres</span>
-                  <span className="w-8 shrink-0 text-center">Aksi</span>
-                </div>
-                {filteredBooks.map((book) => (
-                  <BookCompactRow
                     key={book.id}
                     book={book}
                     onDeleteRequest={setBookToDelete}

@@ -1,5 +1,5 @@
 export type BookStatus = 'unread' | 'reading' | 'completed';
-export type BookViewMode = 'grid' | 'list' | 'compact';
+export type BookViewMode = 'compact' | 'comfortable' | 'cover-only' | 'list';
 export type BookFormat = 'epub' | 'pdf';
 
 export interface Book {
