@@ -7,12 +7,16 @@ import { db } from '@/lib/db';
 import { navigate } from '@/lib/route';
 import { useSettingsStore } from '@/store/settings';
 import { toast } from '@/store/toast';
-import { PdfBottomBar } from './pdf/PdfBottomBar';
-import { PdfHeaderBar } from './pdf/PdfHeaderBar';
-import { PdfStage } from './pdf/PdfStage';
-import { PdfFlashOverlay } from './pdf/PdfStateOverlays';
-import { getPdfCanvasFilterStyle, mapPdfOutlineToToc, mapPdfSearchResults } from './pdf/pdfUtils';
-import { usePdfHotkeys } from './pdf/usePdfHotkeys';
+import { PdfBottomBar } from './components/pdf/PdfBottomBar';
+import { PdfHeaderBar } from './components/pdf/PdfHeaderBar';
+import { PdfStage } from './components/pdf/PdfStage';
+import { PdfFlashOverlay } from './components/pdf/PdfStateOverlays';
+import {
+  getPdfCanvasFilterStyle,
+  mapPdfOutlineToToc,
+  mapPdfSearchResults,
+} from './components/pdf/pdfUtils';
+import { usePdfHotkeys } from './components/pdf/usePdfHotkeys';
 
 import type { PanelTab } from '@/features/reader/panels';
 import type { Bookmark, ReaderTheme, SearchResult, TocItem } from '@/types';
