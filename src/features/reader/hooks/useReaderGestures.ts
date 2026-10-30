@@ -11,6 +11,8 @@ export interface UseReaderGesturesOptions {
   hasSelection: boolean;
   activeFollowLink: FollowLinkData | null;
   isEink?: boolean;
+  isAtStart?: () => boolean;
+  isAtEnd?: () => boolean;
   onClearSelection: () => void;
   onDismissFollowLink: () => void;
   onToggleBars: () => void;
@@ -38,6 +40,8 @@ export function useReaderGestures({
   hasSelection,
   activeFollowLink,
   isEink = false,
+  isAtStart,
+  isAtEnd,
   onClearSelection,
   onDismissFollowLink,
   onToggleBars,
@@ -51,6 +55,8 @@ export function useReaderGestures({
     swipeHandlerRef.current = createNativeSwipeHandler({
       getContainer: () => containerRef.current,
       canSwipe: () => flowMode === 'paginated' && !hasSelection,
+      isAtStart,
+      isAtEnd,
       isEink: () => isEink,
       onNext: next,
       onPrev: prev,
@@ -58,7 +64,7 @@ export function useReaderGestures({
     return () => {
       swipeHandlerRef.current?.cancel();
     };
-  }, [containerRef, flowMode, hasSelection, isEink, next, prev]);
+  }, [containerRef, flowMode, hasSelection, isAtStart, isAtEnd, isEink, next, prev]);
 
   const handleStageMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (flowMode !== 'paginated') {
@@ -93,8 +99,8 @@ export function useReaderGestures({
     swipeHandlerRef.current?.handleTouchEnd(e);
   };
 
-  const handleStageTouchCancel = (e: React.TouchEvent<HTMLDivElement>) => {
-    swipeHandlerRef.current?.handleTouchCancel(e);
+  const handleStageTouchCancel = () => {
+    swipeHandlerRef.current?.handleTouchCancel();
   };
 
   const handleStageClick = (e: React.MouseEvent<HTMLDivElement>) => {

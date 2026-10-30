@@ -70,6 +70,8 @@ export const PdfStage: React.FC<PdfStageProps> = ({
         const hasSel = Boolean(selection && selection.toString().trim().length > 0);
         return scrollMode === 'single' && !hasSel;
       },
+      isAtStart: () => currentPage <= 1,
+      isAtEnd: () => currentPage >= totalPages,
       isEink: () => isEink,
       onNext: onScrollNext,
       onPrev: onScrollPrev,
@@ -77,7 +79,7 @@ export const PdfStage: React.FC<PdfStageProps> = ({
     return () => {
       swipeHandlerRef.current?.cancel();
     };
-  }, [containerRef, scrollMode, isEink, onScrollNext, onScrollPrev]);
+  }, [containerRef, scrollMode, currentPage, totalPages, isEink, onScrollNext, onScrollPrev]);
 
   // Click stage to toggle navigation bars or handle tap navigation
   const handleStageClick = (e: React.MouseEvent) => {
@@ -127,7 +129,7 @@ export const PdfStage: React.FC<PdfStageProps> = ({
       onTouchStart={(e) => swipeHandlerRef.current?.handleTouchStart(e)}
       onTouchMove={(e) => swipeHandlerRef.current?.handleTouchMove(e)}
       onTouchEnd={(e) => swipeHandlerRef.current?.handleTouchEnd(e)}
-      onTouchCancel={(e) => swipeHandlerRef.current?.handleTouchCancel(e)}
+      onTouchCancel={() => swipeHandlerRef.current?.handleTouchCancel()}
       style={{
         touchAction: scrollMode === 'single' ? 'pan-y' : 'auto',
       }}

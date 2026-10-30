@@ -236,6 +236,10 @@ export const EpubReaderView: React.FC<EpubReaderViewProps> = ({ bookId }) => {
     hasSelection: Boolean(state.selection),
     activeFollowLink,
     isEink,
+    isAtStart: () => state.percentage <= 0.005 || state.currentLocation <= 1,
+    isAtEnd: () =>
+      state.percentage >= 0.995 ||
+      (state.totalLocations > 0 && state.currentLocation >= state.totalLocations),
     onClearSelection: handleClearSelection,
     onDismissFollowLink: () => setActiveFollowLink(null),
     onToggleBars: () => setShowBars((prev) => !prev),

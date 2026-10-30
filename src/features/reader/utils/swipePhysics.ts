@@ -1,8 +1,8 @@
 /**
  * Physics-based native swipe controller for e-book page turns.
  * Provides 60/120 FPS hardware-accelerated continuous drag tracking,
- * flick/velocity detection, spring snap-back, smooth slide page transitions,
- * and subtle tactile haptic feedback.
+ * flick/velocity detection, boundary rubber-band stretch resistance,
+ * spring snap-back, smooth slide page transitions, and subtle tactile haptic feedback.
  */
 
 export interface NativeSwipeOptions {
@@ -10,6 +10,8 @@ export interface NativeSwipeOptions {
   onNext: () => void;
   onPrev: () => void;
   canSwipe: () => boolean;
+  isAtStart?: () => boolean;
+  isAtEnd?: () => boolean;
   isEink?: () => boolean;
   onSwipeStateChange?: (isSwiping: boolean) => void;
 }
@@ -18,7 +20,7 @@ export interface NativeSwipeHandler {
   handleTouchStart: (e: TouchEvent | React.TouchEvent) => void;
   handleTouchMove: (e: TouchEvent | React.TouchEvent) => void;
   handleTouchEnd: (e: TouchEvent | React.TouchEvent) => void;
-  handleTouchCancel: (e: TouchEvent | React.TouchEvent) => void;
+  handleTouchCancel: () => void;
   wasSwipeGesture: () => boolean;
   isDragging: () => boolean;
   cancel: () => void;
@@ -145,9 +147,24 @@ export function createNativeSwipeHandler(options: NativeSwipeOptions): NativeSwi
     lastX = touch.clientX;
     lastTime = now;
 
-    // Apply continuous interactive transform with elastic resistance on overdrag
+    // Check if dragging against book boundaries (page 1 or last page)
+    const isAtStart = options.isAtStart?.() ?? false;
+    const isAtEnd = options.isAtEnd?.() ?? false;
+    const isTryingPrev = deltaX > 0;
+    const isTryingNext = deltaX < 0;
+    const isHittingBoundary = (isTryingPrev && isAtStart) || (isTryingNext && isAtEnd);
+
     const container = options.getContainer();
     if (container) {
+      if (isHittingBoundary) {
+        // Heavy elastic rubber-band tension at start or end of book
+        const sign = deltaX > 0 ? 1 : -1;
+        const stretch = Math.min(48, Math.pow(Math.abs(deltaX), 0.72) * 1.5);
+        container.style.transform = `translate3d(${sign * stretch}px, 0, 0)`;
+        container.style.opacity = '0.92';
+        return;
+      }
+
       const screenWidth = window.innerWidth || 360;
       const maxFree = screenWidth * 0.45;
       let tx = deltaX;
@@ -179,14 +196,43 @@ export function createNativeSwipeHandler(options: NativeSwipeOptions): NativeSwi
     const absX = Math.abs(deltaX);
     const screenWidth = window.innerWidth || 360;
 
+    const isAtStart = options.isAtStart?.() ?? false;
+    const isAtEnd = options.isAtEnd?.() ?? false;
+    const isTryingPrev = deltaX > 0;
+    const isTryingNext = deltaX < 0;
+    const isHittingBoundary = (isTryingPrev && isAtStart) || (isTryingNext && isAtEnd);
+
+    const container = options.getContainer();
+    const isEink = options.isEink?.() ?? false;
+
+    // Handle boundary rebound with tactile tick
+    if (isHittingBoundary) {
+      triggerHaptic(8);
+      if (container && !isEink) {
+        isAnimating = true;
+        container.style.transition =
+          'transform 260ms cubic-bezier(0.175, 0.885, 0.32, 1.25), opacity 260ms ease-out';
+        container.style.transform = 'translate3d(0, 0, 0)';
+        container.style.opacity = '1';
+
+        cleanupTimeout = window.setTimeout(() => {
+          resetStyles(container);
+          isAnimating = false;
+          options.onSwipeStateChange?.(false);
+          cleanupTimeout = undefined;
+        }, 260);
+      } else {
+        if (container) resetStyles(container);
+        options.onSwipeStateChange?.(false);
+      }
+      return;
+    }
+
     // Turn threshold: flick velocity >= 0.35 px/ms OR dragged >= 20% of screen width
     const isFlick = Math.abs(velocity) >= 0.35 && absX >= 25;
     const isFarEnough = absX >= Math.min(120, screenWidth * 0.2);
     const shouldTurn =
       (isFlick || isFarEnough) && (deltaX * (velocity || deltaX) >= 0 || absX > 60);
-
-    const container = options.getContainer();
-    const isEink = options.isEink?.() ?? false;
 
     if (shouldTurn) {
       triggerHaptic(12);
