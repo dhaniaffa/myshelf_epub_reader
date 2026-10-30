@@ -1,6 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 
+import { registerBackHandler } from '@/lib/backHandler';
+
 /* =========================================================================
    BUTTON
 ========================================================================= */
@@ -116,16 +118,23 @@ export const Dialog: React.FC<DialogProps> = ({
   const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (!open) return;
+    document.body.style.overflow = 'hidden';
+
+    const unregisterBack = registerBackHandler(() => {
+      onClose();
+      return true;
+    });
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && open) onClose();
+      if (e.key === 'Escape') onClose();
     };
-    if (open) {
-      document.body.style.overflow = 'hidden';
-      window.addEventListener('keydown', handleKeyDown);
-    }
+    window.addEventListener('keydown', handleKeyDown);
+
     return () => {
       document.body.style.overflow = '';
       window.removeEventListener('keydown', handleKeyDown);
+      unregisterBack();
     };
   }, [open, onClose]);
 
@@ -186,13 +195,22 @@ export interface SheetProps {
 
 export const Sheet: React.FC<SheetProps> = ({ open, onClose, title, children, footer }) => {
   useEffect(() => {
+    if (!open) return;
+
+    const unregisterBack = registerBackHandler(() => {
+      onClose();
+      return true;
+    });
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && open) onClose();
+      if (e.key === 'Escape') onClose();
     };
-    if (open) {
-      window.addEventListener('keydown', handleKeyDown);
-    }
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      unregisterBack();
+    };
   }, [open, onClose]);
 
   if (!open) return null;

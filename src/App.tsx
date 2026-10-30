@@ -11,10 +11,12 @@ import { CatalogPage } from '@/features/catalog/CatalogPage';
 import { LibraryPage } from '@/features/library/LibraryPage';
 import { SettingsPage } from '@/features/settings/SettingsPage';
 import { StatsPage } from '@/features/stats/StatsPage';
-import { useHashRoute } from '@/lib/route';
+import { handleBackAction } from '@/lib/backHandler';
+import { navigate, parseRoute, useHashRoute } from '@/lib/route';
 import { THEME_PALETTES } from '@/lib/theme';
 import { checkForAppUpdate } from '@/lib/updater';
 import { useSettingsStore } from '@/store/settings';
+import { toast } from '@/store/toast';
 
 import type { AppUpdateInfo } from '@/lib/updater';
 import type { ReaderTheme } from '@/types';
@@ -94,6 +96,71 @@ export const App: React.FC = () => {
       metaTheme.setAttribute('content', THEME_PALETTES[resolvedTheme].metaTheme);
     }
   }, [resolvedTheme]);
+
+  // Global Android / hardware back press & escape handler
+  useEffect(() => {
+    let lastBackPressTime = 0;
+
+    const performBack = (): boolean => {
+      // 1. Close any open Dialog, Sheet, or custom modal registered in the LIFO stack
+      if (handleBackAction()) {
+        return true;
+      }
+
+      // 2. If no modal is open, check route hierarchy
+      const currentHash = window.location.hash;
+      const currentRoute = parseRoute(currentHash);
+
+      if (currentRoute.type !== 'library') {
+        navigate('');
+        return true;
+      }
+
+      // 3. Already on root LibraryPage: double-back to exit
+      const now = Date.now();
+      if (now - lastBackPressTime < 2000) {
+        // Exit Android app if running in native wrapper
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const bridge = (window as any).AndroidBackupBridge;
+        if (bridge && typeof bridge.exitApp === 'function') {
+          bridge.exitApp();
+          return true;
+        }
+
+        // Desktop Tauri exit fallback
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const tauri = (window as any).__TAURI__;
+        if (tauri?.process?.exit) {
+          tauri.process.exit(0);
+          return true;
+        }
+
+        return false;
+      }
+
+      lastBackPressTime = now;
+      toast.info('Tekan sekali lagi untuk keluar');
+      return true;
+    };
+
+    // Attach to window for Android WebView evaluateJavascript bridge
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).__handleAndroidBack = performBack;
+
+    // Attach to Escape key globally (desktop / tablet hardware keyboard)
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        performBack();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      delete (window as any).__handleAndroidBack;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   return (
     <>

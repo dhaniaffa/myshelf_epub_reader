@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.view.View
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -61,6 +62,17 @@ class MainActivity : TauriActivity() {
       view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
       WindowInsetsCompat.CONSUMED
     }
+
+    onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+      override fun handleOnBackPressed() {
+        mAppWebView?.post {
+          mAppWebView?.evaluateJavascript(
+            "window.__handleAndroidBack ? window.__handleAndroidBack() : false",
+            null
+          )
+        }
+      }
+    })
   }
 
   override fun onWebViewCreate(webView: WebView) {
@@ -93,5 +105,12 @@ class AndroidBackupBridge(private val activity: MainActivity) {
   fun saveFile(filename: String, content: String, mimeType: String): Boolean {
     saveFileWithPicker(filename, content, mimeType)
     return true
+  }
+
+  @JavascriptInterface
+  fun exitApp() {
+    activity.runOnUiThread {
+      activity.finish()
+    }
   }
 }
