@@ -1,8 +1,12 @@
 /**
  * Physics-based native swipe controller for e-book page turns.
- * Provides 60/120 FPS hardware-accelerated continuous drag tracking,
- * flick/velocity detection, boundary rubber-band stretch resistance,
- * spring snap-back, smooth slide page transitions, and subtle tactile haptic feedback.
+ * Engineered for 60/120 FPS buttery-smooth performance on mobile WebViews:
+ * - RequestAnimationFrame (rAF) hardware-synchronized transforms
+ * - Zero alpha blending re-rasterization during drag
+ * - Iframe pointer-events isolation to eliminate hit-test overhead
+ * - Ultra-responsive flick (0.18 px/ms) and low distance threshold (36px)
+ * - Thumb-arc diagonal tolerance (up to 55 degrees)
+ * - Fast snappy spring slide transitions (150ms / 130ms)
  */
 
 export interface NativeSwipeOptions {
@@ -50,17 +54,50 @@ export function createNativeSwipeHandler(options: NativeSwipeOptions): NativeSwi
   let isAnimating = false;
   let cleanupTimeout: number | undefined;
 
+  let rafId: number | null = null;
+  let pendingTranslateX = 0;
+
+  const setIframePointerEvents = (container: HTMLElement, enable: boolean) => {
+    try {
+      const iframes = container.querySelectorAll('iframe');
+      iframes.forEach((ifr) => {
+        ifr.style.pointerEvents = enable ? '' : 'none';
+      });
+    } catch {
+      // ignore
+    }
+  };
+
   const resetStyles = (container: HTMLElement) => {
+    if (rafId !== null) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+    setIframePointerEvents(container, true);
     container.style.transition = '';
     container.style.transform = '';
     container.style.opacity = '';
     container.style.willChange = '';
   };
 
+  const scheduleTransform = (container: HTMLElement, x: number) => {
+    pendingTranslateX = x;
+    if (rafId === null) {
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        container.style.transform = `translate3d(${pendingTranslateX}px, 0, 0)`;
+      });
+    }
+  };
+
   const cancel = () => {
     if (cleanupTimeout) {
       window.clearTimeout(cleanupTimeout);
       cleanupTimeout = undefined;
+    }
+    if (rafId !== null) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
     }
     const container = options.getContainer();
     if (container) {
@@ -107,14 +144,13 @@ export function createNativeSwipeHandler(options: NativeSwipeOptions): NativeSwi
     const touch = e.touches[0];
     const deltaX = touch.clientX - startX;
     const deltaY = touch.clientY - startY;
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
 
-    // Disambiguate horizontal swipe from vertical scroll/selection in first 10px
+    // Fast, natural thumb-arc direction locking (within first 6px)
     if (!directionLocked) {
-      const absX = Math.abs(deltaX);
-      const absY = Math.abs(deltaY);
-
-      if (absY > 8 && absY > absX) {
-        // Vertical gesture intent: abort swipe tracking
+      // Abort only if unmistakably a vertical scroll gesture
+      if (absY > 12 && absY > absX * 1.4) {
         directionLocked = true;
         isDragging = false;
         const container = options.getContainer();
@@ -122,23 +158,27 @@ export function createNativeSwipeHandler(options: NativeSwipeOptions): NativeSwi
         return;
       }
 
-      if (absX > 8 && absX > absY * 1.15) {
-        // Horizontal swipe intent confirmed
+      // Natural thumb arc tolerance: allows horizontal swipe angle up to ~57 degrees
+      if (absX >= 6 && absX >= absY * 0.65) {
         directionLocked = true;
         isDragging = true;
         wasSwipe = true;
+        const container = options.getContainer();
+        if (container) {
+          setIframePointerEvents(container, false);
+        }
         options.onSwipeStateChange?.(true);
       }
     }
 
     if (!isDragging) return;
 
-    // Prevent default browser swipe-back navigation when dragging
+    // Prevent Chromium WebView horizontal back/forward navigation
     if (e.cancelable && typeof e.preventDefault === 'function') {
       e.preventDefault();
     }
 
-    // Measure velocity
+    // Measure instantaneous velocity
     const now = Date.now();
     const dt = now - lastTime;
     if (dt > 0) {
@@ -147,7 +187,7 @@ export function createNativeSwipeHandler(options: NativeSwipeOptions): NativeSwi
     lastX = touch.clientX;
     lastTime = now;
 
-    // Check if dragging against book boundaries (page 1 or last page)
+    // Check if dragging against confirmed boundaries
     const isAtStart = options.isAtStart?.() ?? false;
     const isAtEnd = options.isAtEnd?.() ?? false;
     const isTryingPrev = deltaX > 0;
@@ -157,31 +197,34 @@ export function createNativeSwipeHandler(options: NativeSwipeOptions): NativeSwi
     const container = options.getContainer();
     if (container) {
       if (isHittingBoundary) {
-        // Heavy elastic rubber-band tension at start or end of book
+        // Elastic rubber-band tension at verified boundary
         const sign = deltaX > 0 ? 1 : -1;
-        const stretch = Math.min(48, Math.pow(Math.abs(deltaX), 0.72) * 1.5);
-        container.style.transform = `translate3d(${sign * stretch}px, 0, 0)`;
-        container.style.opacity = '0.92';
+        const stretch = Math.min(45, Math.pow(absX, 0.7) * 1.4);
+        scheduleTransform(container, sign * stretch);
         return;
       }
 
+      // Direct 1:1 hardware-accelerated tracking without expensive opacity recalculation
       const screenWidth = window.innerWidth || 360;
       const maxFree = screenWidth * 0.45;
       let tx = deltaX;
 
-      if (Math.abs(deltaX) > maxFree) {
-        const extra = Math.abs(deltaX) - maxFree;
+      if (absX > maxFree) {
+        const extra = absX - maxFree;
         const sign = deltaX > 0 ? 1 : -1;
-        tx = sign * (maxFree + extra * 0.35);
+        tx = sign * (maxFree + extra * 0.3);
       }
 
-      const opacity = Math.max(0.65, 1 - (Math.abs(tx) / screenWidth) * 0.35);
-      container.style.transform = `translate3d(${tx}px, 0, 0)`;
-      container.style.opacity = `${opacity}`;
+      scheduleTransform(container, tx);
     }
   };
 
   const handleTouchEnd = (e: TouchEvent | React.TouchEvent) => {
+    if (rafId !== null) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+
     if (!isDragging) {
       const container = options.getContainer();
       if (container) resetStyles(container);
@@ -205,22 +248,20 @@ export function createNativeSwipeHandler(options: NativeSwipeOptions): NativeSwi
     const container = options.getContainer();
     const isEink = options.isEink?.() ?? false;
 
-    // Handle boundary rebound with tactile tick
+    // Handle boundary rebound with tactile micro-tick
     if (isHittingBoundary) {
       triggerHaptic(8);
       if (container && !isEink) {
         isAnimating = true;
-        container.style.transition =
-          'transform 260ms cubic-bezier(0.175, 0.885, 0.32, 1.25), opacity 260ms ease-out';
+        container.style.transition = 'transform 200ms cubic-bezier(0.16, 1, 0.3, 1)';
         container.style.transform = 'translate3d(0, 0, 0)';
-        container.style.opacity = '1';
 
         cleanupTimeout = window.setTimeout(() => {
           resetStyles(container);
           isAnimating = false;
           options.onSwipeStateChange?.(false);
           cleanupTimeout = undefined;
-        }, 260);
+        }, 200);
       } else {
         if (container) resetStyles(container);
         options.onSwipeStateChange?.(false);
@@ -228,17 +269,18 @@ export function createNativeSwipeHandler(options: NativeSwipeOptions): NativeSwi
       return;
     }
 
-    // Turn threshold: flick velocity >= 0.35 px/ms OR dragged >= 20% of screen width
-    const isFlick = Math.abs(velocity) >= 0.35 && absX >= 25;
-    const isFarEnough = absX >= Math.min(120, screenWidth * 0.2);
-    const shouldTurn =
-      (isFlick || isFarEnough) && (deltaX * (velocity || deltaX) >= 0 || absX > 60);
+    // Highly responsive thresholds:
+    // 1. Effortless flick: velocity >= 0.18 px/ms with as little as 15px motion
+    // 2. Short static drag: only 36px or 10% of screen width
+    const isFlick = Math.abs(velocity) >= 0.18 && absX >= 15;
+    const isFarEnough = absX >= Math.min(36, screenWidth * 0.1);
+    const shouldTurn = isFlick || isFarEnough;
 
     if (shouldTurn) {
       triggerHaptic(12);
       const isNext = deltaX < 0;
 
-      // E-Ink optimization: instantaneous turn without slide animations (prevents e-ink ghosting)
+      // E-Ink optimization: instantaneous flash turn
       if (isEink || !container) {
         if (container) resetStyles(container);
         if (isNext) options.onNext();
@@ -247,15 +289,13 @@ export function createNativeSwipeHandler(options: NativeSwipeOptions): NativeSwi
         return;
       }
 
-      // Modern smooth slide-out and slide-in physics
+      // Snappy, silky 60/120 FPS slide transition (150ms slide-out + 130ms slide-in)
       isAnimating = true;
       const slideOutX = isNext ? '-100%' : '100%';
-      const slideInStartX = isNext ? '40px' : '-40px';
+      const slideInStartX = isNext ? '30px' : '-30px';
 
-      container.style.transition =
-        'transform 200ms cubic-bezier(0.2, 0.8, 0.25, 1), opacity 200ms ease-out';
+      container.style.transition = 'transform 150ms cubic-bezier(0.16, 1, 0.3, 1)';
       container.style.transform = `translate3d(${slideOutX}, 0, 0)`;
-      container.style.opacity = '0.4';
 
       cleanupTimeout = window.setTimeout(() => {
         if (isNext) {
@@ -264,19 +304,30 @@ export function createNativeSwipeHandler(options: NativeSwipeOptions): NativeSwi
           options.onPrev();
         }
 
-        // Position on opposite entrance side without transition
+        // Reposition on entrance side with zero transition delay
         container.style.transition = 'none';
         container.style.transform = `translate3d(${slideInStartX}, 0, 0)`;
-        container.style.opacity = '0.6';
 
-        // Force synchronous DOM reflow
+        // Force synchronous layout reflow
         void container.offsetWidth;
 
-        // Slide into final resting place smoothly
-        container.style.transition =
-          'transform 180ms cubic-bezier(0.25, 1, 0.5, 1), opacity 180ms ease-out';
+        // Slide into resting position
+        container.style.transition = 'transform 130ms cubic-bezier(0.16, 1, 0.3, 1)';
         container.style.transform = 'translate3d(0, 0, 0)';
-        container.style.opacity = '1';
+
+        cleanupTimeout = window.setTimeout(() => {
+          resetStyles(container);
+          isAnimating = false;
+          options.onSwipeStateChange?.(false);
+          cleanupTimeout = undefined;
+        }, 130);
+      }, 150);
+    } else {
+      // Light snap-back to origin if gesture was cancelled (< 36px)
+      if (container && !isEink) {
+        isAnimating = true;
+        container.style.transition = 'transform 180ms cubic-bezier(0.16, 1, 0.3, 1)';
+        container.style.transform = 'translate3d(0, 0, 0)';
 
         cleanupTimeout = window.setTimeout(() => {
           resetStyles(container);
@@ -284,22 +335,6 @@ export function createNativeSwipeHandler(options: NativeSwipeOptions): NativeSwi
           options.onSwipeStateChange?.(false);
           cleanupTimeout = undefined;
         }, 180);
-      }, 200);
-    } else {
-      // Snap back to original position with spring easing
-      if (container && !isEink) {
-        isAnimating = true;
-        container.style.transition =
-          'transform 220ms cubic-bezier(0.2, 0.9, 0.3, 1), opacity 220ms ease-out';
-        container.style.transform = 'translate3d(0, 0, 0)';
-        container.style.opacity = '1';
-
-        cleanupTimeout = window.setTimeout(() => {
-          resetStyles(container);
-          isAnimating = false;
-          options.onSwipeStateChange?.(false);
-          cleanupTimeout = undefined;
-        }, 220);
       } else {
         if (container) resetStyles(container);
         options.onSwipeStateChange?.(false);

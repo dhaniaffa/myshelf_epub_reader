@@ -372,16 +372,6 @@ export function setupIframeListeners({
       const isPaginated = settingsRef.current.flowMode === 'paginated';
       return isPaginated && !hasSelection;
     },
-    isAtStart: () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const loc = (renditionRef.current as any)?.currentLocation?.();
-      return Boolean(loc?.atStart);
-    },
-    isAtEnd: () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const loc = (renditionRef.current as any)?.currentLocation?.();
-      return Boolean(loc?.atEnd);
-    },
     isEink: () => {
       const theme = themeRef.current;
       return settingsRef.current.einkMode || theme === 'eink-light' || theme === 'eink-dark';
