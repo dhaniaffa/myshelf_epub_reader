@@ -99,6 +99,30 @@ body,
   animation: slideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* Lightweight page transition when switching routes/menus */
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-page-enter {
+  animation: pageEnter 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: opacity, transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-page-enter {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
 /* E-Ink High Contrast Mode & Zero Latency Optimizations */
 .eink-mode,
 .eink-mode * {

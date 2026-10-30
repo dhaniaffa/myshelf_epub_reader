@@ -194,25 +194,30 @@ export const App: React.FC = () => {
         >
           <ReaderPage bookId={route.bookId} />
         </Suspense>
-      ) : route.type === 'collections' ? (
-        <AppShell currentRoute="collections">
-          <CollectionsPage collectionId={route.collectionId} />
-        </AppShell>
-      ) : route.type === 'catalog' ? (
-        <AppShell currentRoute="catalog">
-          <CatalogPage sourceId={route.sourceId} />
-        </AppShell>
-      ) : route.type === 'stats' ? (
-        <AppShell currentRoute="stats">
-          <StatsPage />
-        </AppShell>
-      ) : route.type === 'settings' ? (
-        <AppShell currentRoute="settings">
-          <SettingsPage />
-        </AppShell>
       ) : (
-        <AppShell currentRoute="library">
-          <LibraryPage />
+        <AppShell currentRoute={route.type}>
+          <div
+            key={
+              route.type === 'collections'
+                ? `collections_${route.collectionId || 'root'}`
+                : route.type === 'catalog'
+                  ? `catalog_${route.sourceId || 'root'}`
+                  : route.type
+            }
+            className="animate-page-enter flex min-w-0 flex-1 flex-col"
+          >
+            {route.type === 'collections' ? (
+              <CollectionsPage collectionId={route.collectionId} />
+            ) : route.type === 'catalog' ? (
+              <CatalogPage sourceId={route.sourceId} />
+            ) : route.type === 'stats' ? (
+              <StatsPage />
+            ) : route.type === 'settings' ? (
+              <SettingsPage />
+            ) : (
+              <LibraryPage />
+            )}
+          </div>
         </AppShell>
       )}
 
