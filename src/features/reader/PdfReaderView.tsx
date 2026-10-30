@@ -399,6 +399,8 @@ export const PdfReaderView: React.FC<PdfReaderViewProps> = ({ bookId }) => {
       {/* READING STAGE */}
       <PdfStage
         scrollMode={state.scrollMode}
+        scale={state.scale}
+        onScaleChange={setScale}
         isReady={state.isReady}
         hasError={state.hasError}
         errorMessage={state.errorMessage}

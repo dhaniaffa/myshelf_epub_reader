@@ -2,15 +2,19 @@ import React, { useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { navigate } from '@/lib/route';
+import { createPdfPinchHandler } from '../../utils/pdfPinchZoom';
 import { createNativeSwipeHandler } from '../../utils/swipePhysics';
 import { PdfPageCanvas } from './PdfPageCanvas';
 import { PdfRunningFooter } from './PdfRunningFooter';
 import { PdfErrorOverlay, PdfLoadingOverlay } from './PdfStateOverlays';
 
+import type { PdfPinchHandler } from '../../utils/pdfPinchZoom';
 import type { NativeSwipeHandler } from '../../utils/swipePhysics';
 
 export interface PdfStageProps {
   scrollMode: 'vertical' | 'single';
+  scale: number;
+  onScaleChange: (scale: number) => void;
   isReady: boolean;
   hasError: boolean;
   errorMessage?: string;
@@ -37,6 +41,8 @@ export interface PdfStageProps {
 
 export const PdfStage: React.FC<PdfStageProps> = ({
   scrollMode,
+  scale,
+  onScaleChange,
   isReady,
   hasError,
   errorMessage,
@@ -61,6 +67,18 @@ export const PdfStage: React.FC<PdfStageProps> = ({
 }) => {
   // Native physics swipe gesture handler for single page mode
   const swipeHandlerRef = useRef<NativeSwipeHandler | null>(null);
+  const pinchHandlerRef = useRef<PdfPinchHandler | null>(null);
+
+  useEffect(() => {
+    pinchHandlerRef.current = createPdfPinchHandler({
+      getContainer: () => containerRef.current,
+      getCurrentScale: () => scale,
+      onCommitScale: onScaleChange,
+    });
+    return () => {
+      pinchHandlerRef.current?.cancel();
+    };
+  }, [containerRef, scale, onScaleChange]);
 
   useEffect(() => {
     swipeHandlerRef.current = createNativeSwipeHandler({
@@ -68,7 +86,12 @@ export const PdfStage: React.FC<PdfStageProps> = ({
       canSwipe: () => {
         const selection = window.getSelection();
         const hasSel = Boolean(selection && selection.toString().trim().length > 0);
-        return scrollMode === 'single' && !hasSel;
+        return (
+          scrollMode === 'single' &&
+          !hasSel &&
+          scale <= 1.05 &&
+          !pinchHandlerRef.current?.isPinching()
+        );
       },
       isAtStart: () => currentPage <= 1,
       isAtEnd: () => currentPage >= totalPages,
@@ -79,12 +102,21 @@ export const PdfStage: React.FC<PdfStageProps> = ({
     return () => {
       swipeHandlerRef.current?.cancel();
     };
-  }, [containerRef, scrollMode, currentPage, totalPages, isEink, onScrollNext, onScrollPrev]);
+  }, [
+    containerRef,
+    scrollMode,
+    scale,
+    currentPage,
+    totalPages,
+    isEink,
+    onScrollNext,
+    onScrollPrev,
+  ]);
 
   // Click stage to toggle navigation bars or handle tap navigation
   const handleStageClick = (e: React.MouseEvent) => {
-    // If a horizontal swipe drag just occurred, suppress click event completely
-    if (swipeHandlerRef.current?.wasSwipeGesture()) {
+    // If a swipe or pinch drag just occurred, suppress click event completely
+    if (swipeHandlerRef.current?.wasSwipeGesture() || pinchHandlerRef.current?.wasPinching()) {
       return;
     }
 
@@ -126,12 +158,30 @@ export const PdfStage: React.FC<PdfStageProps> = ({
   return (
     <main
       onClick={handleStageClick}
-      onTouchStart={(e) => swipeHandlerRef.current?.handleTouchStart(e)}
-      onTouchMove={(e) => swipeHandlerRef.current?.handleTouchMove(e)}
-      onTouchEnd={(e) => swipeHandlerRef.current?.handleTouchEnd(e)}
-      onTouchCancel={() => swipeHandlerRef.current?.handleTouchCancel()}
+      onTouchStart={(e) => {
+        pinchHandlerRef.current?.handleTouchStart(e);
+        if (e.touches.length === 1 && !pinchHandlerRef.current?.isPinching()) {
+          swipeHandlerRef.current?.handleTouchStart(e);
+        } else if (e.touches.length > 1) {
+          swipeHandlerRef.current?.cancel();
+        }
+      }}
+      onTouchMove={(e) => {
+        pinchHandlerRef.current?.handleTouchMove(e);
+        if (e.touches.length === 1 && !pinchHandlerRef.current?.isPinching()) {
+          swipeHandlerRef.current?.handleTouchMove(e);
+        }
+      }}
+      onTouchEnd={(e) => {
+        pinchHandlerRef.current?.handleTouchEnd(e);
+        swipeHandlerRef.current?.handleTouchEnd(e);
+      }}
+      onTouchCancel={() => {
+        pinchHandlerRef.current?.handleTouchCancel();
+        swipeHandlerRef.current?.handleTouchCancel();
+      }}
       style={{
-        touchAction: scrollMode === 'single' ? 'pan-y' : 'auto',
+        touchAction: scale > 1.05 ? 'pan-x pan-y' : scrollMode === 'single' ? 'pan-y' : 'auto',
       }}
       className="relative box-border flex h-full w-full flex-1 flex-col overflow-hidden"
     >
@@ -166,7 +216,7 @@ export const PdfStage: React.FC<PdfStageProps> = ({
           key="pdf-vertical-container"
           ref={containerRef}
           onScroll={onScroll}
-          className="relative h-full w-full flex-1 overflow-x-hidden overflow-y-auto"
+          className="relative h-full w-full flex-1 overflow-x-auto overflow-y-auto"
         >
           <div className="mx-auto flex min-h-full flex-col items-center px-2 pt-16 pb-24 sm:px-4">
             {pagesArray.map((pageNum) => {
@@ -207,16 +257,17 @@ export const PdfStage: React.FC<PdfStageProps> = ({
         <div
           key="pdf-single-container"
           ref={containerRef}
-          style={{ touchAction: 'pan-y' }}
+          style={{ touchAction: scale > 1.05 ? 'pan-x pan-y' : 'pan-y' }}
           className="relative flex h-full w-full flex-1 items-center justify-center overflow-auto px-2 pt-14 pb-16"
         >
           <div
-            className="bg-surface-container relative rounded-md shadow-md"
+            id="pdf-single-page-wrapper"
+            className="bg-surface-container relative rounded-md shadow-md transition-shadow"
             style={{
               width: `${targetPageWidth}px`,
               height: `${targetPageHeight}px`,
-              maxWidth: 'calc(100vw - 24px)',
-              maxHeight: 'calc(100vh - 120px)',
+              maxWidth: scale > 1.05 ? 'none' : 'calc(100vw - 24px)',
+              maxHeight: scale > 1.05 ? 'none' : 'calc(100vh - 120px)',
             }}
           >
             <PdfPageCanvas

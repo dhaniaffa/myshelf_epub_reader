@@ -80,6 +80,29 @@ export function setupIframeListeners({
     true
   );
 
+  // 2b. Image 2-finger pinch handler (instantly opens image viewer lightbox on pinch)
+  contents.document.addEventListener(
+    'touchstart',
+    (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        const target = e.target as HTMLElement;
+        const img = target?.closest('img');
+        if (img && img.src) {
+          e.preventDefault();
+          window.dispatchEvent(
+            new CustomEvent(READER_EVENTS.openImage, {
+              detail: {
+                src: img.src,
+                alt: img.getAttribute('alt') || '',
+              },
+            })
+          );
+        }
+      }
+    },
+    { passive: false }
+  );
+
   // 3. Footnote click interception & follow link handler
   contents.document.addEventListener(
     'click',
