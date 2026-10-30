@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { Panels } from '@/features/reader/panels';
-import { SettingsSheet } from '@/features/reader/SettingsSheet';
+import { SettingsSheet } from '@/features/reader/settings';
 import { usePdfReader } from '@/features/reader/usePdfReader';
 import { db } from '@/lib/db';
 import { navigate } from '@/lib/route';

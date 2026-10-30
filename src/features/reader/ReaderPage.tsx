@@ -22,7 +22,7 @@ import { NoteDialog } from '@/features/reader/NoteDialog';
 import { Panels } from '@/features/reader/panels';
 import { PdfReaderView } from '@/features/reader/PdfReaderView';
 import { SelectionBar } from '@/features/reader/SelectionBar';
-import { SettingsSheet } from '@/features/reader/SettingsSheet';
+import { SettingsSheet } from '@/features/reader/settings';
 import { TTSPlayerBar } from '@/features/reader/TTSPlayerBar';
 import { useReader } from '@/features/reader/useReader';
 import { splitIntoSentences, useTTS } from '@/features/reader/useTTS';
