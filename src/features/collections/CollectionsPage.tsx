@@ -9,7 +9,6 @@ import {
   Folders,
   Plus,
   Search,
-  Tag,
   Trash2,
 } from 'lucide-react';
 
@@ -17,7 +16,7 @@ import { Button, Dialog, IconButton } from '@/components/ui';
 import { BookCard } from '@/features/library/BookCard';
 import { BookDetailsDialog } from '@/features/library/BookDetailsDialog';
 import { registerBackHandler } from '@/lib/backHandler';
-import { addTagToBook, createCollection, db, deleteCollection, removeTagFromBook } from '@/lib/db';
+import { createCollection, db, deleteCollection, removeTagFromBook } from '@/lib/db';
 import { navigate } from '@/lib/route';
 import { toast } from '@/store/toast';
 
@@ -39,7 +38,6 @@ export const CollectionsPage: React.FC<CollectionsPageProps> = ({ collectionId }
   const [deletingCol, setDeletingCol] = useState<BookCollection | null>(null);
   const [selectedBookForDetails, setSelectedBookForDetails] = useState<Book | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [addBookToColDialog, setAddBookToColDialog] = useState<Book | null>(null);
 
   const handleOpenCollection = (name: string) => {
     setSearchQuery('');
@@ -64,12 +62,11 @@ export const CollectionsPage: React.FC<CollectionsPageProps> = ({ collectionId }
   }, [activeCollectionName]);
 
   // Group books by collection
-  const { booksByCollection, untaggedBooks, totalTaggedCount } = useMemo(() => {
+  const { booksByCollection, totalTaggedCount } = useMemo(() => {
     const map: Record<string, Book[]> = {};
-    const untagged: Book[] = [];
     let taggedCount = 0;
 
-    if (!allBooks) return { booksByCollection: map, untaggedBooks: untagged, totalTaggedCount: 0 };
+    if (!allBooks) return { booksByCollection: map, totalTaggedCount: 0 };
 
     for (const b of allBooks) {
       if (b.tags && Array.isArray(b.tags) && b.tags.length > 0) {
@@ -78,12 +75,10 @@ export const CollectionsPage: React.FC<CollectionsPageProps> = ({ collectionId }
           if (!map[t]) map[t] = [];
           map[t].push(b);
         }
-      } else {
-        untagged.push(b);
       }
     }
 
-    return { booksByCollection: map, untaggedBooks: untagged, totalTaggedCount: taggedCount };
+    return { booksByCollection: map, totalTaggedCount: taggedCount };
   }, [allBooks]);
 
   const handleCreateCollection = async (e: React.FormEvent) => {
@@ -185,7 +180,7 @@ export const CollectionsPage: React.FC<CollectionsPageProps> = ({ collectionId }
 
       {/* STATS OVERVIEW CARDS (only shown on root collections view) */}
       {!activeCollectionName && (
-        <div className="mb-8 grid grid-cols-3 gap-3 sm:gap-4">
+        <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4">
           <div className="bg-surface-container-low border-outline-variant/20 rounded-2xl border p-3.5 sm:p-4">
             <span className="text-on-surface-variant/70 text-[11px] font-medium sm:text-xs">
               Total Koleksi
@@ -196,18 +191,10 @@ export const CollectionsPage: React.FC<CollectionsPageProps> = ({ collectionId }
           </div>
           <div className="bg-surface-container-low border-outline-variant/20 rounded-2xl border p-3.5 sm:p-4">
             <span className="text-on-surface-variant/70 text-[11px] font-medium sm:text-xs">
-              Dikelompokkan
+              Buku Dikelompokkan
             </span>
             <p className="text-primary mt-1 font-mono text-xl font-bold sm:text-2xl">
               {totalTaggedCount}
-            </p>
-          </div>
-          <div className="bg-surface-container-low border-outline-variant/20 rounded-2xl border p-3.5 sm:p-4">
-            <span className="text-on-surface-variant/70 text-[11px] font-medium sm:text-xs">
-              Belum Dikelompokkan
-            </span>
-            <p className="text-on-surface-variant mt-1 font-mono text-xl font-bold sm:text-2xl">
-              {untaggedBooks.length}
             </p>
           </div>
         </div>
@@ -358,48 +345,6 @@ export const CollectionsPage: React.FC<CollectionsPageProps> = ({ collectionId }
               </div>
             )}
           </div>
-
-          {/* UNTAGGED BOOKS SECTION (Quick Categorization) */}
-          {untaggedBooks.length > 0 && (
-            <div className="border-outline-variant/20 border-t pt-6">
-              <div className="mb-3 flex items-center justify-between">
-                <div>
-                  <h3 className="text-on-surface text-base font-bold">Buku Belum Dikelompokkan</h3>
-                  <p className="text-on-surface-variant text-xs">
-                    Kelompokkan buku-buku ini ke koleksi Anda dengan cepat.
-                  </p>
-                </div>
-                <span className="bg-surface-container-high text-on-surface-variant rounded-full px-2.5 py-0.5 font-mono text-xs font-semibold">
-                  {untaggedBooks.length} buku
-                </span>
-              </div>
-
-              <div className="flex scrollbar-none gap-3 overflow-x-auto pb-2">
-                {untaggedBooks.slice(0, 10).map((b) => (
-                  <div
-                    key={b.id}
-                    className="bg-surface-container-low border-outline-variant/20 flex w-44 shrink-0 flex-col justify-between rounded-xl border p-3"
-                  >
-                    <div className="space-y-1">
-                      <p className="text-on-surface line-clamp-1 text-xs font-semibold">
-                        {b.title}
-                      </p>
-                      <p className="text-on-surface-variant truncate text-[11px]">{b.author}</p>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => setAddBookToColDialog(b)}
-                      className="bg-primary/10 hover:bg-primary text-primary hover:text-on-primary mt-3 flex cursor-pointer items-center justify-center gap-1 rounded-lg py-1.5 text-[11px] font-semibold transition-colors"
-                    >
-                      <Plus size={12} />
-                      <span>Atur Koleksi</span>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       )}
 
@@ -473,49 +418,6 @@ export const CollectionsPage: React.FC<CollectionsPageProps> = ({ collectionId }
           Buku-buku di dalam koleksi ini tidak akan terhapus dari perpustakaan Anda, hanya label
           koleksinya yang dicabut.
         </p>
-      </Dialog>
-
-      {/* QUICK ADD TO COLLECTION MODAL FOR UNTAGGED BOOKS */}
-      <Dialog
-        open={Boolean(addBookToColDialog)}
-        onClose={() => setAddBookToColDialog(null)}
-        title={
-          <div className="flex items-center gap-2">
-            <Tag size={18} className="text-primary" />
-            <span>Masukkan ke Koleksi</span>
-          </div>
-        }
-        maxWidth="sm"
-        actions={
-          <Button variant="outlined" size="sm" onClick={() => setAddBookToColDialog(null)}>
-            Tutup
-          </Button>
-        }
-      >
-        <div className="space-y-3 py-1">
-          <p className="text-on-surface-variant text-xs">
-            Pilih koleksi untuk buku{' '}
-            <strong className="text-on-surface">&quot;{addBookToColDialog?.title}&quot;</strong>:
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {collections?.map((col) => (
-              <button
-                key={col.id}
-                type="button"
-                onClick={async () => {
-                  if (!addBookToColDialog) return;
-                  await addTagToBook(addBookToColDialog.id, col.name);
-                  toast.success(`Buku dimasukkan ke koleksi "${col.name}"`);
-                  setAddBookToColDialog(null);
-                }}
-                className="bg-primary/10 hover:bg-primary text-primary hover:text-on-primary inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors"
-              >
-                <Plus size={12} />
-                <span>{col.name}</span>
-              </button>
-            ))}
-          </div>
-        </div>
       </Dialog>
 
       {/* BOOK DETAILS DIALOG */}
