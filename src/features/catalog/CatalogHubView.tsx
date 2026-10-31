@@ -1,7 +1,7 @@
 import React from 'react';
 import { ArrowRight, Code2, Compass, Plus, Server } from 'lucide-react';
 
-import { Button } from '@/components/ui';
+import { Button } from '@/components/ui/Button';
 import { CATALOG_SOURCES } from '@/features/catalog/sources';
 
 import type { CatalogSourceConfig, CatalogSourceId } from '@/features/catalog/sources';

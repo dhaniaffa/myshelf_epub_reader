@@ -11,7 +11,7 @@ import {
   Unlink,
 } from 'lucide-react';
 
-import { Button } from '@/components/ui';
+import { Button } from '@/components/ui/Button';
 import {
   connectLocalFolder,
   disconnectLocalFolder,

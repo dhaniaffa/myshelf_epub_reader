@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { BookOpen, Globe, Search, X } from 'lucide-react';
 
-import { Button } from '@/components/ui';
+import { Button } from '@/components/ui/Button';
 import { CatalogBookCard } from '@/features/catalog/CatalogBookCard';
 import { fetchOpenLibraryBooks, OPEN_LIBRARY_CURATED_TOPICS } from '@/lib/openlibrary';
 

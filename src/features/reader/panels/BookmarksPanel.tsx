@@ -1,7 +1,7 @@
 import React from 'react';
 import { Trash2 } from 'lucide-react';
 
-import { IconButton } from '@/components/ui';
+import { IconButton } from '@/components/ui/IconButton';
 
 import type { Bookmark } from '@/types';
 

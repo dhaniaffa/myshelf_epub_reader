@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { BookOpen, Check, Download, DownloadCloud, Globe, Tag, User } from 'lucide-react';
 
-import { Button, Dialog } from '@/components/ui';
+import { Button } from '@/components/ui/Button';
+import { Dialog } from '@/components/ui/Dialog';
 
 import type { CatalogBook } from '@/types';
 

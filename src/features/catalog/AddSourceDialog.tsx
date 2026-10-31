@@ -1,7 +1,8 @@
 import React from 'react';
 import { Code2, Plus, Rss } from 'lucide-react';
 
-import { Button, Dialog } from '@/components/ui';
+import { Button } from '@/components/ui/Button';
+import { Dialog } from '@/components/ui/Dialog';
 
 interface AddSourceDialogProps {
   open: boolean;

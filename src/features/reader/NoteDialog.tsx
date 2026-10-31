@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 
-import { Button, Dialog } from '@/components/ui';
+import { Button } from '@/components/ui/Button';
+import { Dialog } from '@/components/ui/Dialog';
 import { HIGHLIGHT_COLORS } from '@/lib/theme';
 
 import type { HighlightColor } from '@/types';

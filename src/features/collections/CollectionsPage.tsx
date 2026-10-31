@@ -12,7 +12,9 @@ import {
   Trash2,
 } from 'lucide-react';
 
-import { Button, Dialog, IconButton } from '@/components/ui';
+import { Button } from '@/components/ui/Button';
+import { Dialog } from '@/components/ui/Dialog';
+import { IconButton } from '@/components/ui/IconButton';
 import { BookCard } from '@/features/library/BookCard';
 import { BookDetailsDialog } from '@/features/library/BookDetailsDialog';
 import { registerBackHandler } from '@/lib/backHandler';

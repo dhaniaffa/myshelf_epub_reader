@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { BookOpen, CheckCircle2, Info, MoreVertical, Trash2 } from 'lucide-react';
 
-import { IconButton } from '@/components/ui';
+import { IconButton } from '@/components/ui/IconButton';
 import { useCoverUrl } from '@/lib/cover';
 import { db } from '@/lib/db';
 import { formatFileSize, readMetadata } from '@/lib/epub';

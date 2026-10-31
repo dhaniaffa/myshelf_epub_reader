@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Download, ExternalLink, Loader2, Sparkles } from 'lucide-react';
 
-import { Button, Dialog } from '@/components/ui';
+import { Button } from '@/components/ui/Button';
+import { Dialog } from '@/components/ui/Dialog';
 import { installAppUpdate, isAndroidPlatform } from '@/lib/updater';
 import { toast } from '@/store/toast';
 

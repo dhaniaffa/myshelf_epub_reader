@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { AlertCircle, BookA, Cloud, Database, Loader2, Volume2 } from 'lucide-react';
 
-import { Button, Dialog } from '@/components/ui';
+import { Button } from '@/components/ui/Button';
+import { Dialog } from '@/components/ui/Dialog';
 import { lookupWord } from '@/lib/dictionary';
 
 import type { DictionaryResult } from '@/types';

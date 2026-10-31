@@ -13,7 +13,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 
-import { Button } from '@/components/ui';
+import { Button } from '@/components/ui/Button';
 import { CatalogBookCard } from '@/features/catalog/CatalogBookCard';
 import { fetchOpdsFeed } from '@/lib/opds';
 import { toast } from '@/store/toast';

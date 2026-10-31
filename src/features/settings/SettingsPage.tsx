@@ -1,7 +1,7 @@
 import React from 'react';
 import { ArrowLeft } from 'lucide-react';
 
-import { IconButton } from '@/components/ui';
+import { IconButton } from '@/components/ui/IconButton';
 import { APP_VERSION } from '@/config';
 import { navigate } from '@/lib/route';
 import { useStorageEstimate } from './hooks/useStorageEstimate';

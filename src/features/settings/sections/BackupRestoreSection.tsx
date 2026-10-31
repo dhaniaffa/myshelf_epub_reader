@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Download, Upload } from 'lucide-react';
 
-import { Button } from '@/components/ui';
+import { Button } from '@/components/ui/Button';
 import { exportBackupJson, importBackupJson } from '@/lib/backup';
 import { toast } from '@/store/toast';
 

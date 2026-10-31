@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Search, X } from 'lucide-react';
 
-import { Button } from '@/components/ui';
+import { Button } from '@/components/ui/Button';
 import { CatalogBookCard } from '@/features/catalog/CatalogBookCard';
 import { fetchGutenbergBooks, GUTENBERG_CURATED_TOPICS } from '@/lib/gutenberg';
 

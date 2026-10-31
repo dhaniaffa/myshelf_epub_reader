@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { ArrowLeft, BookOpen, ChevronRight, FolderOpen, Plus, Trash2 } from 'lucide-react';
 
-import { Button } from '@/components/ui';
+import { Button } from '@/components/ui/Button';
 import { CatalogBookCard } from '@/features/catalog/CatalogBookCard';
 import { db, DEFAULT_OPDS_FEEDS } from '@/lib/db';
 import { fetchOpdsFeed } from '@/lib/opds';

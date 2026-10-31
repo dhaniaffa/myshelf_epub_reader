@@ -13,7 +13,7 @@ import {
   Zap,
 } from 'lucide-react';
 
-import { IconButton } from '@/components/ui';
+import { IconButton } from '@/components/ui/IconButton';
 import { db, getLocalDateString } from '@/lib/db';
 import { navigate } from '@/lib/route';
 import {

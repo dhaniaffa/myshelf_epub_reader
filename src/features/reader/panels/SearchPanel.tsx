@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ExternalLink } from 'lucide-react';
 
-import { Button } from '@/components/ui';
+import { Button } from '@/components/ui/Button';
 
 import type { SearchResult } from '@/types';
 

@@ -21,7 +21,8 @@ import {
 } from 'lucide-react';
 
 import { AppLogo } from '@/components/icons/AppLogo';
-import { Button, Dialog } from '@/components/ui';
+import { Button } from '@/components/ui/Button';
+import { Dialog } from '@/components/ui/Dialog';
 import { APP_CONFIG, APP_NAME, APP_SUBTITLE } from '@/config';
 import { BookCard } from '@/features/library/BookCard';
 import { BookCompactCard } from '@/features/library/BookCompactCard';

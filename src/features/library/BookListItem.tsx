@@ -13,7 +13,8 @@ import {
   User,
 } from 'lucide-react';
 
-import { Button, IconButton } from '@/components/ui';
+import { Button } from '@/components/ui/Button';
+import { IconButton } from '@/components/ui/IconButton';
 import { useCoverUrl } from '@/lib/cover';
 import { db } from '@/lib/db';
 import { formatFileSize, readMetadata } from '@/lib/epub';

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Globe, Rss } from 'lucide-react';
 
-import { Button, Dialog } from '@/components/ui';
+import { Button } from '@/components/ui/Button';
+import { Dialog } from '@/components/ui/Dialog';
 
 interface CustomFeedDialogProps {
   open: boolean;

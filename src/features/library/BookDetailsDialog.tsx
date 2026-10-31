@@ -16,7 +16,8 @@ import {
   User,
 } from 'lucide-react';
 
-import { Button, Dialog } from '@/components/ui';
+import { Button } from '@/components/ui/Button';
+import { Dialog } from '@/components/ui/Dialog';
 import { BookTagSection } from '@/features/library/BookTagSection';
 import { useCoverUrl } from '@/lib/cover';
 import { db } from '@/lib/db';

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowUpCircle, RefreshCw } from 'lucide-react';
 
-import { Button } from '@/components/ui';
+import { Button } from '@/components/ui/Button';
 import { UpdateDialog } from '@/components/UpdateDialog';
 import { APP_VERSION } from '@/config';
 import { checkForAppUpdate } from '@/lib/updater';

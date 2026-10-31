@@ -8,7 +8,7 @@ import {
   Settings,
 } from 'lucide-react';
 
-import { IconButton } from '@/components/ui';
+import { IconButton } from '@/components/ui/IconButton';
 
 export interface PdfHeaderBarProps {
   show: boolean;

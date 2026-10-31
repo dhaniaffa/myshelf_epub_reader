@@ -5,7 +5,7 @@ import { useRegisterSW } from 'virtual:pwa-register/react';
 import { AppShell } from '@/components/layout/AppShell';
 import { GlobalSyncIndicator } from '@/components/sync/GlobalSyncIndicator';
 import { ToastContainer } from '@/components/ToastContainer';
-import { Button } from '@/components/ui';
+import { Button } from '@/components/ui/Button';
 import { UpdateDialog } from '@/components/UpdateDialog';
 import { CatalogPage } from '@/features/catalog/CatalogPage';
 import { CollectionsPage } from '@/features/collections/CollectionsPage';

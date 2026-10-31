@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { ArrowLeft, Plus, RefreshCw } from 'lucide-react';
 
-import { Button, IconButton } from '@/components/ui';
+import { Button } from '@/components/ui/Button';
+import { IconButton } from '@/components/ui/IconButton';
 import { AddSourceDialog } from '@/features/catalog/AddSourceDialog';
 import { CatalogBookDetailsDialog } from '@/features/catalog/CatalogBookDetailsDialog';
 import { CatalogHubView } from '@/features/catalog/CatalogHubView';

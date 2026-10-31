@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { BookOpen, Check, Download, DownloadCloud } from 'lucide-react';
 
-import { Button } from '@/components/ui';
+import { Button } from '@/components/ui/Button';
 
 import type { CatalogBook } from '@/types';
 

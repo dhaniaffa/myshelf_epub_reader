@@ -1,7 +1,7 @@
 import React from 'react';
 import { Bold, RefreshCw, Tablet, Volume2 } from 'lucide-react';
 
-import { Button } from '@/components/ui';
+import { Button } from '@/components/ui/Button';
 import { useSettingsStore } from '@/store/settings';
 
 export interface EinkOptimizationSectionProps {

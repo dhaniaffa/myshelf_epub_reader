@@ -7,7 +7,8 @@ import {
   Search as SearchIcon,
 } from 'lucide-react';
 
-import { Button, Sheet } from '@/components/ui';
+import { Button } from '@/components/ui/Button';
+import { Sheet } from '@/components/ui/Sheet';
 import { exportAnnotationsMarkdown } from '@/lib/backup';
 import { toast } from '@/store/toast';
 import { AnnotationsPanel } from './AnnotationsPanel';

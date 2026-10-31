@@ -1,7 +1,7 @@
 import React from 'react';
 import { BookOpen, Calendar, Clock, HardDrive, Play, Sparkles, User } from 'lucide-react';
 
-import { Button } from '@/components/ui';
+import { Button } from '@/components/ui/Button';
 import { useCoverUrl } from '@/lib/cover';
 import { formatFileSize } from '@/lib/epub';
 import { navigate } from '@/lib/route';

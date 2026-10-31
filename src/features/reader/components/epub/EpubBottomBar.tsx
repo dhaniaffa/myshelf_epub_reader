@@ -1,7 +1,7 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-import { IconButton } from '@/components/ui';
+import { IconButton } from '@/components/ui/IconButton';
 
 export interface EpubBottomBarProps {
   showBars: boolean;

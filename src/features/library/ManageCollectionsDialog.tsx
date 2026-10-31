@@ -2,7 +2,9 @@ import React, { useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { FolderPlus, Plus, Tag, Trash2 } from 'lucide-react';
 
-import { Button, Dialog, IconButton } from '@/components/ui';
+import { Button } from '@/components/ui/Button';
+import { Dialog } from '@/components/ui/Dialog';
+import { IconButton } from '@/components/ui/IconButton';
 import { createCollection, db, deleteCollection } from '@/lib/db';
 import { toast } from '@/store/toast';
 

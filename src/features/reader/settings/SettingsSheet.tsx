@@ -1,7 +1,8 @@
 import React from 'react';
 import { RotateCcw } from 'lucide-react';
 
-import { Button, Sheet } from '@/components/ui';
+import { Button } from '@/components/ui/Button';
+import { Sheet } from '@/components/ui/Sheet';
 import { useSettingsReset } from './hooks/useSettingsReset';
 import { EinkOptimizationSection } from './sections/EinkOptimizationSection';
 import { EpubLayoutSection } from './sections/EpubLayoutSection';
