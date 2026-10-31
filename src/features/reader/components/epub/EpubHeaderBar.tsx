@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 
 import { IconButton } from '@/components/ui';
-import { navigate } from '@/lib/route';
+import { navigateBack } from '@/lib/route';
 
 export interface EpubHeaderBarProps {
   showBars: boolean;
@@ -56,7 +56,7 @@ export const EpubHeaderBar: React.FC<EpubHeaderBarProps> = ({
       <div className="flex items-center gap-2">
         <IconButton
           size="sm"
-          onClick={() => navigate('/')}
+          onClick={() => navigateBack('/')}
           aria-label="Kembali ke MyShelf"
           title="Kembali ke MyShelf"
         >

@@ -4,7 +4,7 @@ import { Panels } from '@/features/reader/panels';
 import { SettingsSheet } from '@/features/reader/settings';
 import { usePdfReader } from '@/features/reader/usePdfReader';
 import { db } from '@/lib/db';
-import { navigate } from '@/lib/route';
+import { navigateBack } from '@/lib/route';
 import { useSettingsStore } from '@/store/settings';
 import { toast } from '@/store/toast';
 import { PdfBottomBar } from './components/pdf/PdfBottomBar';
@@ -382,7 +382,7 @@ export const PdfReaderView: React.FC<PdfReaderViewProps> = ({ bookId }) => {
           state.currentChapterTitle || state.bookData?.author || `Halaman ${state.currentPage}`
         }
         isBookmarked={isBookmarkedCurrent}
-        onBack={() => navigate('/')}
+        onBack={() => navigateBack('/')}
         onToggleBookmark={handleToggleBookmark}
         onOpenSearch={() => {
           setActivePanelTab('search');

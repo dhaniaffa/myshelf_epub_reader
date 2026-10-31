@@ -14,10 +14,11 @@ import {
   OpenLibraryView,
   StandardEbooksView,
 } from '@/features/catalog/views';
+import { registerBackHandler } from '@/lib/backHandler';
 import { db, DEFAULT_OPDS_FEEDS } from '@/lib/db';
 import { importBookFiles } from '@/lib/importBooks';
 import { fetchWithCorsProxy } from '@/lib/proxy';
-import { navigate } from '@/lib/route';
+import { navigate, navigateBack } from '@/lib/route';
 import { toast } from '@/store/toast';
 
 import type { CatalogSourceId } from '@/features/catalog/sources';
@@ -84,9 +85,21 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({ sourceId }) => {
 
   // Back to Hub source directory
   const handleBackToHub = () => {
-    navigate('catalog');
+    navigateBack('catalog');
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
+
+  // Back button handler for Android & Desktop Escape when viewing a specific source
+  useEffect(() => {
+    if (!activeSource) return;
+
+    const unregister = registerBackHandler(() => {
+      handleBackToHub();
+      return true;
+    });
+
+    return unregister;
+  }, [activeSource]);
 
   // Download & Import Book to Dexie
   const handleDownloadBook = async (book: CatalogBook) => {

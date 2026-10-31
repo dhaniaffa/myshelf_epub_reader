@@ -13,7 +13,8 @@ import { LibraryPage } from '@/features/library/LibraryPage';
 import { SettingsPage } from '@/features/settings/SettingsPage';
 import { StatsPage } from '@/features/stats/StatsPage';
 import { handleBackAction } from '@/lib/backHandler';
-import { navigate, parseRoute, useHashRoute } from '@/lib/route';
+import { isAndroidNative } from '@/lib/platform';
+import { navigate, parseRoute, popRoute, useHashRoute } from '@/lib/route';
 import { THEME_PALETTES } from '@/lib/theme';
 import { checkForAppUpdate } from '@/lib/updater';
 import { useSettingsStore } from '@/store/settings';
@@ -103,12 +104,35 @@ export const App: React.FC = () => {
     let lastBackPressTime = 0;
 
     const performBack = (): boolean => {
-      // 1. Close any open Dialog, Sheet, or custom modal registered in the LIFO stack
+      // 1. Layer 3 (Overlays): Close any open Dialog, Sheet, Footnote, Lightbox in LIFO order
       if (handleBackAction()) {
         return true;
       }
 
-      // 2. If no modal is open, check route hierarchy
+      // 2. Layer 2 & 1 (Screen / Tab Stack Layer for Android Native):
+      if (isAndroidNative()) {
+        if (popRoute()) {
+          return true;
+        }
+
+        // Layer 0: Already at root Library Home with empty stack -> Double-back to exit
+        const now = Date.now();
+        if (now - lastBackPressTime < 2000) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const bridge = (window as any).AndroidBackupBridge;
+          if (bridge && typeof bridge.exitApp === 'function') {
+            bridge.exitApp();
+            return true;
+          }
+          return false;
+        }
+
+        lastBackPressTime = now;
+        toast.info('Tekan sekali lagi untuk keluar');
+        return true;
+      }
+
+      // 3. Fallback for Desktop / Web Browser (e.g. Escape key on PC or Web)
       const currentHash = window.location.hash;
       const currentRoute = parseRoute(currentHash);
 
@@ -127,31 +151,19 @@ export const App: React.FC = () => {
         return true;
       }
 
-      // 3. Already on root LibraryPage: double-back to exit
+      // Desktop Tauri exit fallback
       const now = Date.now();
       if (now - lastBackPressTime < 2000) {
-        // Exit Android app if running in native wrapper
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const bridge = (window as any).AndroidBackupBridge;
-        if (bridge && typeof bridge.exitApp === 'function') {
-          bridge.exitApp();
-          return true;
-        }
-
-        // Desktop Tauri exit fallback
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const tauri = (window as any).__TAURI__;
         if (tauri?.process?.exit) {
           tauri.process.exit(0);
           return true;
         }
-
         return false;
       }
 
-      lastBackPressTime = now;
-      toast.info('Tekan sekali lagi untuk keluar');
-      return true;
+      return false;
     };
 
     // Attach to window for Android WebView evaluateJavascript bridge

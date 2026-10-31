@@ -17,7 +17,7 @@ import { BookCard } from '@/features/library/BookCard';
 import { BookDetailsDialog } from '@/features/library/BookDetailsDialog';
 import { registerBackHandler } from '@/lib/backHandler';
 import { createCollection, db, deleteCollection, removeTagFromBook } from '@/lib/db';
-import { navigate } from '@/lib/route';
+import { navigate, navigateBack } from '@/lib/route';
 import { toast } from '@/store/toast';
 
 import type { Book, BookCollection } from '@/types';
@@ -46,7 +46,7 @@ export const CollectionsPage: React.FC<CollectionsPageProps> = ({ collectionId }
 
   const handleCloseCollection = () => {
     setSearchQuery('');
-    navigate('collections');
+    navigateBack('collections');
   };
 
   // Back button handler for Android & Desktop Escape

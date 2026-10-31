@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-import { navigate } from '@/lib/route';
+import { navigateBack } from '@/lib/route';
 import { createPdfPinchHandler } from '../../utils/pdfPinchZoom';
 import { createNativeSwipeHandler } from '../../utils/swipePhysics';
 import { PdfPageCanvas } from './PdfPageCanvas';
@@ -284,7 +284,7 @@ export const PdfStage: React.FC<PdfStageProps> = ({
 
       {/* Error State */}
       {hasError && (
-        <PdfErrorOverlay errorMessage={errorMessage} onReturnHome={() => navigate('/')} />
+        <PdfErrorOverlay errorMessage={errorMessage} onReturnHome={() => navigateBack('/')} />
       )}
 
       {/* Loading Spinner */}
