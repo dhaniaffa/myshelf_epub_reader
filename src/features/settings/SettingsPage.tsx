@@ -3,6 +3,7 @@ import { ArrowLeft } from 'lucide-react';
 
 import { IconButton } from '@/components/ui/IconButton';
 import { APP_VERSION } from '@/config';
+import { isWebBrowser } from '@/lib/platform';
 import { navigate } from '@/lib/route';
 import { useStorageEstimate } from './hooks/useStorageEstimate';
 import {
@@ -61,8 +62,10 @@ export const SettingsPage: React.FC = () => {
         {/* Local Folder Sync */}
         <FolderSyncSection onStorageChange={refreshStorage} />
 
-        {/* Offline Storage (IndexedDB) */}
-        <StorageQuotaSection storageInfo={storageInfo} onRequestPersist={handleRequestPersist} />
+        {/* Offline Storage (IndexedDB) - Only shown on Web Browser */}
+        {isWebBrowser() && (
+          <StorageQuotaSection storageInfo={storageInfo} onRequestPersist={handleRequestPersist} />
+        )}
 
         {/* Backup & Restore */}
         <BackupRestoreSection onRestored={refreshStorage} />

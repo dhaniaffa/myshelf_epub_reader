@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { getStorageEstimate, requestPersistentStorage } from '@/lib/db';
+import { isWebBrowser } from '@/lib/platform';
 import { toast } from '@/store/toast';
 
 export interface StorageInfo {
@@ -19,6 +20,7 @@ export function useStorageEstimate() {
   });
 
   const refreshStorage = useCallback(async () => {
+    if (!isWebBrowser()) return;
     try {
       const info = await getStorageEstimate();
       setStorageInfo(info);
@@ -28,6 +30,7 @@ export function useStorageEstimate() {
   }, []);
 
   useEffect(() => {
+    if (!isWebBrowser()) return;
     let active = true;
     getStorageEstimate()
       .then((info) => {
