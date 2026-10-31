@@ -141,6 +141,9 @@ export interface ReaderSettings {
   pdfFitMode?: PdfFitMode; // Default page fit mode for PDF files
   pdfScale?: number; // Default zoom scale for PDF files (default: 1.0)
   pdfPageColor?: PdfPageColor; // Independent background / invert color mode for PDF pages ('auto' | 'light' | 'dark' | 'sepia')
+  libraryViewMode?: BookViewMode; // Default bookshelf view mode ('comfortable' | 'compact' | 'cover-only' | 'list')
+  ttsRate?: number; // TTS speech rate (0.5 to 3.0, default: 1.0)
+  ttsVoiceLang?: 'id' | 'en'; // TTS voice language ('id' | 'en', default: 'id')
 }
 
 export interface FootnoteData {

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { useSettingsStore } from '@/store/settings';
 import { toast } from '@/store/toast';
 
 export interface UseTTSOptions {
@@ -91,40 +92,6 @@ export function splitIntoSentences(text: string): string[] {
   return result;
 }
 
-const TTS_LANG_KEY = 'myshelf_tts_language';
-const TTS_RATE_KEY = 'myshelf_tts_rate';
-
-function getInitialLanguage(): TTSLanguage {
-  if (typeof window !== 'undefined') {
-    try {
-      const saved = localStorage.getItem(TTS_LANG_KEY);
-      if (saved === 'id' || saved === 'en') {
-        return saved;
-      }
-    } catch {
-      // ignore
-    }
-  }
-  return 'id';
-}
-
-function getInitialRate(): number {
-  if (typeof window !== 'undefined') {
-    try {
-      const saved = localStorage.getItem(TTS_RATE_KEY);
-      if (saved) {
-        const val = parseFloat(saved);
-        if (!isNaN(val) && val >= 0.5 && val <= 3.0) {
-          return val;
-        }
-      }
-    } catch {
-      // ignore
-    }
-  }
-  return 1.0;
-}
-
 /**
  * Builds universal fallback TTS audio stream URL
  */
@@ -157,20 +124,25 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
   const hasWindow = typeof window !== 'undefined';
   const hasNativeSpeech = hasWindow && 'speechSynthesis' in window;
 
+  const storedRate = useSettingsStore((s) => s.ttsRate ?? 1.0);
+  const storedLang = useSettingsStore((s) => s.ttsVoiceLang ?? 'id');
+  const setStoredRate = useSettingsStore((s) => s.setTtsRate);
+  const setStoredLang = useSettingsStore((s) => s.setTtsVoiceLang);
+
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [sentences, setSentences] = useState<string[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [rate, setRateState] = useState(getInitialRate);
-  const [language, setLanguageState] = useState<TTSLanguage>(getInitialLanguage);
+  const [rate, setRateState] = useState(storedRate);
+  const [language, setLanguageState] = useState<TTSLanguage>(storedLang);
   const [isSpeakingSelection, setIsSpeakingSelection] = useState(false);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice | null>(null);
 
   const sentencesRef = useRef<string[]>([]);
   const currentIndexRef = useRef(0);
-  const rateRef = useRef(getInitialRate());
-  const languageRef = useRef<TTSLanguage>(getInitialLanguage());
+  const rateRef = useRef(storedRate);
+  const languageRef = useRef<TTSLanguage>(storedLang);
   const isSpeakingSelectionRef = useRef(false);
   const voiceRef = useRef<SpeechSynthesisVoice | null>(null);
   const isPlayingRef = useRef(false);
@@ -539,11 +511,7 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
     (newRate: number) => {
       setRateState(newRate);
       rateRef.current = newRate;
-      try {
-        localStorage.setItem(TTS_RATE_KEY, newRate.toString());
-      } catch {
-        // ignore
-      }
+      setStoredRate(newRate);
       if (audioRef.current) {
         audioRef.current.playbackRate = newRate;
       }
@@ -551,7 +519,7 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
         speakCurrentSentence(currentIndexRef.current);
       }
     },
-    [speakCurrentSentence]
+    [setStoredRate, speakCurrentSentence]
   );
 
   // Set language
@@ -559,11 +527,7 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
     (newLang: TTSLanguage) => {
       setLanguageState(newLang);
       languageRef.current = newLang;
-      try {
-        localStorage.setItem(TTS_LANG_KEY, newLang);
-      } catch {
-        // ignore
-      }
+      setStoredLang(newLang);
 
       if (hasNativeSpeech) {
         const vList = window.speechSynthesis.getVoices();
@@ -582,7 +546,7 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
         speakCurrentSentence(currentIndexRef.current);
       }
     },
-    [hasNativeSpeech, speakCurrentSentence]
+    [hasNativeSpeech, setStoredLang, speakCurrentSentence]
   );
 
   // Set voice

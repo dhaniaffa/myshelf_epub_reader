@@ -23,7 +23,7 @@ import {
 import { AppLogo } from '@/components/icons/AppLogo';
 import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
-import { APP_CONFIG, APP_NAME, APP_SUBTITLE } from '@/config';
+import { APP_NAME, APP_SUBTITLE } from '@/config';
 import { BookCard } from '@/features/library/BookCard';
 import { BookCompactCard } from '@/features/library/BookCompactCard';
 import { BookCoverCard } from '@/features/library/BookCoverCard';
@@ -40,6 +40,7 @@ import {
 } from '@/lib/fileSystemSync';
 import { importEpubFiles } from '@/lib/importBooks';
 import { navigate } from '@/lib/route';
+import { useSettingsStore } from '@/store/settings';
 import { useSyncStore } from '@/store/sync';
 import { toast } from '@/store/toast';
 
@@ -58,20 +59,8 @@ export const LibraryPage: React.FC = () => {
   const [selectedCollection, setSelectedCollection] = useState<string | 'all'>('all');
   const [manageCollectionsOpen, setManageCollectionsOpen] = useState(false);
   const [sortBy, setSortBy] = useState<'lastRead' | 'title' | 'added'>('lastRead');
-  const [viewMode, setViewMode] = useState<BookViewMode>(() => {
-    const saved = localStorage.getItem(APP_CONFIG.storageKeys.viewMode);
-    if (
-      saved === 'compact' ||
-      saved === 'comfortable' ||
-      saved === 'cover-only' ||
-      saved === 'list'
-    ) {
-      return saved;
-    }
-    // Backward compatibility with legacy 'grid' setting
-    if (saved === 'grid') return 'comfortable';
-    return 'comfortable';
-  });
+  const viewMode = useSettingsStore((s) => s.libraryViewMode || 'comfortable');
+  const setLibraryViewMode = useSettingsStore((s) => s.setLibraryViewMode);
   const [isImporting, setIsImporting] = useState(false);
   const isFolderSyncing = useSyncStore((s) => s.isSyncing);
   const syncProgress = useSyncStore((s) => s.progress);
@@ -120,8 +109,7 @@ export const LibraryPage: React.FC = () => {
   };
 
   const handleViewModeChange = (mode: BookViewMode) => {
-    setViewMode(mode);
-    localStorage.setItem(APP_CONFIG.storageKeys.viewMode, mode);
+    setLibraryViewMode(mode);
   };
 
   // Find last read book for "Continue Reading" card

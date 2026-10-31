@@ -73,6 +73,32 @@ describe('Settings Store (src/store/settings.ts)', () => {
       setPdfScale(1.5);
       expect(useSettingsStore.getState().pdfScale).toBe(1.5);
     });
+
+    it('clamps tts rate between 0.5 and 3.0', () => {
+      const { setTtsRate } = useSettingsStore.getState();
+
+      setTtsRate(0.2);
+      expect(useSettingsStore.getState().ttsRate).toBe(0.5);
+
+      setTtsRate(5.0);
+      expect(useSettingsStore.getState().ttsRate).toBe(3.0);
+
+      setTtsRate(1.5);
+      expect(useSettingsStore.getState().ttsRate).toBe(1.5);
+    });
+
+    it('updates tts voice language and library view mode cleanly', () => {
+      const { setTtsVoiceLang, setLibraryViewMode } = useSettingsStore.getState();
+
+      setTtsVoiceLang('en');
+      expect(useSettingsStore.getState().ttsVoiceLang).toBe('en');
+
+      setLibraryViewMode('cover-only');
+      expect(useSettingsStore.getState().libraryViewMode).toBe('cover-only');
+
+      setLibraryViewMode('list');
+      expect(useSettingsStore.getState().libraryViewMode).toBe('list');
+    });
   });
 
   describe('Isolated Reset Functions', () => {

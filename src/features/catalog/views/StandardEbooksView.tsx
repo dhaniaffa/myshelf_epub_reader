@@ -16,6 +16,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import { CatalogBookCard } from '@/features/catalog/CatalogBookCard';
 import { fetchOpdsFeed } from '@/lib/opds';
+import { safeStorage } from '@/lib/storage';
 import { toast } from '@/store/toast';
 
 import type { OpdsFeedResult, OpdsNavigationLink } from '@/types';
@@ -42,7 +43,7 @@ export const StandardEbooksView: React.FC<BaseCatalogViewProps> = ({
 
   // Patrons Circle email for authentication if user is a patron
   const [patronEmail, setPatronEmail] = useState<string>(() => {
-    return localStorage.getItem(PATRON_EMAIL_STORAGE_KEY) || '';
+    return safeStorage.getItem(PATRON_EMAIL_STORAGE_KEY) || '';
   });
   const [showEmailInput, setShowEmailInput] = useState(false);
   const [tempEmail, setTempEmail] = useState('');
@@ -95,14 +96,14 @@ export const StandardEbooksView: React.FC<BaseCatalogViewProps> = ({
     e.preventDefault();
     const clean = tempEmail.trim();
     if (!clean) {
-      localStorage.removeItem(PATRON_EMAIL_STORAGE_KEY);
+      safeStorage.removeItem(PATRON_EMAIL_STORAGE_KEY);
       setPatronEmail('');
       setShowEmailInput(false);
       toast.info('Email Patrons Circle dihapus');
       void loadStandardEbooks(url, '');
       return;
     }
-    localStorage.setItem(PATRON_EMAIL_STORAGE_KEY, clean);
+    safeStorage.setItem(PATRON_EMAIL_STORAGE_KEY, clean);
     setPatronEmail(clean);
     setShowEmailInput(false);
     toast.success('Email Patrons Circle disimpan');

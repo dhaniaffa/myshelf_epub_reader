@@ -24,6 +24,9 @@ interface SettingsState extends ReaderSettings {
   setPdfFitMode: (pdfFitMode: NonNullable<ReaderSettings['pdfFitMode']>) => void;
   setPdfScale: (pdfScale: number) => void;
   setPdfPageColor: (pdfPageColor: NonNullable<ReaderSettings['pdfPageColor']>) => void;
+  setLibraryViewMode: (libraryViewMode: NonNullable<ReaderSettings['libraryViewMode']>) => void;
+  setTtsRate: (ttsRate: number) => void;
+  setTtsVoiceLang: (ttsVoiceLang: NonNullable<ReaderSettings['ttsVoiceLang']>) => void;
   resetEpubSettings: () => void;
   resetPdfSettings: () => void;
   resetSettings: () => void;
@@ -48,6 +51,9 @@ const DEFAULT_SETTINGS: ReaderSettings = {
   pdfFitMode: 'width',
   pdfScale: 1.0,
   pdfPageColor: 'auto',
+  libraryViewMode: 'comfortable',
+  ttsRate: 1.0,
+  ttsVoiceLang: 'id',
 };
 
 export const useSettingsStore = create<SettingsState>()(
@@ -74,6 +80,9 @@ export const useSettingsStore = create<SettingsState>()(
       setPdfFitMode: (pdfFitMode) => set({ pdfFitMode }),
       setPdfScale: (pdfScale) => set({ pdfScale: Math.max(0.5, Math.min(3.0, pdfScale)) }),
       setPdfPageColor: (pdfPageColor) => set({ pdfPageColor }),
+      setLibraryViewMode: (libraryViewMode) => set({ libraryViewMode }),
+      setTtsRate: (ttsRate) => set({ ttsRate: Math.max(0.5, Math.min(3.0, ttsRate)) }),
+      setTtsVoiceLang: (ttsVoiceLang) => set({ ttsVoiceLang }),
       resetEpubSettings: () =>
         set({
           fontFamily: DEFAULT_SETTINGS.fontFamily,
