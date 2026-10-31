@@ -1,8 +1,14 @@
+import { invoke } from '@tauri-apps/api/core';
+
 import { generateBackupJsonString } from '@/lib/backup';
 import { db } from '@/lib/db';
-import { importBookFiles } from '@/lib/importBooks';
+import { importBookFiles, importNativePickedBooks } from '@/lib/importBooks';
+import { pickAndScanNativeFolder } from '@/lib/nativeFiles';
+import { isAndroidNative, isDesktopTauri } from '@/lib/platform';
+import { useSettingsStore } from '@/store/settings';
 import { useSyncStore } from '@/store/sync';
 
+import type { NativePickedBook } from '@/lib/nativeFiles';
 import type { LocalSyncFolder } from '@/types';
 
 export const PRIMARY_SYNC_FOLDER_ID = 'primary_library';
@@ -35,6 +41,15 @@ export function isFileSystemAccessSupported(): boolean {
   if (isMobile) return false;
 
   return typeof window.showDirectoryPicker === 'function';
+}
+
+/**
+ * Checks if folder sync / directory scanning is supported on this platform.
+ * Returns true for Desktop Tauri, Android Native (SAF), or Chromium browsers.
+ */
+export function isFolderSyncSupported(): boolean {
+  if (typeof window === 'undefined') return false;
+  return isDesktopTauri() || isAndroidNative() || isFileSystemAccessSupported();
 }
 
 const IGNORED_DIR_NAMES = new Set([
@@ -206,18 +221,76 @@ export async function writeBackupToFolder(dirHandle: FileSystemDirectoryHandle):
  * Gets currently connected folder configuration
  */
 export async function getLocalFolder(): Promise<LocalSyncFolder | undefined> {
-  if (!isFileSystemAccessSupported()) return undefined;
+  if (!isFolderSyncSupported()) return undefined;
   return await db.sync_folders.get(PRIMARY_SYNC_FOLDER_ID);
 }
 
 /**
- * Opens OS folder picker dialog and stores handle into IndexedDB
+ * Opens OS folder picker dialog and stores handle/path into IndexedDB
  */
 export async function connectLocalFolder(options?: {
   autoSyncOnLaunch?: boolean;
   autoBackupEnabled?: boolean;
 }): Promise<LocalSyncFolder> {
-  if (!isFileSystemAccessSupported() || !window.showDirectoryPicker) {
+  if (!isFolderSyncSupported()) {
+    throw new Error('Sinkronisasi folder tidak didukung pada platform ini');
+  }
+
+  // Desktop Native (Tauri)
+  if (isDesktopTauri()) {
+    const folderPath = await invoke<string | null>('pick_folder_dialog');
+    if (!folderPath) {
+      const abortErr = new Error('Pemilihan folder dibatalkan');
+      abortErr.name = 'AbortError';
+      throw abortErr;
+    }
+
+    const folderName = folderPath.split(/[/\\]/).pop() || 'Folder Koleksi Buku';
+    const existing = await db.sync_folders.get(PRIMARY_SYNC_FOLDER_ID);
+
+    const folder: LocalSyncFolder = {
+      id: PRIMARY_SYNC_FOLDER_ID,
+      name: folderName,
+      path: folderPath,
+      handle: null,
+      connectedAt: Date.now(),
+      lastSyncedAt: null,
+      bookCount: existing?.bookCount || 0,
+      autoSyncOnLaunch: options?.autoSyncOnLaunch ?? existing?.autoSyncOnLaunch ?? true,
+      autoBackupEnabled: options?.autoBackupEnabled ?? existing?.autoBackupEnabled ?? false,
+    };
+
+    await db.sync_folders.put(folder);
+    return folder;
+  }
+
+  // Android Native (SAF)
+  if (isAndroidNative()) {
+    const picked = await pickAndScanNativeFolder();
+    if (!picked) {
+      const abortErr = new Error('Pemilihan folder dibatalkan');
+      abortErr.name = 'AbortError';
+      throw abortErr;
+    }
+
+    const existing = await db.sync_folders.get(PRIMARY_SYNC_FOLDER_ID);
+    const folder: LocalSyncFolder = {
+      id: PRIMARY_SYNC_FOLDER_ID,
+      name: 'Folder Buku Android',
+      handle: null,
+      connectedAt: Date.now(),
+      lastSyncedAt: null,
+      bookCount: picked.length,
+      autoSyncOnLaunch: options?.autoSyncOnLaunch ?? existing?.autoSyncOnLaunch ?? true,
+      autoBackupEnabled: false,
+    };
+
+    await db.sync_folders.put(folder);
+    return folder;
+  }
+
+  // Web Browser (Chromium File System Access API)
+  if (!window.showDirectoryPicker) {
     throw new Error('File System Access API tidak didukung pada peramban ini');
   }
 
@@ -315,6 +388,107 @@ export async function syncLocalFolder(
         duplicates: 0,
         failed: 0,
         error: 'Belum ada folder yang terhubung',
+      };
+    }
+
+    // 1. Desktop Native (Tauri)
+    if (isDesktopTauri() && folder.path) {
+      syncStore.updateProgress({ phase: 'scanning', foundCount: 0 });
+      const filePaths = await invoke<string[]>('scan_directory_books', {
+        folderPath: folder.path,
+      });
+      if (isAborted()) {
+        return {
+          success: false,
+          totalFound: filePaths.length,
+          imported: 0,
+          duplicates: 0,
+          failed: 0,
+          error: 'Sinkronisasi dibatalkan oleh pengguna',
+        };
+      }
+
+      const picked: NativePickedBook[] = filePaths.map((p) => ({
+        path: p,
+        name: p.split(/[/\\]/).pop() || 'Unknown.epub',
+      }));
+
+      const mode = useSettingsStore.getState().importStorageMode || 'linked';
+      syncStore.updateProgress({ phase: 'importing', current: 0, total: picked.length });
+      const res = await importNativePickedBooks(
+        picked,
+        mode,
+        (current, total, fileName) => {
+          syncStore.updateProgress({ phase: 'importing', current, total, fileName });
+          if (onProgress) onProgress(current, total, fileName);
+        },
+        signal || internalSignal
+      );
+
+      await db.sync_folders.update(PRIMARY_SYNC_FOLDER_ID, {
+        lastSyncedAt: Date.now(),
+        bookCount: filePaths.length,
+      });
+
+      return {
+        success: true,
+        totalFound: filePaths.length,
+        imported: res.imported,
+        duplicates: res.duplicates,
+        failed: res.failed,
+      };
+    }
+
+    // 2. Android Native (SAF)
+    if (isAndroidNative()) {
+      syncStore.updateProgress({ phase: 'scanning', foundCount: 0 });
+      const picked = await pickAndScanNativeFolder();
+      if (!picked || isAborted()) {
+        return {
+          success: false,
+          totalFound: 0,
+          imported: 0,
+          duplicates: 0,
+          failed: 0,
+          error: isAborted() ? 'Sinkronisasi dibatalkan' : 'Gagal memindai folder Android',
+        };
+      }
+
+      const mode = useSettingsStore.getState().importStorageMode || 'linked';
+      syncStore.updateProgress({ phase: 'importing', current: 0, total: picked.length });
+      const res = await importNativePickedBooks(
+        picked,
+        mode,
+        (current, total, fileName) => {
+          syncStore.updateProgress({ phase: 'importing', current, total, fileName });
+          if (onProgress) onProgress(current, total, fileName);
+        },
+        signal || internalSignal
+      );
+
+      await db.sync_folders.update(PRIMARY_SYNC_FOLDER_ID, {
+        lastSyncedAt: Date.now(),
+        bookCount: picked.length,
+      });
+
+      return {
+        success: true,
+        totalFound: picked.length,
+        imported: res.imported,
+        duplicates: res.duplicates,
+        failed: res.failed,
+      };
+    }
+
+    // 3. Web Browser (Chromium File System Access API)
+    if (!folder.handle) {
+      return {
+        success: false,
+        totalFound: 0,
+        imported: 0,
+        duplicates: 0,
+        failed: 0,
+        error: 'Akses folder peramban tidak valid',
       };
     }
 

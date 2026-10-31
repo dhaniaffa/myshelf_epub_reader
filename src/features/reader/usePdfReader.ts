@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { db, recordReadingTime } from '@/lib/db';
+import { readNativeBookBinary } from '@/lib/nativeFiles';
 import { extractPdfOutline, PDF_CMAP_URL, PDF_STANDARD_FONT_DATA_URL, pdfjsLib } from '@/lib/pdf';
+import { toast } from '@/store/toast';
 
 import type { PdfOutlineItem } from '@/lib/pdf';
 import type { Book, Bookmark, ReaderSettings, ReaderTheme } from '@/types';
@@ -130,16 +132,41 @@ export function usePdfReader({ bookId, settings }: UsePdfReaderOptions) {
 
     async function initPdf() {
       try {
-        const [book, fileRecord] = await Promise.all([db.books.get(bookId), db.files.get(bookId)]);
+        const book = await db.books.get(bookId);
+        if (!isMounted || !book) return;
 
-        if (!isMounted || !fileRecord?.buffer) return;
+        let rawBuffer: ArrayBuffer | null = null;
+        if (book.storageMode === 'linked') {
+          try {
+            rawBuffer = await readNativeBookBinary(book);
+          } catch (readErr) {
+            console.error('Gagal membaca PDF tertaut:', readErr);
+            toast.error('Berkas PDF tidak ditemukan di lokasi penyimpanan lokal');
+            setState((prev) => ({
+              ...prev,
+              hasError: true,
+              errorMessage: 'Berkas PDF tidak ditemukan di lokasi aslinya.',
+            }));
+            return;
+          }
+        } else {
+          const fileRecord = await db.files.get(bookId);
+          if (fileRecord?.buffer) {
+            rawBuffer =
+              fileRecord.buffer instanceof Blob
+                ? await fileRecord.buffer.arrayBuffer()
+                : fileRecord.buffer;
+          }
+        }
 
-        const rawBuffer =
-          fileRecord.buffer instanceof Blob
-            ? await fileRecord.buffer.arrayBuffer()
-            : fileRecord.buffer;
-
-        if (!isMounted) return;
+        if (!isMounted || !rawBuffer) {
+          setState((prev) => ({
+            ...prev,
+            hasError: true,
+            errorMessage: 'Data berkas PDF tidak dapat dimuat.',
+          }));
+          return;
+        }
 
         const loadingTask = pdfjsLib.getDocument({
           data: new Uint8Array(rawBuffer.slice(0)),

@@ -27,6 +27,9 @@ interface SettingsState extends ReaderSettings {
   setLibraryViewMode: (libraryViewMode: NonNullable<ReaderSettings['libraryViewMode']>) => void;
   setTtsRate: (ttsRate: number) => void;
   setTtsVoiceLang: (ttsVoiceLang: NonNullable<ReaderSettings['ttsVoiceLang']>) => void;
+  setImportStorageMode: (
+    importStorageMode: NonNullable<ReaderSettings['importStorageMode']>
+  ) => void;
   resetEpubSettings: () => void;
   resetPdfSettings: () => void;
   resetSettings: () => void;
@@ -54,6 +57,7 @@ const DEFAULT_SETTINGS: ReaderSettings = {
   libraryViewMode: 'comfortable',
   ttsRate: 1.0,
   ttsVoiceLang: 'id',
+  importStorageMode: 'linked',
 };
 
 export const useSettingsStore = create<SettingsState>()(
@@ -83,6 +87,7 @@ export const useSettingsStore = create<SettingsState>()(
       setLibraryViewMode: (libraryViewMode) => set({ libraryViewMode }),
       setTtsRate: (ttsRate) => set({ ttsRate: Math.max(0.5, Math.min(3.0, ttsRate)) }),
       setTtsVoiceLang: (ttsVoiceLang) => set({ ttsVoiceLang }),
+      setImportStorageMode: (importStorageMode) => set({ importStorageMode }),
       resetEpubSettings: () =>
         set({
           fontFamily: DEFAULT_SETTINGS.fontFamily,

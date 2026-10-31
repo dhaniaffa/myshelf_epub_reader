@@ -159,6 +159,7 @@ describe('Settings Store (src/store/settings.ts)', () => {
       state.setTheme('oled');
       state.setEinkMode(true);
       state.setPdfScale(2.5);
+      state.setImportStorageMode('vault');
 
       state.resetSettings();
 
@@ -167,6 +168,18 @@ describe('Settings Store (src/store/settings.ts)', () => {
       expect(resetState.theme).toBe('auto');
       expect(resetState.einkMode).toBe(false);
       expect(resetState.pdfScale).toBe(1.0);
+      expect(resetState.importStorageMode).toBe('linked');
+    });
+
+    it('updates importStorageMode between linked and vault', () => {
+      const state = useSettingsStore.getState();
+      expect(state.importStorageMode).toBe('linked');
+
+      state.setImportStorageMode('vault');
+      expect(useSettingsStore.getState().importStorageMode).toBe('vault');
+
+      state.setImportStorageMode('linked');
+      expect(useSettingsStore.getState().importStorageMode).toBe('linked');
     });
   });
 });

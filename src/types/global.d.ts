@@ -2,6 +2,10 @@ interface AndroidBackupBridge {
   saveFileWithPicker?: (filename: string, content: string, mimeType: string) => void;
   saveFile?: (filename: string, content: string, mimeType: string) => void;
   exitApp?: () => void;
+  pickBooks?: () => void;
+  pickFolder?: () => void;
+  readBookBinaryBase64?: (uriString: string) => string | null;
+  checkUriValid?: (uriString: string) => boolean;
 }
 
 interface TauriProcess {
@@ -36,6 +40,10 @@ declare global {
     __activeUtterance?: SpeechSynthesisUtterance | null;
     __androidBackupCallback?: (result: { success: boolean; error?: string }) => void;
     __onAndroidSaveResult?: ((success: boolean) => void) | null;
+    __onAndroidPickBooksResult?:
+      ((results: Array<{ uri: string; name: string; size: number }>) => void) | null;
+    __onAndroidPickFolderResult?:
+      ((results: Array<{ uri: string; name: string; size: number }>) => void) | null;
     __handleAndroidBack?: (() => boolean) | null;
     AndroidBackupBridge?: AndroidBackupBridge;
     __TAURI__?: TauriGlobal;

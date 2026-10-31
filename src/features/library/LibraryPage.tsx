@@ -38,7 +38,9 @@ import {
   isFileSystemAccessSupported,
   syncLocalFolder,
 } from '@/lib/fileSystemSync';
-import { importEpubFiles } from '@/lib/importBooks';
+import { importEpubFiles, importNativePickedBooks } from '@/lib/importBooks';
+import { pickAndScanNativeFolder, pickNativeBookFiles } from '@/lib/nativeFiles';
+import { isWebBrowser } from '@/lib/platform';
 import { navigate } from '@/lib/route';
 import { useSettingsStore } from '@/store/settings';
 import { useSyncStore } from '@/store/sync';
@@ -73,6 +75,7 @@ export const LibraryPage: React.FC = () => {
   const [bookToDelete, setBookToDelete] = useState<Book | null>(null);
   const [selectedBookForDetails, setSelectedBookForDetails] = useState<Book | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [importChoiceOpen, setImportChoiceOpen] = useState(false);
 
   // Auto-sync on launch if enabled on connected folder
   const hasAutoSyncedRef = useRef(false);
@@ -171,6 +174,104 @@ export const LibraryPage: React.FC = () => {
     }
   };
 
+  const handleScanFolderClick = async () => {
+    setImportChoiceOpen(false);
+    setIsImporting(true);
+    setImportProgress({ current: 0, total: 0, fileName: 'Membuka pemilih folder...' });
+
+    try {
+      const picked = await pickAndScanNativeFolder();
+      if (!picked) {
+        setIsImporting(false);
+        setImportProgress(null);
+        return;
+      }
+
+      if (picked.length === 0) {
+        toast.info('Tidak ditemukan berkas .epub atau .pdf di dalam folder tersebut');
+        setIsImporting(false);
+        setImportProgress(null);
+        return;
+      }
+
+      setImportProgress({ current: 0, total: picked.length, fileName: 'Memulai impor buku...' });
+      const mode = useSettingsStore.getState().importStorageMode || 'linked';
+      const res = await importNativePickedBooks(picked, mode, (curr, tot, fileName) => {
+        setImportProgress({ current: curr, total: tot, fileName });
+      });
+
+      if (res.imported > 0) {
+        toast.success(
+          mode === 'linked'
+            ? `Berhasil memindai dan menautkan ${res.imported} buku baru`
+            : `Berhasil memindai dan menyalin ${res.imported} buku baru`
+        );
+      }
+      if (res.duplicates > 0) {
+        toast.warning(`${res.duplicates} buku sudah ada di perpustakaan (duplikat dilewati)`);
+      }
+      if (res.failed > 0) {
+        toast.error(`${res.failed} berkas gagal dibaca sebagai buku valid`);
+      }
+    } catch (err) {
+      console.error('Gagal memindai folder native:', err);
+      toast.error('Terjadi kesalahan saat memindai folder koleksi');
+    } finally {
+      setIsImporting(false);
+      setImportProgress(null);
+    }
+  };
+
+  const handlePickFilesClick = async () => {
+    setImportChoiceOpen(false);
+    if (!isWebBrowser()) {
+      try {
+        const picked = await pickNativeBookFiles();
+        if (!picked || picked.length === 0) return;
+
+        setIsImporting(true);
+        setImportProgress({ current: 0, total: picked.length });
+
+        const mode = useSettingsStore.getState().importStorageMode || 'linked';
+        const res = await importNativePickedBooks(picked, mode, (curr, tot, fileName) => {
+          setImportProgress({ current: curr, total: tot, fileName });
+        });
+
+        if (res.imported > 0) {
+          toast.success(
+            mode === 'linked'
+              ? `Berhasil menautkan ${res.imported} buku ke perpustakaan`
+              : `Berhasil menyalin ${res.imported} buku ke perpustakaan`
+          );
+        }
+        if (res.duplicates > 0) {
+          toast.warning(`${res.duplicates} buku sudah ada di perpustakaan (duplikat diabaikan)`);
+        }
+        if (res.failed > 0) {
+          toast.error(`${res.failed} berkas gagal dibaca sebagai buku valid`);
+        }
+      } catch (err) {
+        console.error('Gagal memproses berkas native:', err);
+        toast.error('Terjadi kesalahan saat memproses berkas buku');
+      } finally {
+        setIsImporting(false);
+        setImportProgress(null);
+      }
+      return;
+    }
+
+    fileInputRef.current?.click();
+  };
+
+  const handleImportClick = () => {
+    if (isImporting) return;
+    if (!isWebBrowser()) {
+      setImportChoiceOpen(true);
+      return;
+    }
+    fileInputRef.current?.click();
+  };
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
@@ -260,7 +361,7 @@ export const LibraryPage: React.FC = () => {
             variant="filled"
             size="sm"
             icon={<UploadCloud size={16} />}
-            onClick={() => fileInputRef.current?.click()}
+            onClick={handleImportClick}
             disabled={isImporting}
           >
             <span className="hidden sm:inline">Impor Berkas</span>
@@ -655,7 +756,7 @@ export const LibraryPage: React.FC = () => {
                 variant="filled"
                 size="md"
                 icon={<UploadCloud size={18} />}
-                onClick={() => fileInputRef.current?.click()}
+                onClick={handleImportClick}
                 disabled={isImporting}
                 className="w-full whitespace-nowrap shadow-xs hover:shadow-sm sm:w-auto"
               >
@@ -809,6 +910,65 @@ export const LibraryPage: React.FC = () => {
         open={manageCollectionsOpen}
         onClose={() => setManageCollectionsOpen(false)}
       />
+
+      {/* Import Choice Dialog (Scan Folder vs Select Files) */}
+      <Dialog
+        open={importChoiceOpen}
+        onClose={() => setImportChoiceOpen(false)}
+        title="Tambah Buku ke Perpustakaan"
+        maxWidth="sm"
+        actions={
+          <Button variant="text" size="sm" onClick={() => setImportChoiceOpen(false)}>
+            Batal
+          </Button>
+        }
+      >
+        <div className="space-y-3 pt-1">
+          <p className="text-on-surface-variant text-xs">
+            Pilih cara Anda ingin menambahkan koleksi buku (EPUB & PDF) ke MyShelf:
+          </p>
+
+          {/* Option 1: Recursive Folder Scanner */}
+          <button
+            type="button"
+            onClick={handleScanFolderClick}
+            className="border-outline-variant/30 bg-surface-container hover:bg-surface-container-high hover:border-primary/50 group flex w-full cursor-pointer items-start gap-3.5 rounded-2xl border p-4 text-left transition-all"
+          >
+            <div className="bg-primary/10 text-primary group-hover:bg-primary group-hover:text-on-primary mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors">
+              <FolderOpen size={20} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="text-on-surface text-sm font-semibold">Pindai Folder Koleksi</span>
+                <span className="bg-primary/20 text-primary rounded-full px-2 py-0.5 font-mono text-[10px] font-bold">
+                  Rekomendasi
+                </span>
+              </div>
+              <p className="text-on-surface-variant mt-1 text-xs leading-relaxed">
+                Pilih satu folder induk. MyShelf akan menelusuri seluruh berkas buku di dalamnya
+                beserta seluruh subfoldernya secara otomatis.
+              </p>
+            </div>
+          </button>
+
+          {/* Option 2: File Picker */}
+          <button
+            type="button"
+            onClick={handlePickFilesClick}
+            className="border-outline-variant/30 bg-surface-container hover:bg-surface-container-high hover:border-primary/50 group flex w-full cursor-pointer items-start gap-3.5 rounded-2xl border p-4 text-left transition-all"
+          >
+            <div className="bg-surface-container-highest text-on-surface-variant group-hover:bg-primary group-hover:text-on-primary mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors">
+              <UploadCloud size={20} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <span className="text-on-surface text-sm font-semibold">Pilih Berkas Satuan</span>
+              <p className="text-on-surface-variant mt-1 text-xs leading-relaxed">
+                Pilih satu atau beberapa berkas buku secara manual dari kotak dialog berkas.
+              </p>
+            </div>
+          </button>
+        </div>
+      </Dialog>
     </div>
   );
 };

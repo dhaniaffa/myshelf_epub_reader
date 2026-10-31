@@ -10,6 +10,8 @@ import { setupIframeListeners } from '@/features/reader/utils/iframeListeners';
 import { calculatePageLocation, mapToc } from '@/features/reader/utils/readerLocation';
 import { getCurrentPageText as extractPageText } from '@/features/reader/utils/readerText';
 import { db } from '@/lib/db';
+import { readNativeBookBinary } from '@/lib/nativeFiles';
+import { toast } from '@/store/toast';
 
 import type { RawNavTocItem, RelocatedLocation } from '@/features/reader/utils/readerLocation';
 import type {
@@ -162,8 +164,32 @@ export function useReader({ bookId, settings, resolvedTheme }: UseReaderOptions)
     async function initBook() {
       if (!containerRef.current) return;
 
-      const fileRecord = await db.files.get(bookId);
-      if (!fileRecord || !isMounted) return;
+      const bookMeta = await db.books.get(bookId);
+      if (!bookMeta || !isMounted) return;
+
+      let rawData: ArrayBuffer | null = null;
+      if (bookMeta.storageMode === 'linked') {
+        try {
+          rawData = await readNativeBookBinary(bookMeta);
+        } catch (err) {
+          console.error('Gagal membaca berkas tertaut:', err);
+          toast.error('Berkas asli tidak ditemukan di penyimpanan lokal Anda');
+          return;
+        }
+      } else {
+        const fileRecord = await db.files.get(bookId);
+        if (fileRecord?.buffer) {
+          rawData =
+            fileRecord.buffer instanceof Blob
+              ? await fileRecord.buffer.arrayBuffer()
+              : fileRecord.buffer;
+        }
+      }
+
+      if (!rawData || !isMounted) {
+        toast.error('Data berkas buku tidak dapat dimuat');
+        return;
+      }
 
       // Clean up previous instance if any
       if (renditionRef.current) {
@@ -180,12 +206,6 @@ export function useReader({ bookId, settings, resolvedTheme }: UseReaderOptions)
           // ignore
         }
       }
-
-      const rawData =
-        fileRecord.buffer instanceof Blob
-          ? await fileRecord.buffer.arrayBuffer()
-          : fileRecord.buffer;
-      if (!isMounted) return;
 
       const createBook = ePub as unknown as (data: ArrayBuffer) => EpubBook;
       bookInstance = createBook(rawData);

@@ -16,8 +16,8 @@ import {
   connectLocalFolder,
   disconnectLocalFolder,
   getLocalFolder,
-  isFileSystemAccessSupported,
   isFolderSyncRunning,
+  isFolderSyncSupported,
   syncLocalFolder,
   updateFolderOptions,
 } from '@/lib/fileSystemSync';
@@ -31,7 +31,7 @@ interface FolderSyncSectionProps {
 
 export const FolderSyncSection: React.FC<FolderSyncSectionProps> = ({ onStorageChange }) => {
   const syncFolder = useLiveQuery(() => getLocalFolder(), []);
-  const isSupported = isFileSystemAccessSupported();
+  const isSupported = isFolderSyncSupported();
   const isSyncing = useSyncStore((s) => s.isSyncing);
   const syncProgress = useSyncStore((s) => s.progress);
   const cancelSync = useSyncStore((s) => s.cancelSync);
@@ -150,13 +150,11 @@ export const FolderSyncSection: React.FC<FolderSyncSectionProps> = ({ onStorageC
           </div>
           <div>
             <h2 className="text-on-surface text-base font-bold">
-              {isSupported
-                ? 'Sinkronisasi Folder Lokal (Desktop)'
-                : 'Penyimpanan & Impor Buku Lokal'}
+              {isSupported ? 'Sinkronisasi Folder Lokal' : 'Penyimpanan & Impor Buku Lokal'}
             </h2>
             <p className="text-on-surface-variant text-xs">
               {isSupported
-                ? 'Hubungkan folder komputer (Dropbox, Syncthing, ~/Books) untuk mendeteksi & menyinkronkan buku otomatis.'
+                ? 'Hubungkan folder koleksi buku untuk mendeteksi & menyinkronkan seluruh berkas dan subfolder secara otomatis.'
                 : 'Impor berkas buku (.epub dan .pdf) dari folder penyimpanan perangkat ke perpustakaan offline.'}
             </p>
           </div>
@@ -266,7 +264,10 @@ export const FolderSyncSection: React.FC<FolderSyncSectionProps> = ({ onStorageC
                     <span className="text-on-surface-variant text-xs font-medium">
                       Folder Terhubung:
                     </span>
-                    <span className="text-on-surface bg-surface-container max-w-50 truncate rounded-md px-2 py-0.5 font-mono text-xs font-bold sm:max-w-xs">
+                    <span
+                      className="text-on-surface bg-surface-container max-w-50 truncate rounded-md px-2 py-0.5 font-mono text-xs font-bold sm:max-w-xs"
+                      title={syncFolder.path || syncFolder.uri || syncFolder.name}
+                    >
                       {syncFolder.name}
                     </span>
                   </div>

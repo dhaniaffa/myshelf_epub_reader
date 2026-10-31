@@ -13,6 +13,7 @@ import {
   BackupRestoreSection,
   FolderSyncSection,
   ReadingGoalsSection,
+  StorageModeSection,
   StorageQuotaSection,
 } from './sections';
 
@@ -61,6 +62,9 @@ export const SettingsPage: React.FC = () => {
 
         {/* Local Folder Sync */}
         <FolderSyncSection onStorageChange={refreshStorage} />
+
+        {/* Book Import Storage Strategy */}
+        <StorageModeSection />
 
         {/* Offline Storage (IndexedDB) - Only shown on Web Browser */}
         {isWebBrowser() && (

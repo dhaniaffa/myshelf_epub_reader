@@ -1,6 +1,7 @@
 export type BookStatus = 'unread' | 'reading' | 'completed';
 export type BookViewMode = 'compact' | 'comfortable' | 'cover-only' | 'list';
 export type BookFormat = 'epub' | 'pdf';
+export type BookStorageMode = 'vault' | 'linked';
 
 export interface Book {
   id: string; // SHA-256 hash of file content
@@ -18,6 +19,10 @@ export interface Book {
   fileSize?: number;
   format?: BookFormat;
   tags?: string[];
+  storageMode?: BookStorageMode;
+  filePath?: string | null;
+  sourceUri?: string | null;
+  missingSince?: number | null;
 }
 
 export interface BookCollection {
@@ -144,6 +149,7 @@ export interface ReaderSettings {
   libraryViewMode?: BookViewMode; // Default bookshelf view mode ('comfortable' | 'compact' | 'cover-only' | 'list')
   ttsRate?: number; // TTS speech rate (0.5 to 3.0, default: 1.0)
   ttsVoiceLang?: 'id' | 'en'; // TTS voice language ('id' | 'en', default: 'id')
+  importStorageMode?: BookStorageMode; // Book import storage mode ('linked' | 'vault')
 }
 
 export interface FootnoteData {
@@ -180,7 +186,9 @@ export interface FollowLinkData {
 export interface LocalSyncFolder {
   id: string;
   name: string;
-  handle: FileSystemDirectoryHandle;
+  handle?: FileSystemDirectoryHandle | null;
+  path?: string | null;
+  uri?: string | null;
   connectedAt: number;
   lastSyncedAt: number | null;
   bookCount: number;

@@ -7,10 +7,12 @@ import {
   Calendar,
   CheckCircle2,
   Clock,
+  Database,
   FileText,
   Globe,
   HardDrive,
   Hash,
+  Link2,
   Play,
   RotateCcw,
   User,
@@ -22,6 +24,7 @@ import { BookTagSection } from '@/features/library/BookTagSection';
 import { useCoverUrl } from '@/lib/cover';
 import { db } from '@/lib/db';
 import { formatFileSize, readFullMetadata } from '@/lib/epub';
+import { readNativeBookBinary } from '@/lib/nativeFiles';
 import { readFullPdfMetadata } from '@/lib/pdf';
 import { navigate } from '@/lib/route';
 import { toast } from '@/store/toast';
@@ -49,43 +52,57 @@ const BookDetailsContent: React.FC<BookDetailsContentProps> = ({ book, onClose }
   useEffect(() => {
     let isMounted = true;
 
-    db.files
-      .get(book.id)
-      .then(async (file) => {
-        if (!file?.buffer || !isMounted) return;
-        const rawBuffer =
-          file.buffer instanceof Blob ? await file.buffer.arrayBuffer() : file.buffer;
-        if (!isMounted) return;
+    async function loadMetadata() {
+      try {
+        let rawBuffer: ArrayBuffer | null = null;
+        if (book?.storageMode === 'linked') {
+          try {
+            rawBuffer = await readNativeBookBinary(book);
+          } catch {
+            // Abaikan bila file tidak dapat dibaca
+          }
+        } else if (book) {
+          const file = await db.files.get(book.id);
+          if (file?.buffer) {
+            rawBuffer = file.buffer instanceof Blob ? await file.buffer.arrayBuffer() : file.buffer;
+          }
+        }
+
+        if (!rawBuffer || !isMounted || !book) return;
+
         if (book.format === 'pdf') {
-          return readFullPdfMetadata(rawBuffer, book.title).then((pdfMeta) => ({
-            ...pdfMeta,
-            publisher: pdfMeta.producer || pdfMeta.creator || null,
-            description: null,
-            language: null,
-            identifier: null,
-            rights: null,
-          }));
+          const pdfMeta = await readFullPdfMetadata(rawBuffer, book.title);
+          if (isMounted) {
+            setExtraMeta({
+              ...pdfMeta,
+              publisher: pdfMeta.producer || pdfMeta.creator || null,
+              description: null,
+              language: null,
+              identifier: null,
+              rights: null,
+            });
+          }
+        } else {
+          const meta = await readFullMetadata(rawBuffer);
+          if (isMounted && meta) {
+            setExtraMeta(meta);
+          }
         }
-        return readFullMetadata(rawBuffer);
-      })
-      .then((meta) => {
-        if (isMounted && meta) {
-          setExtraMeta(meta);
-        }
-      })
-      .catch((err) => {
+      } catch (err) {
         console.warn('Gagal memuat metadata lengkap buku:', err);
-      })
-      .finally(() => {
+      } finally {
         if (isMounted) {
           setIsLoading(false);
         }
-      });
+      }
+    }
+
+    loadMetadata();
 
     return () => {
       isMounted = false;
     };
-  }, [book.id, book.format, book.title]);
+  }, [book]);
 
   const progressPercent = Math.round((book.progress || 0) * 100);
 
@@ -297,6 +314,23 @@ const BookDetailsContent: React.FC<BookDetailsContentProps> = ({ book, onClose }
               <Calendar size={13} className="text-primary/70" /> Ditambahkan
             </span>
             <p className="text-on-surface font-semibold">{formatDate(book.addedAt)}</p>
+          </div>
+
+          <div className="space-y-0.5">
+            <span className="text-on-surface-variant/70 flex items-center gap-1">
+              {book.storageMode === 'linked' ? (
+                <Link2 size={13} className="text-primary/70" />
+              ) : (
+                <Database size={13} className="text-primary/70" />
+              )}
+              Penyimpanan
+            </span>
+            <p
+              className="text-on-surface truncate font-semibold"
+              title={book.filePath || book.sourceUri || 'Tersimpan di IndexedDB'}
+            >
+              {book.storageMode === 'linked' ? 'Tertaut (Lokal)' : 'Salinan Internal'}
+            </p>
           </div>
 
           {extraMeta?.identifier && (
