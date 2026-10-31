@@ -7,7 +7,7 @@ export interface Book {
   id: string; // SHA-256 hash of file content
   title: string;
   author: string;
-  cover: Blob | null;
+  cover: Blob | null; // Nullable for ultra-low heap RAM; binary blob stored in separate covers table
   progress: number; // 0 to 1
   lastCfi: string | null;
   readingTimeSeconds: number;
@@ -39,6 +39,11 @@ export interface BookCollection {
 export interface BookFile {
   id: string; // matches Book.id
   buffer: ArrayBuffer | Blob;
+}
+
+export interface BookCoverRecord {
+  bookId: string; // matches Book.id
+  blob: Blob;
 }
 
 export interface BookLocations {

@@ -6,6 +6,7 @@ import type {
   Annotation,
   Book,
   BookCollection,
+  BookCoverRecord,
   BookFile,
   BookLocations,
   Bookmark,
@@ -18,6 +19,7 @@ import type { Table } from 'dexie';
 
 export class Database extends Dexie {
   books!: Table<Book, string>;
+  covers!: Table<BookCoverRecord, string>;
   files!: Table<BookFile, string>;
   locations!: Table<BookLocations, string>;
   bookmarks!: Table<Bookmark, string>;
@@ -53,6 +55,27 @@ export class Database extends Dexie {
       books: 'id, status, lastReadAt, addedAt, *tags',
       collections: 'id, name, createdAt',
     });
+    this.version(7)
+      .stores({
+        covers: 'bookId',
+      })
+      .upgrade(async (tx) => {
+        // Migrasi Blob cover dari tabel books ke tabel covers terpisah
+        const booksTable = tx.table<Book, string>('books');
+        const coversTable = tx.table<BookCoverRecord, string>('covers');
+
+        const booksWithCovers = await booksTable.filter((b) => Boolean(b.cover)).toArray();
+
+        for (const b of booksWithCovers) {
+          if (b.cover) {
+            await coversTable.put({ bookId: b.id, blob: b.cover });
+          }
+        }
+
+        await booksTable.toCollection().modify((b) => {
+          b.cover = null;
+        });
+      });
   }
 }
 
@@ -93,15 +116,31 @@ export const DEFAULT_OPDS_FEEDS: OpdsFeed[] = [
 
 export const db = new Database();
 
+type DeleteBooksCallback = (bookIds: string[]) => void;
+const deleteBooksCallbacks: DeleteBooksCallback[] = [];
+
+/**
+ * Register a listener invoked whenever books are deleted from the database
+ * (Useful for memory cache invalidation without circular imports).
+ */
+export function onBooksDeleted(callback: DeleteBooksCallback): () => void {
+  deleteBooksCallbacks.push(callback);
+  return () => {
+    const idx = deleteBooksCallbacks.indexOf(callback);
+    if (idx !== -1) deleteBooksCallbacks.splice(idx, 1);
+  };
+}
+
 /**
  * Atomically delete a book and all associated data in a transaction
  */
 export async function deleteBook(id: string): Promise<void> {
   await db.transaction(
     'rw',
-    [db.books, db.files, db.locations, db.bookmarks, db.annotations, db.reading_logs],
+    [db.books, db.covers, db.files, db.locations, db.bookmarks, db.annotations, db.reading_logs],
     async () => {
       await db.books.delete(id);
+      await db.covers.delete(id);
       await db.files.delete(id);
       await db.locations.where('bookId').equals(id).delete();
       await db.bookmarks.where('bookId').equals(id).delete();
@@ -109,6 +148,13 @@ export async function deleteBook(id: string): Promise<void> {
       await db.reading_logs.where('bookId').equals(id).delete();
     }
   );
+  for (const cb of deleteBooksCallbacks) {
+    try {
+      cb([id]);
+    } catch {
+      // Abaikan callback error
+    }
+  }
 }
 
 /**
@@ -118,9 +164,10 @@ export async function deleteBooks(ids: string[]): Promise<void> {
   if (ids.length === 0) return;
   await db.transaction(
     'rw',
-    [db.books, db.files, db.locations, db.bookmarks, db.annotations, db.reading_logs],
+    [db.books, db.covers, db.files, db.locations, db.bookmarks, db.annotations, db.reading_logs],
     async () => {
       await db.books.bulkDelete(ids);
+      await db.covers.bulkDelete(ids);
       await db.files.bulkDelete(ids);
       await db.locations.where('bookId').anyOf(ids).delete();
       await db.bookmarks.where('bookId').anyOf(ids).delete();
@@ -128,6 +175,28 @@ export async function deleteBooks(ids: string[]): Promise<void> {
       await db.reading_logs.where('bookId').anyOf(ids).delete();
     }
   );
+  for (const cb of deleteBooksCallbacks) {
+    try {
+      cb(ids);
+    } catch {
+      // Abaikan callback error
+    }
+  }
+}
+
+/**
+ * Retrieve cover Blob for a specific book from isolated covers table
+ */
+export async function getBookCover(bookId: string): Promise<Blob | null> {
+  const record = await db.covers.get(bookId);
+  return record?.blob || null;
+}
+
+/**
+ * Store cover Blob for a specific book in isolated covers table
+ */
+export async function setBookCover(bookId: string, blob: Blob): Promise<void> {
+  await db.covers.put({ bookId, blob });
 }
 
 /**

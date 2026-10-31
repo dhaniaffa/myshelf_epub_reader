@@ -43,7 +43,7 @@ export const BookListItem: React.FC<BookListItemProps> = ({
   isSelected = false,
   onToggleSelect,
 }) => {
-  const coverUrl = useCoverUrl(book.cover);
+  const coverUrl = useCoverUrl(book.id, book.cover);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 

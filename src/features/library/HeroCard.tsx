@@ -13,7 +13,7 @@ interface HeroCardProps {
 }
 
 export const HeroCard: React.FC<HeroCardProps> = ({ book }) => {
-  const coverUrl = useCoverUrl(book.cover);
+  const coverUrl = useCoverUrl(book.id, book.cover);
 
   const progressPercent = Math.round((book.progress || 0) * 100);
 

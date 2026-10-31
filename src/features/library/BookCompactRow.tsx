@@ -22,7 +22,7 @@ export const BookCompactRow: React.FC<BookCompactRowProps> = ({
   onDeleteRequest,
   onShowDetails,
 }) => {
-  const coverUrl = useCoverUrl(book.cover);
+  const coverUrl = useCoverUrl(book.id, book.cover);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 

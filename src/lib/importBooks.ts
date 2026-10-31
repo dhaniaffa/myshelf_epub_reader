@@ -138,7 +138,7 @@ async function processSingleFile(file: File, ctx: ProcessFileContext): Promise<P
       id: hash,
       title,
       author,
-      cover,
+      cover: null, // Ultra-low heap footprint; cover Blob is isolated in db.covers table
       progress: 0,
       lastCfi: isPdf ? 'page:1' : null,
       readingTimeSeconds: 0,
@@ -157,6 +157,16 @@ async function processSingleFile(file: File, ctx: ProcessFileContext): Promise<P
       filePath: ctx.filePath || null,
       sourceUri: ctx.sourceUri || null,
     };
+
+    // Store cover Blob in isolated covers table to keep main book records ultra-lightweight
+    if (cover) {
+      await Promise.race([
+        db.covers.put({ bookId: hash, blob: cover }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Timeout menyimpan cover ke IndexedDB (>10s)')), 10000)
+        ),
+      ]);
+    }
 
     // Only store Blob in db.files when in vault mode.
     // In linked mode, omit db.files storage to eliminate storage duplication.

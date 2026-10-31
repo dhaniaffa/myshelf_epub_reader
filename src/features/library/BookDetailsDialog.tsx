@@ -44,7 +44,7 @@ interface BookDetailsContentProps {
 
 const BookDetailsContent: React.FC<BookDetailsContentProps> = ({ book, onClose }) => {
   const liveBook = useLiveQuery(() => db.books.get(book.id), [book.id]) || book;
-  const coverUrl = useCoverUrl(liveBook.cover);
+  const coverUrl = useCoverUrl(liveBook.id, liveBook.cover);
 
   // Check if liveBook already has full metadata cached in database
   const hasCachedMeta =

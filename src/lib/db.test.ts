@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { db, deleteBook, deleteBooks, getLocalDateString } from './db';
+import { db, deleteBook, deleteBooks, getBookCover, getLocalDateString, setBookCover } from './db';
 
 describe('Database Operations (src/lib/db.ts)', () => {
   beforeEach(() => {
@@ -27,6 +27,9 @@ describe('Database Operations (src/lib/db.ts)', () => {
 
     const bulkDeleteBooksSpy = vi
       .spyOn(db.books, 'bulkDelete')
+      .mockResolvedValue(undefined as never);
+    const bulkDeleteCoversSpy = vi
+      .spyOn(db.covers, 'bulkDelete')
       .mockResolvedValue(undefined as never);
     const bulkDeleteFilesSpy = vi
       .spyOn(db.files, 'bulkDelete')
@@ -56,6 +59,7 @@ describe('Database Operations (src/lib/db.ts)', () => {
 
     expect(txSpy).toHaveBeenCalledWith('rw', expect.any(Array), expect.any(Function));
     expect(bulkDeleteBooksSpy).toHaveBeenCalledWith(['book-1', 'book-2']);
+    expect(bulkDeleteCoversSpy).toHaveBeenCalledWith(['book-1', 'book-2']);
     expect(bulkDeleteFilesSpy).toHaveBeenCalledWith(['book-1', 'book-2']);
     expect(mockWhereLocations.anyOf).toHaveBeenCalledWith(['book-1', 'book-2']);
     expect(mockWhereBookmarks.anyOf).toHaveBeenCalledWith(['book-1', 'book-2']);
@@ -68,6 +72,7 @@ describe('Database Operations (src/lib/db.ts)', () => {
     }) as never);
 
     const deleteBookSpy = vi.spyOn(db.books, 'delete').mockResolvedValue(undefined as never);
+    const deleteCoverSpy = vi.spyOn(db.covers, 'delete').mockResolvedValue(undefined as never);
     const deleteFileSpy = vi.spyOn(db.files, 'delete').mockResolvedValue(undefined as never);
 
     const mockWhereLocations = {
@@ -94,7 +99,24 @@ describe('Database Operations (src/lib/db.ts)', () => {
 
     expect(txSpy).toHaveBeenCalledWith('rw', expect.any(Array), expect.any(Function));
     expect(deleteBookSpy).toHaveBeenCalledWith('book-single');
+    expect(deleteCoverSpy).toHaveBeenCalledWith('book-single');
     expect(deleteFileSpy).toHaveBeenCalledWith('book-single');
     expect(mockWhereLocations.equals).toHaveBeenCalledWith('book-single');
+  });
+
+  it('reads and writes cover blobs in db.covers isolated table', async () => {
+    const dummyBlob = new Blob(['mock-cover'], { type: 'image/jpeg' });
+    const getSpy = vi.spyOn(db.covers, 'get').mockResolvedValue({
+      bookId: 'b-123',
+      blob: dummyBlob,
+    });
+    const putSpy = vi.spyOn(db.covers, 'put').mockResolvedValue('b-123');
+
+    const cover = await getBookCover('b-123');
+    expect(getSpy).toHaveBeenCalledWith('b-123');
+    expect(cover).toBe(dummyBlob);
+
+    await setBookCover('b-123', dummyBlob);
+    expect(putSpy).toHaveBeenCalledWith({ bookId: 'b-123', blob: dummyBlob });
   });
 });
