@@ -4,6 +4,7 @@ import {
   ArrowUpDown,
   BookOpen,
   CheckSquare,
+  ChevronDown,
   Compass,
   FolderOpen,
   FolderSync,
@@ -611,26 +612,31 @@ export const LibraryPage: React.FC = () => {
             {/* Right Controls: Sort & View Mode Switcher */}
             <div className="flex items-center justify-between gap-2 sm:justify-end sm:gap-2.5">
               {/* Sort Selector */}
-              <div className="bg-surface-container-low border-outline-variant/30 flex h-9 flex-1 items-center rounded-xl border px-2.5 shadow-2xs sm:h-11 sm:flex-initial sm:rounded-2xl sm:px-3.5 sm:shadow-xs">
+              <div className="group bg-surface-container-low border-outline-variant/30 hover:border-outline-variant/60 focus-within:border-primary/50 relative flex h-9 flex-1 items-center rounded-xl border px-2.5 shadow-2xs transition-colors sm:h-11 sm:flex-initial sm:rounded-2xl sm:px-3.5 sm:shadow-xs">
                 <ArrowUpDown
                   size={14}
-                  className="text-on-surface-variant mr-1.5 shrink-0 sm:mr-2 sm:size-3.75"
+                  className="text-on-surface-variant pointer-events-none mr-1.5 shrink-0 sm:mr-2 sm:size-3.75"
                 />
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as 'lastRead' | 'title' | 'added')}
-                  className="text-on-surface w-full cursor-pointer border-none bg-transparent pr-1 text-xs font-medium focus:outline-none sm:text-sm"
+                  aria-label="Urutkan rak buku"
+                  className="text-on-surface appearance-none w-full cursor-pointer border-none bg-transparent py-1 pr-6 text-xs font-medium focus:outline-none sm:pr-7 sm:text-sm"
                 >
-                  <option value="lastRead" className="bg-surface-container text-on-surface">
+                  <option value="lastRead" className="bg-surface-container-high text-on-surface">
                     Terakhir Dibaca
                   </option>
-                  <option value="title" className="bg-surface-container text-on-surface">
+                  <option value="title" className="bg-surface-container-high text-on-surface">
                     Judul (A-Z)
                   </option>
-                  <option value="added" className="bg-surface-container text-on-surface">
+                  <option value="added" className="bg-surface-container-high text-on-surface">
                     Terbaru Ditambahkan
                   </option>
                 </select>
+                <ChevronDown
+                  size={14}
+                  className="text-on-surface-variant group-hover:text-on-surface pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors sm:right-3 sm:size-4"
+                />
               </div>
 
               {/* View Mode Switcher */}
