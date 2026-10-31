@@ -46,6 +46,7 @@ import { importEpubFiles, importNativePickedBooks } from '@/lib/importBooks';
 import { pickAndScanNativeFolder, pickNativeBookFiles } from '@/lib/nativeFiles';
 import { isWebBrowser } from '@/lib/platform';
 import { navigate } from '@/lib/route';
+import { useProgressiveBatch } from '@/lib/useProgressiveBatch';
 import { useSettingsStore } from '@/store/settings';
 import { useSyncStore } from '@/store/sync';
 import { toast } from '@/store/toast';
@@ -152,6 +153,16 @@ export const LibraryPage: React.FC = () => {
         return b.addedAt - a.addedAt;
       });
   }, [books, searchQuery, statusFilter, selectedCollection, sortBy]);
+
+  // Progressive batch rendering to prevent DOM overload with large libraries
+  const {
+    displayedItems: displayedBooks,
+    hasMore: hasMoreBooks,
+    sentinelRef: bookSentinelRef,
+  } = useProgressiveBatch(filteredBooks, {
+    initialBatchSize: 48,
+    batchIncrement: 36,
+  });
 
   const handleFiles = async (files: FileList | File[]) => {
     if (!files || files.length === 0) return;
@@ -621,7 +632,7 @@ export const LibraryPage: React.FC = () => {
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as 'lastRead' | 'title' | 'added')}
                   aria-label="Urutkan rak buku"
-                  className="text-on-surface appearance-none w-full cursor-pointer border-none bg-transparent py-1 pr-6 text-xs font-medium focus:outline-none sm:pr-7 sm:text-sm"
+                  className="text-on-surface w-full cursor-pointer appearance-none border-none bg-transparent py-1 pr-6 text-xs font-medium focus:outline-none sm:pr-7 sm:text-sm"
                 >
                   <option value="lastRead" className="bg-surface-container-high text-on-surface">
                     Terakhir Dibaca
@@ -635,7 +646,7 @@ export const LibraryPage: React.FC = () => {
                 </select>
                 <ChevronDown
                   size={14}
-                  className="text-on-surface-variant group-hover:text-on-surface pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors sm:right-3 sm:size-4"
+                  className="text-on-surface-variant group-hover:text-on-surface pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 transition-colors sm:right-3 sm:size-4"
                 />
               </div>
 
@@ -944,7 +955,7 @@ export const LibraryPage: React.FC = () => {
           <>
             {viewMode === 'compact' && (
               <div className="animate-fade-in grid grid-cols-3 gap-2.5 sm:grid-cols-4 sm:gap-3.5 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8">
-                {filteredBooks.map((book) => (
+                {displayedBooks.map((book) => (
                   <BookCompactCard
                     key={book.id}
                     book={book}
@@ -960,7 +971,7 @@ export const LibraryPage: React.FC = () => {
 
             {viewMode === 'comfortable' && (
               <div className="animate-fade-in grid grid-cols-2 gap-3.5 sm:grid-cols-3 sm:gap-5 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                {filteredBooks.map((book) => (
+                {displayedBooks.map((book) => (
                   <BookCard
                     key={book.id}
                     book={book}
@@ -976,7 +987,7 @@ export const LibraryPage: React.FC = () => {
 
             {viewMode === 'cover-only' && (
               <div className="animate-fade-in grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-5">
-                {filteredBooks.map((book) => (
+                {displayedBooks.map((book) => (
                   <BookCoverCard
                     key={book.id}
                     book={book}
@@ -992,7 +1003,7 @@ export const LibraryPage: React.FC = () => {
 
             {viewMode === 'list' && (
               <div className="animate-fade-in flex flex-col gap-3">
-                {filteredBooks.map((book) => (
+                {displayedBooks.map((book) => (
                   <BookListItem
                     key={book.id}
                     book={book}
@@ -1003,6 +1014,26 @@ export const LibraryPage: React.FC = () => {
                     onToggleSelect={toggleSelectBook}
                   />
                 ))}
+              </div>
+            )}
+
+            {/* Infinite Scroll Sentinel & Loading Indicator */}
+            {hasMoreBooks && (
+              <div ref={bookSentinelRef} className="flex items-center justify-center pt-6 pb-8">
+                <div className="bg-surface-container-low border-outline-variant/30 text-on-surface-variant flex items-center gap-2.5 rounded-full border px-4 py-2 shadow-2xs">
+                  <Loader2 size={16} className="text-primary animate-spin" />
+                  <span className="text-xs font-medium">
+                    Memuat lebih banyak buku ({displayedBooks.length} dari {filteredBooks.length}
+                    )...
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* End of library indicator when there are many books */}
+            {!hasMoreBooks && filteredBooks.length > 48 && (
+              <div className="text-on-surface-variant/50 py-8 text-center text-xs">
+                Semua {filteredBooks.length} buku telah ditampilkan
               </div>
             )}
           </>
