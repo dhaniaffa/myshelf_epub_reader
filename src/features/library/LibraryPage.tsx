@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import {
   ArrowUpDown,
   BookOpen,
+  CheckSquare,
   Compass,
   FolderOpen,
   FolderSync,
@@ -15,7 +16,9 @@ import {
   Loader2,
   Plus,
   Search,
+  Square,
   Tag,
+  Trash2,
   UploadCloud,
   X,
 } from 'lucide-react';
@@ -31,7 +34,7 @@ import { BookDetailsDialog } from '@/features/library/BookDetailsDialog';
 import { BookListItem } from '@/features/library/BookListItem';
 import { HeroCard } from '@/features/library/HeroCard';
 import { ManageCollectionsDialog } from '@/features/library/ManageCollectionsDialog';
-import { db, deleteBook } from '@/lib/db';
+import { db, deleteBook, deleteBooks } from '@/lib/db';
 import {
   connectLocalFolder,
   getLocalFolder,
@@ -64,6 +67,9 @@ export const LibraryPage: React.FC = () => {
   const viewMode = useSettingsStore((s) => s.libraryViewMode || 'comfortable');
   const setLibraryViewMode = useSettingsStore((s) => s.setLibraryViewMode);
   const [isImporting, setIsImporting] = useState(false);
+  const [isDeleteMode, setIsDeleteMode] = useState(false);
+  const [selectedBookIds, setSelectedBookIds] = useState<Set<string>>(new Set());
+  const [batchDeleteConfirmOpen, setBatchDeleteConfirmOpen] = useState(false);
   const isFolderSyncing = useSyncStore((s) => s.isSyncing);
   const syncProgress = useSyncStore((s) => s.progress);
   const cancelSync = useSyncStore((s) => s.cancelSync);
@@ -292,6 +298,43 @@ export const LibraryPage: React.FC = () => {
     }
   };
 
+  const toggleSelectBook = (bookId: string) => {
+    setSelectedBookIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(bookId)) {
+        next.delete(bookId);
+      } else {
+        next.add(bookId);
+      }
+      return next;
+    });
+  };
+
+  const isAllSelected = filteredBooks.length > 0 && selectedBookIds.size === filteredBooks.length;
+
+  const handleToggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedBookIds(new Set());
+    } else {
+      setSelectedBookIds(new Set(filteredBooks.map((b) => b.id)));
+    }
+  };
+
+  const handleBatchDeleteConfirm = async () => {
+    const ids = Array.from(selectedBookIds);
+    if (ids.length === 0) return;
+    try {
+      await deleteBooks(ids);
+      toast.success(`Berhasil menghapus ${ids.length} buku dari rak`);
+      setSelectedBookIds(new Set());
+      setIsDeleteMode(false);
+      setBatchDeleteConfirmOpen(false);
+    } catch (err) {
+      console.error('Gagal menghapus buku:', err);
+      toast.error('Gagal menghapus buku yang dipilih');
+    }
+  };
+
   return (
     <div
       className="bg-surface flex min-h-screen flex-col"
@@ -339,6 +382,25 @@ export const LibraryPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          {books.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                setIsDeleteMode(!isDeleteMode);
+                setSelectedBookIds(new Set());
+              }}
+              className={`inline-flex h-8.5 cursor-pointer items-center gap-1.5 rounded-full border px-3 text-xs font-semibold shadow-2xs transition-all ${
+                isDeleteMode
+                  ? 'border-rose-600 bg-rose-500 text-white shadow-sm'
+                  : 'bg-surface-container-high hover:bg-surface-container-highest border-outline-variant/30 text-on-surface'
+              }`}
+              title={isDeleteMode ? 'Keluar dari mode hapus' : 'Mode kelola / hapus buku'}
+            >
+              <Trash2 size={14} className={isDeleteMode ? 'text-white' : 'text-rose-500'} />
+              <span className="hidden sm:inline">{isDeleteMode ? 'Selesai' : 'Hapus Buku'}</span>
+            </button>
+          )}
+
           {syncFolder && (
             <button
               type="button"
@@ -384,6 +446,63 @@ export const LibraryPage: React.FC = () => {
 
       {/* Main Content */}
       <main className="mx-auto w-full max-w-7xl flex-1 space-y-4 p-3.5 sm:space-y-7 sm:p-8">
+        {/* Sticky Batch Delete / Selection Toolbar */}
+        {isDeleteMode && (
+          <div className="bg-surface-container border-outline-variant/40 animate-slide-up sticky top-14 z-20 flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-3.5 shadow-lg backdrop-blur-md sm:top-16 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <button
+                type="button"
+                onClick={handleToggleSelectAll}
+                className="bg-surface-container-highest hover:bg-surface-container-high text-on-surface border-outline-variant/30 inline-flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors"
+              >
+                {isAllSelected ? (
+                  <CheckSquare size={16} className="text-rose-500" />
+                ) : (
+                  <Square size={16} />
+                )}
+                <span>
+                  {isAllSelected ? 'Batalkan Semua' : `Pilih Semua (${filteredBooks.length})`}
+                </span>
+              </button>
+
+              <div className="text-on-surface text-xs font-medium sm:text-sm">
+                {selectedBookIds.size === 0 ? (
+                  <span className="text-on-surface-variant">Pilih buku yang ingin dihapus</span>
+                ) : (
+                  <span>
+                    <strong className="font-bold text-rose-500">{selectedBookIds.size}</strong> dari{' '}
+                    {filteredBooks.length} buku dipilih
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="text"
+                size="sm"
+                onClick={() => {
+                  setIsDeleteMode(false);
+                  setSelectedBookIds(new Set());
+                }}
+              >
+                Batal
+              </Button>
+
+              <Button
+                variant="danger"
+                size="sm"
+                icon={<Trash2 size={15} />}
+                disabled={selectedBookIds.size === 0}
+                onClick={() => setBatchDeleteConfirmOpen(true)}
+                className="shadow-sm"
+              >
+                Hapus {selectedBookIds.size > 0 ? `(${selectedBookIds.size})` : ''}
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Progress Sinkronisasi Folder Lokal */}
         {isFolderSyncing && (
           <div className="animate-slide-up flex flex-col gap-2 rounded-2xl border border-teal-500/30 bg-teal-500/10 p-4 shadow-xs">
@@ -458,7 +577,7 @@ export const LibraryPage: React.FC = () => {
         )}
 
         {/* Hero Card: Lanjutkan Membaca */}
-        {continueReadingBook && <HeroCard book={continueReadingBook} />}
+        {!isDeleteMode && continueReadingBook && <HeroCard book={continueReadingBook} />}
 
         {/* Filters and Controls Toolbar */}
         <div className="space-y-2.5 sm:space-y-3.5">
@@ -825,6 +944,9 @@ export const LibraryPage: React.FC = () => {
                     book={book}
                     onDeleteRequest={setBookToDelete}
                     onShowDetails={setSelectedBookForDetails}
+                    isSelectionMode={isDeleteMode}
+                    isSelected={selectedBookIds.has(book.id)}
+                    onToggleSelect={toggleSelectBook}
                   />
                 ))}
               </div>
@@ -838,6 +960,9 @@ export const LibraryPage: React.FC = () => {
                     book={book}
                     onDeleteRequest={setBookToDelete}
                     onShowDetails={setSelectedBookForDetails}
+                    isSelectionMode={isDeleteMode}
+                    isSelected={selectedBookIds.has(book.id)}
+                    onToggleSelect={toggleSelectBook}
                   />
                 ))}
               </div>
@@ -851,6 +976,9 @@ export const LibraryPage: React.FC = () => {
                     book={book}
                     onDeleteRequest={setBookToDelete}
                     onShowDetails={setSelectedBookForDetails}
+                    isSelectionMode={isDeleteMode}
+                    isSelected={selectedBookIds.has(book.id)}
+                    onToggleSelect={toggleSelectBook}
                   />
                 ))}
               </div>
@@ -864,6 +992,9 @@ export const LibraryPage: React.FC = () => {
                     book={book}
                     onDeleteRequest={setBookToDelete}
                     onShowDetails={setSelectedBookForDetails}
+                    isSelectionMode={isDeleteMode}
+                    isSelected={selectedBookIds.has(book.id)}
+                    onToggleSelect={toggleSelectBook}
                   />
                 ))}
               </div>
@@ -872,7 +1003,7 @@ export const LibraryPage: React.FC = () => {
         )}
       </main>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Single Delete Confirmation Dialog */}
       <Dialog
         open={!!bookToDelete}
         onClose={() => setBookToDelete(null)}
@@ -897,6 +1028,44 @@ export const LibraryPage: React.FC = () => {
           Seluruh berkas, riwayat progres, penanda, serta sorotan dan catatan untuk buku ini akan
           dihapus dari perangkat Anda secara permanen.
         </p>
+      </Dialog>
+
+      {/* Batch Delete Confirmation Dialog */}
+      <Dialog
+        open={batchDeleteConfirmOpen}
+        onClose={() => setBatchDeleteConfirmOpen(false)}
+        title={
+          selectedBookIds.size === books.length
+            ? 'Hapus Semua Buku dari Rak?'
+            : `Hapus ${selectedBookIds.size} Buku Terpilih?`
+        }
+        maxWidth="sm"
+        actions={
+          <>
+            <Button variant="text" size="sm" onClick={() => setBatchDeleteConfirmOpen(false)}>
+              Batal
+            </Button>
+            <Button variant="danger" size="sm" onClick={handleBatchDeleteConfirm}>
+              Hapus {selectedBookIds.size} Buku
+            </Button>
+          </>
+        }
+      >
+        <div className="text-on-surface-variant space-y-2 text-sm">
+          <p>
+            Apakah Anda yakin ingin menghapus{' '}
+            <strong className="text-on-surface font-semibold">
+              {selectedBookIds.size === books.length
+                ? 'seluruh buku di perpustakaan'
+                : `${selectedBookIds.size} buku yang dipilih`}
+            </strong>{' '}
+            dari MyShelf?
+          </p>
+          <p className="text-on-surface-variant/80 text-xs">
+            Seluruh berkas, riwayat progres membaca, penanda buku, catatan, dan sorotan akan dihapus
+            secara permanen dari perangkat Anda.
+          </p>
+        </div>
       </Dialog>
 
       {/* Book Details Dialog (About Book) */}

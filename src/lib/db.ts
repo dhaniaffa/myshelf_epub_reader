@@ -112,6 +112,25 @@ export async function deleteBook(id: string): Promise<void> {
 }
 
 /**
+ * Atomically delete multiple books and all their associated data in a single transaction
+ */
+export async function deleteBooks(ids: string[]): Promise<void> {
+  if (ids.length === 0) return;
+  await db.transaction(
+    'rw',
+    [db.books, db.files, db.locations, db.bookmarks, db.annotations, db.reading_logs],
+    async () => {
+      await db.books.bulkDelete(ids);
+      await db.files.bulkDelete(ids);
+      await db.locations.where('bookId').anyOf(ids).delete();
+      await db.bookmarks.where('bookId').anyOf(ids).delete();
+      await db.annotations.where('bookId').anyOf(ids).delete();
+      await db.reading_logs.where('bookId').anyOf(ids).delete();
+    }
+  );
+}
+
+/**
  * Format timestamp to local date string 'YYYY-MM-DD'
  */
 export function getLocalDateString(timestamp: number = Date.now()): string {

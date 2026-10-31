@@ -1,5 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { BookOpen, CheckCircle2, Info, MoreVertical, Tag, Trash2 } from 'lucide-react';
+import {
+  BookOpen,
+  CheckCircle2,
+  CheckSquare,
+  Info,
+  MoreVertical,
+  Square,
+  Tag,
+  Trash2,
+} from 'lucide-react';
 
 import { useCoverUrl } from '@/lib/cover';
 import { db } from '@/lib/db';
@@ -14,12 +23,18 @@ interface BookCompactCardProps {
   book: Book;
   onDeleteRequest: (book: Book) => void;
   onShowDetails?: (book: Book) => void;
+  isSelectionMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (bookId: string) => void;
 }
 
 export const BookCompactCard: React.FC<BookCompactCardProps> = ({
   book,
   onDeleteRequest,
   onShowDetails,
+  isSelectionMode = false,
+  isSelected = false,
+  onToggleSelect,
 }) => {
   const coverUrl = useCoverUrl(book.cover);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -75,6 +90,10 @@ export const BookCompactCard: React.FC<BookCompactCardProps> = ({
   };
 
   const handleCardClick = () => {
+    if (isSelectionMode) {
+      onToggleSelect?.(book.id);
+      return;
+    }
     if (menuOpen) {
       setMenuOpen(false);
       return;
@@ -85,9 +104,13 @@ export const BookCompactCard: React.FC<BookCompactCardProps> = ({
   return (
     <div
       onClick={handleCardClick}
-      className={`group bg-surface-container-low hover:bg-surface-container border-outline-variant/30 hover:border-primary/40 relative flex cursor-pointer flex-col rounded-xl border transition-all duration-200 select-none hover:-translate-y-0.5 hover:shadow-md ${
-        menuOpen ? 'z-40' : ''
-      }`}
+      className={`group bg-surface-container-low hover:bg-surface-container relative flex cursor-pointer flex-col rounded-xl border transition-all duration-200 select-none hover:-translate-y-0.5 hover:shadow-md ${
+        isSelectionMode
+          ? isSelected
+            ? 'border-rose-500 bg-rose-500/5 ring-2 ring-rose-500'
+            : 'border-outline-variant/60 hover:border-primary/60'
+          : 'border-outline-variant/30 hover:border-primary/40'
+      } ${menuOpen ? 'z-40' : ''}`}
     >
       {/* Cover Aspect Ratio 2:3 */}
       <div className="relative aspect-2/3 w-full">
@@ -141,69 +164,83 @@ export const BookCompactCard: React.FC<BookCompactCardProps> = ({
           </div>
         </div>
 
-        {/* More Actions Button */}
-        <div
-          ref={menuRef}
-          className="absolute top-1 right-1 z-30"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <button
-            type="button"
-            className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-black/40 text-white shadow-sm backdrop-blur-md transition-colors hover:bg-black/70 active:scale-95"
-            onClick={(e) => {
-              e.stopPropagation();
-              setMenuOpen(!menuOpen);
-            }}
-            aria-label="Menu opsi buku"
-          >
-            <MoreVertical size={12} />
-          </button>
-
-          {menuOpen && (
-            <div className="bg-surface-container-highest border-outline-variant/40 animate-fade-in pointer-events-auto absolute right-0 z-50 mt-1 w-36 rounded-xl border py-1.5 text-xs shadow-xl sm:w-44">
-              <button
-                onClick={() => {
-                  setMenuOpen(false);
-                  onShowDetails?.(book);
-                }}
-                className="hover:bg-surface-container text-on-surface flex w-full cursor-pointer items-center gap-2 px-2.5 py-1.5 text-left sm:px-3 sm:py-2"
-              >
-                <Info size={13} className="text-primary shrink-0" />
-                <span className="truncate">Tentang Buku</span>
-              </button>
-              <button
-                onClick={() => {
-                  setMenuOpen(false);
-                  onShowDetails?.(book);
-                }}
-                className="hover:bg-surface-container text-on-surface flex w-full cursor-pointer items-center gap-2 px-2.5 py-1.5 text-left sm:px-3 sm:py-2"
-              >
-                <Tag size={13} className="text-primary shrink-0" />
-                <span className="truncate">Kelola Tag</span>
-              </button>
-              <button
-                onClick={handleToggleCompleted}
-                className="hover:bg-surface-container text-on-surface flex w-full cursor-pointer items-center gap-2 px-2.5 py-1.5 text-left sm:px-3 sm:py-2"
-              >
-                <CheckCircle2 size={13} className="shrink-0 text-emerald-500" />
-                <span className="truncate">
-                  {book.status === 'completed' ? 'Batal Selesai' : 'Tandai Selesai'}
-                </span>
-              </button>
-              <div className="border-outline-variant/30 my-1 border-t" />
-              <button
-                onClick={() => {
-                  setMenuOpen(false);
-                  onDeleteRequest(book);
-                }}
-                className="hover:bg-error-container/30 text-error flex w-full cursor-pointer items-center gap-2 px-2.5 py-1.5 text-left sm:px-3 sm:py-2"
-              >
-                <Trash2 size={13} className="shrink-0" />
-                <span className="truncate">Hapus Buku</span>
-              </button>
+        {/* Selection Checkbox (when in selection mode) or More Actions Button */}
+        {isSelectionMode ? (
+          <div className="absolute top-1 right-1 z-30">
+            <div
+              className={`flex h-6 w-6 items-center justify-center rounded-lg border shadow-sm transition-all ${
+                isSelected
+                  ? 'scale-105 border-rose-600 bg-rose-500 text-white shadow-md'
+                  : 'border-white/40 bg-black/50 text-white/70 backdrop-blur-md hover:bg-black/70'
+              }`}
+            >
+              {isSelected ? <CheckSquare size={14} className="text-white" /> : <Square size={14} />}
             </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div
+            ref={menuRef}
+            className="absolute top-1 right-1 z-30"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-black/40 text-white shadow-sm backdrop-blur-md transition-colors hover:bg-black/70 active:scale-95"
+              onClick={(e) => {
+                e.stopPropagation();
+                setMenuOpen(!menuOpen);
+              }}
+              aria-label="Menu opsi buku"
+            >
+              <MoreVertical size={12} />
+            </button>
+
+            {menuOpen && (
+              <div className="bg-surface-container-highest border-outline-variant/40 animate-fade-in pointer-events-auto absolute right-0 z-50 mt-1 w-36 rounded-xl border py-1.5 text-xs shadow-xl sm:w-44">
+                <button
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onShowDetails?.(book);
+                  }}
+                  className="hover:bg-surface-container text-on-surface flex w-full cursor-pointer items-center gap-2 px-2.5 py-1.5 text-left sm:px-3 sm:py-2"
+                >
+                  <Info size={13} className="text-primary shrink-0" />
+                  <span className="truncate">Tentang Buku</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onShowDetails?.(book);
+                  }}
+                  className="hover:bg-surface-container text-on-surface flex w-full cursor-pointer items-center gap-2 px-2.5 py-1.5 text-left sm:px-3 sm:py-2"
+                >
+                  <Tag size={13} className="text-primary shrink-0" />
+                  <span className="truncate">Kelola Tag</span>
+                </button>
+                <button
+                  onClick={handleToggleCompleted}
+                  className="hover:bg-surface-container text-on-surface flex w-full cursor-pointer items-center gap-2 px-2.5 py-1.5 text-left sm:px-3 sm:py-2"
+                >
+                  <CheckCircle2 size={13} className="shrink-0 text-emerald-500" />
+                  <span className="truncate">
+                    {book.status === 'completed' ? 'Batal Selesai' : 'Tandai Selesai'}
+                  </span>
+                </button>
+                <div className="border-outline-variant/30 my-1 border-t" />
+                <button
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onDeleteRequest(book);
+                  }}
+                  className="hover:bg-error-container/30 text-error flex w-full cursor-pointer items-center gap-2 px-2.5 py-1.5 text-left sm:px-3 sm:py-2"
+                >
+                  <Trash2 size={13} className="shrink-0" />
+                  <span className="truncate">Hapus Buku</span>
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Book compact info below cover */}

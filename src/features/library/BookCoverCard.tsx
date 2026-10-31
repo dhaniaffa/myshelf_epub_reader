@@ -3,9 +3,11 @@ import {
   BookOpen,
   Calendar,
   CheckCircle2,
+  CheckSquare,
   HardDrive,
   Info,
   MoreVertical,
+  Square,
   Tag,
   Trash2,
   User,
@@ -24,12 +26,18 @@ interface BookCoverCardProps {
   book: Book;
   onDeleteRequest: (book: Book) => void;
   onShowDetails?: (book: Book) => void;
+  isSelectionMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (bookId: string) => void;
 }
 
 export const BookCoverCard: React.FC<BookCoverCardProps> = ({
   book,
   onDeleteRequest,
   onShowDetails,
+  isSelectionMode = false,
+  isSelected = false,
+  onToggleSelect,
 }) => {
   const coverUrl = useCoverUrl(book.cover);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -85,6 +93,10 @@ export const BookCoverCard: React.FC<BookCoverCardProps> = ({
   };
 
   const handleCardClick = () => {
+    if (isSelectionMode) {
+      onToggleSelect?.(book.id);
+      return;
+    }
     if (menuOpen) {
       setMenuOpen(false);
       return;
@@ -96,9 +108,13 @@ export const BookCoverCard: React.FC<BookCoverCardProps> = ({
     <div
       onClick={handleCardClick}
       title={book.title}
-      className={`group border-outline-variant/30 hover:border-primary/60 relative aspect-2/3 w-full cursor-pointer overflow-hidden rounded-2xl border shadow-lg ring-1 ring-black/5 transition-all duration-300 select-none hover:-translate-y-2 hover:shadow-2xl dark:ring-white/10 ${
-        menuOpen ? 'z-40' : ''
-      }`}
+      className={`group relative aspect-2/3 w-full cursor-pointer overflow-hidden rounded-2xl border shadow-lg ring-1 ring-black/5 transition-all duration-300 select-none hover:-translate-y-2 hover:shadow-2xl dark:ring-white/10 ${
+        isSelectionMode
+          ? isSelected
+            ? 'border-rose-500 ring-4 shadow-rose-500/20 ring-rose-500'
+            : 'border-outline-variant/60 hover:border-primary/60'
+          : 'border-outline-variant/30 hover:border-primary/60'
+      } ${menuOpen ? 'z-40' : ''}`}
     >
       {/* Cover Image or Artistic Cloth-Bound Fallback */}
       <div className="bg-surface-container-high relative h-full w-full">
@@ -173,102 +189,118 @@ export const BookCoverCard: React.FC<BookCoverCardProps> = ({
         </div>
 
         {/* Desktop & Tablet Hover Overlay: Full Title, Author, Year, and Quick Read */}
-        <div className="pointer-events-none absolute inset-0 z-15 hidden flex-col justify-between bg-black/85 p-4 text-white opacity-0 backdrop-blur-xs transition-opacity duration-200 group-hover:opacity-100 sm:flex">
-          <div className="space-y-2 overflow-y-auto pr-1">
-            <span className="text-primary-container font-mono text-[10px] font-semibold tracking-wider uppercase">
-              {book.format === 'pdf' ? 'Dokumen PDF' : 'Buku EPUB'}
-            </span>
-            <h4 className="wrap-break-words text-sm leading-snug font-bold md:text-base">
-              {book.title}
-            </h4>
-            <div className="flex items-center gap-1.5 text-xs text-white/90">
-              <User size={13} className="text-primary-container shrink-0" />
-              <span className="line-clamp-1">{book.author}</span>
-            </div>
-            {book.publishedYear && (
-              <div className="flex items-center gap-1.5 text-xs text-white/80">
-                <Calendar size={12} className="text-primary-container shrink-0" />
-                <span>Tahun {book.publishedYear}</span>
-              </div>
-            )}
-            {book.fileSize && (
-              <div className="flex items-center gap-1.5 text-xs text-white/80">
-                <HardDrive size={12} className="text-primary-container shrink-0" />
-                <span>{formatFileSize(book.fileSize)}</span>
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center justify-between border-t border-white/15 pt-2.5 text-xs text-white/85">
-            <span>{progressPercent > 0 ? `${progressPercent}% dibaca` : 'Mulai Baca'}</span>
-            <span className="text-primary-container font-semibold">Buka Buku →</span>
-          </div>
-        </div>
-      </div>
-
-      {/* More Actions 3-Dots Button */}
-      <div
-        ref={menuRef}
-        className="absolute top-2.5 right-2.5 z-30"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button
-          type="button"
-          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-black/50 text-white shadow-md backdrop-blur-md transition-colors hover:bg-black/80 active:scale-95"
-          onClick={(e) => {
-            e.stopPropagation();
-            setMenuOpen(!menuOpen);
-          }}
-          aria-label="Menu opsi buku"
-        >
-          <MoreVertical size={15} />
-        </button>
-
-        {menuOpen && (
-          <div className="bg-surface-container-highest border-outline-variant/40 animate-fade-in pointer-events-auto absolute right-0 z-50 mt-1 w-36 rounded-xl border py-1.5 text-xs shadow-xl sm:w-44">
-            <button
-              onClick={() => {
-                setMenuOpen(false);
-                onShowDetails?.(book);
-              }}
-              className="hover:bg-surface-container text-on-surface flex w-full cursor-pointer items-center gap-2 px-2.5 py-2 text-left sm:px-3"
-            >
-              <Info size={13} className="text-primary shrink-0" />
-              <span className="truncate">Tentang Buku</span>
-            </button>
-            <button
-              onClick={() => {
-                setMenuOpen(false);
-                onShowDetails?.(book);
-              }}
-              className="hover:bg-surface-container text-on-surface flex w-full cursor-pointer items-center gap-2 px-2.5 py-2 text-left sm:px-3"
-            >
-              <Tag size={13} className="text-primary shrink-0" />
-              <span className="truncate">Kelola Tag</span>
-            </button>
-            <button
-              onClick={handleToggleCompleted}
-              className="hover:bg-surface-container text-on-surface flex w-full cursor-pointer items-center gap-2 px-2.5 py-2 text-left sm:px-3"
-            >
-              <CheckCircle2 size={13} className="shrink-0 text-emerald-500" />
-              <span className="truncate">
-                {book.status === 'completed' ? 'Batal Selesai' : 'Tandai Selesai'}
+        {!isSelectionMode && (
+          <div className="pointer-events-none absolute inset-0 z-15 hidden flex-col justify-between bg-black/85 p-4 text-white opacity-0 backdrop-blur-xs transition-opacity duration-200 group-hover:opacity-100 sm:flex">
+            <div className="space-y-2 overflow-y-auto pr-1">
+              <span className="text-primary-container font-mono text-[10px] font-semibold tracking-wider uppercase">
+                {book.format === 'pdf' ? 'Dokumen PDF' : 'Buku EPUB'}
               </span>
-            </button>
-            <div className="border-outline-variant/30 my-1 border-t" />
-            <button
-              onClick={() => {
-                setMenuOpen(false);
-                onDeleteRequest(book);
-              }}
-              className="hover:bg-error-container/30 text-error flex w-full cursor-pointer items-center gap-2 px-2.5 py-2 text-left sm:px-3"
-            >
-              <Trash2 size={13} className="shrink-0" />
-              <span className="truncate">Hapus Buku</span>
-            </button>
+              <h4 className="wrap-break-words text-sm leading-snug font-bold md:text-base">
+                {book.title}
+              </h4>
+              <div className="flex items-center gap-1.5 text-xs text-white/90">
+                <User size={13} className="text-primary-container shrink-0" />
+                <span className="line-clamp-1">{book.author}</span>
+              </div>
+              {book.publishedYear && (
+                <div className="flex items-center gap-1.5 text-xs text-white/80">
+                  <Calendar size={12} className="text-primary-container shrink-0" />
+                  <span>Tahun {book.publishedYear}</span>
+                </div>
+              )}
+              {book.fileSize && (
+                <div className="flex items-center gap-1.5 text-xs text-white/80">
+                  <HardDrive size={12} className="text-primary-container shrink-0" />
+                  <span>{formatFileSize(book.fileSize)}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between border-t border-white/15 pt-2.5 text-xs text-white/85">
+              <span>{progressPercent > 0 ? `${progressPercent}% dibaca` : 'Mulai Baca'}</span>
+              <span className="text-primary-container font-semibold">Buka Buku →</span>
+            </div>
           </div>
         )}
       </div>
+
+      {/* Selection Checkbox (when in selection mode) or More Actions 3-Dots Button */}
+      {isSelectionMode ? (
+        <div className="absolute top-2.5 right-2.5 z-30">
+          <div
+            className={`flex h-8 w-8 items-center justify-center rounded-xl border shadow-md transition-all ${
+              isSelected
+                ? 'scale-105 border-rose-600 bg-rose-500 text-white'
+                : 'border-white/40 bg-black/60 text-white/70 backdrop-blur-md hover:bg-black/80'
+            }`}
+          >
+            {isSelected ? <CheckSquare size={18} className="text-white" /> : <Square size={18} />}
+          </div>
+        </div>
+      ) : (
+        <div
+          ref={menuRef}
+          className="absolute top-2.5 right-2.5 z-30"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            type="button"
+            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-black/50 text-white shadow-md backdrop-blur-md transition-colors hover:bg-black/80 active:scale-95"
+            onClick={(e) => {
+              e.stopPropagation();
+              setMenuOpen(!menuOpen);
+            }}
+            aria-label="Menu opsi buku"
+          >
+            <MoreVertical size={15} />
+          </button>
+
+          {menuOpen && (
+            <div className="bg-surface-container-highest border-outline-variant/40 animate-fade-in pointer-events-auto absolute right-0 z-50 mt-1 w-36 rounded-xl border py-1.5 text-xs shadow-xl sm:w-44">
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  onShowDetails?.(book);
+                }}
+                className="hover:bg-surface-container text-on-surface flex w-full cursor-pointer items-center gap-2 px-2.5 py-2 text-left sm:px-3"
+              >
+                <Info size={13} className="text-primary shrink-0" />
+                <span className="truncate">Tentang Buku</span>
+              </button>
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  onShowDetails?.(book);
+                }}
+                className="hover:bg-surface-container text-on-surface flex w-full cursor-pointer items-center gap-2 px-2.5 py-2 text-left sm:px-3"
+              >
+                <Tag size={13} className="text-primary shrink-0" />
+                <span className="truncate">Kelola Tag</span>
+              </button>
+              <button
+                onClick={handleToggleCompleted}
+                className="hover:bg-surface-container text-on-surface flex w-full cursor-pointer items-center gap-2 px-2.5 py-2 text-left sm:px-3"
+              >
+                <CheckCircle2 size={13} className="shrink-0 text-emerald-500" />
+                <span className="truncate">
+                  {book.status === 'completed' ? 'Batal Selesai' : 'Tandai Selesai'}
+                </span>
+              </button>
+              <div className="border-outline-variant/30 my-1 border-t" />
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  onDeleteRequest(book);
+                }}
+                className="hover:bg-error-container/30 text-error flex w-full cursor-pointer items-center gap-2 px-2.5 py-2 text-left sm:px-3"
+              >
+                <Trash2 size={13} className="shrink-0" />
+                <span className="truncate">Hapus Buku</span>
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
