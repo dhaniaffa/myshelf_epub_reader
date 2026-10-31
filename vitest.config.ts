@@ -15,7 +15,9 @@ export default defineConfig({
         'src/store/**',
         'src/features/reader/utils/**',
         'src/features/reader/components/pdf/pdfUtils.ts',
+        'src/features/reader/ReaderErrorBoundary.tsx',
         'src/components/ui/**',
+        'src/components/GlobalErrorBoundary.tsx',
         'scripts/bump-version.js',
       ],
       exclude: [

@@ -10,6 +10,7 @@ import { UpdateDialog } from '@/components/UpdateDialog';
 import { CatalogPage } from '@/features/catalog/CatalogPage';
 import { CollectionsPage } from '@/features/collections/CollectionsPage';
 import { LibraryPage } from '@/features/library/LibraryPage';
+import { ReaderErrorBoundary } from '@/features/reader/ReaderErrorBoundary';
 import { SettingsPage } from '@/features/settings/SettingsPage';
 import { StatsPage } from '@/features/stats/StatsPage';
 import { handleBackAction } from '@/lib/backHandler';
@@ -204,7 +205,9 @@ export const App: React.FC = () => {
             </div>
           }
         >
-          <ReaderPage bookId={route.bookId} />
+          <ReaderErrorBoundary bookId={route.bookId}>
+            <ReaderPage bookId={route.bookId} />
+          </ReaderErrorBoundary>
         </Suspense>
       ) : (
         <AppShell currentRoute={route.type}>

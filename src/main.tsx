@@ -7,9 +7,12 @@ import '@fontsource/roboto/700.css';
 import '@/styles/app.css';
 
 import { App } from '@/App';
+import { GlobalErrorBoundary } from '@/components/GlobalErrorBoundary';
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
-    <App />
+    <GlobalErrorBoundary>
+      <App />
+    </GlobalErrorBoundary>
   </React.StrictMode>
 );
