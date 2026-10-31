@@ -107,6 +107,10 @@ export interface ExtractedMetadata {
   author: string;
   cover: Blob | null;
   publishedYear: string | null;
+  publisher?: string | null;
+  description?: string | null;
+  language?: string | null;
+  identifier?: string | null;
 }
 
 export interface FullBookMetadata extends ExtractedMetadata {
@@ -179,11 +183,20 @@ export async function readMetadata(buffer: ArrayBuffer): Promise<ExtractedMetada
       }
     }
 
+    const publisher = metadata?.publisher ? String(metadata.publisher).trim() : null;
+    const description = metadata?.description ? String(metadata.description).trim() : null;
+    const language = metadata?.language ? String(metadata.language).trim() : null;
+    const identifier = metadata?.identifier ? String(metadata.identifier).trim() : null;
+
     return {
       title: title || 'Tanpa Judul',
       author: author || 'Penulis Tidak Dikenal',
       cover: coverBlob,
       publishedYear,
+      publisher,
+      description,
+      language,
+      identifier,
     };
   } finally {
     try {
@@ -197,7 +210,10 @@ export async function readMetadata(buffer: ArrayBuffer): Promise<ExtractedMetada
 /**
  * Mengekstrak seluruh metadata lengkap (termasuk deskripsi, penerbit, bahasa, identifier)
  */
-export async function readFullMetadata(buffer: ArrayBuffer): Promise<FullBookMetadata> {
+export async function readFullMetadata(
+  buffer: ArrayBuffer,
+  options?: { extractCover?: boolean }
+): Promise<FullBookMetadata> {
   const createBook = ePub as unknown as (data: ArrayBuffer) => ExtendedEpubBook;
   const book = createBook(buffer);
 
@@ -205,28 +221,30 @@ export async function readFullMetadata(buffer: ArrayBuffer): Promise<FullBookMet
     const metadata = await book.loaded.metadata;
     let coverBlob: Blob | null = null;
 
-    try {
-      const coverUrl = await book.coverUrl();
-      if (coverUrl) {
-        let rawBlob: Blob | null = null;
-        try {
-          const response = await fetch(coverUrl);
-          rawBlob = await response.blob();
-        } catch {
-          if (book.archive?.getBlob) {
-            try {
-              rawBlob = await book.archive.getBlob(coverUrl);
-            } catch {
-              // ignore
+    if (options?.extractCover) {
+      try {
+        const coverUrl = await book.coverUrl();
+        if (coverUrl) {
+          let rawBlob: Blob | null = null;
+          try {
+            const response = await fetch(coverUrl);
+            rawBlob = await response.blob();
+          } catch {
+            if (book.archive?.getBlob) {
+              try {
+                rawBlob = await book.archive.getBlob(coverUrl);
+              } catch {
+                // ignore
+              }
             }
           }
+          if (rawBlob) {
+            coverBlob = await resizeCoverBlob(rawBlob, 400);
+          }
         }
-        if (rawBlob) {
-          coverBlob = await resizeCoverBlob(rawBlob, 400);
-        }
+      } catch {
+        coverBlob = null;
       }
-    } catch {
-      coverBlob = null;
     }
 
     const title = metadata?.title ? String(metadata.title).trim() : 'Tanpa Judul';

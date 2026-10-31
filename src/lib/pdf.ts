@@ -22,6 +22,8 @@ export interface PdfExtractedMetadata {
   cover: Blob | null;
   publishedYear: string | null;
   totalPages: number;
+  publisher?: string | null;
+  description?: string | null;
 }
 
 export interface PdfFullMetadata extends PdfExtractedMetadata {
@@ -124,6 +126,8 @@ async function internalReadPdfMetadata(
     let title = cleanFileName(fileName);
     let author = 'Penulis Tidak Dikenal';
     let publishedYear: string | null = null;
+    let publisher: string | null = null;
+    let description: string | null = null;
 
     try {
       const meta = await pdfDoc.getMetadata();
@@ -134,6 +138,12 @@ async function internalReadPdfMetadata(
         }
         if (info.Author && String(info.Author).trim().length > 0) {
           author = String(info.Author).trim();
+        }
+        if (info.Producer || info.Creator) {
+          publisher = String(info.Producer || info.Creator).trim();
+        }
+        if (info.Subject && String(info.Subject).trim().length > 0) {
+          description = String(info.Subject).trim();
         }
         publishedYear = extractYear(info.CreationDate || info.ModDate);
       }
@@ -204,6 +214,8 @@ async function internalReadPdfMetadata(
       cover: coverBlob,
       publishedYear,
       totalPages,
+      publisher,
+      description,
     };
   } catch (err) {
     console.warn(`Gagal memuat metadata PDF untuk ${fileName}, menggunakan fallback:`, err);
@@ -239,9 +251,20 @@ async function internalReadPdfMetadata(
  */
 export async function readFullPdfMetadata(
   buffer: ArrayBuffer,
-  fileName?: string
+  fileName?: string,
+  options?: { extractCover?: boolean }
 ): Promise<PdfFullMetadata> {
-  const basic = await readPdfMetadata(buffer, fileName);
+  const shouldExtractCover = options?.extractCover ?? true;
+  const basic = shouldExtractCover
+    ? await readPdfMetadata(buffer, fileName)
+    : {
+        title: cleanFileName(fileName),
+        author: 'Penulis Tidak Dikenal',
+        cover: null,
+        publishedYear: null,
+        totalPages: 1,
+      };
+
   const bufferCopy = buffer.slice(0);
   const loadingTask = pdfjsLib.getDocument({
     data: new Uint8Array(bufferCopy),
@@ -257,6 +280,10 @@ export async function readFullPdfMetadata(
 
     return {
       ...basic,
+      title: info.Title ? String(info.Title).trim() : basic.title,
+      author: info.Author ? String(info.Author).trim() : basic.author,
+      publishedYear: extractYear(info.CreationDate || info.ModDate) || basic.publishedYear,
+      totalPages: pdfDoc.numPages || basic.totalPages,
       producer: info.Producer ? String(info.Producer).trim() : null,
       creator: info.Creator ? String(info.Creator).trim() : null,
       creationDate: info.CreationDate ? String(info.CreationDate).trim() : null,

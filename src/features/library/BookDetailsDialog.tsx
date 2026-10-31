@@ -45,14 +45,46 @@ interface BookDetailsContentProps {
 const BookDetailsContent: React.FC<BookDetailsContentProps> = ({ book, onClose }) => {
   const liveBook = useLiveQuery(() => db.books.get(book.id), [book.id]) || book;
   const coverUrl = useCoverUrl(liveBook.cover);
-  const [extraMeta, setExtraMeta] = useState<FullBookMetadata | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Load complete metadata from EPUB file
+  // Check if liveBook already has full metadata cached in database
+  const hasCachedMeta =
+    liveBook.publisher !== undefined ||
+    liveBook.description !== undefined ||
+    liveBook.language !== undefined ||
+    liveBook.identifier !== undefined;
+
+  const [extraMeta, setExtraMeta] = useState<FullBookMetadata | null>(() => {
+    if (hasCachedMeta) {
+      return {
+        title: liveBook.title,
+        author: liveBook.author,
+        cover: liveBook.cover,
+        publishedYear: liveBook.publishedYear || null,
+        publisher: liveBook.publisher || null,
+        description: liveBook.description || null,
+        language: liveBook.language || null,
+        identifier: liveBook.identifier || null,
+      };
+    }
+    return null;
+  });
+  const [isLoading, setIsLoading] = useState(!hasCachedMeta);
+
+  // Load complete metadata asynchronously only if not already cached
   useEffect(() => {
-    let isMounted = true;
+    // If book already has cached metadata in Dexie, SKIP binary file read completely!
+    if (
+      liveBook.publisher !== undefined ||
+      liveBook.description !== undefined ||
+      liveBook.language !== undefined ||
+      liveBook.identifier !== undefined
+    ) {
+      return;
+    }
 
-    async function loadMetadata() {
+    let isMounted = true;
+    // Small delay allows dialog open transition animation to complete with 0 frame drops
+    const timer = setTimeout(async () => {
       try {
         let rawBuffer: ArrayBuffer | null = null;
         if (book?.storageMode === 'linked') {
@@ -70,12 +102,21 @@ const BookDetailsContent: React.FC<BookDetailsContentProps> = ({ book, onClose }
 
         if (!rawBuffer || !isMounted || !book) return;
 
+        let publisher: string | null = null;
+        let description: string | null = null;
+        let language: string | null = null;
+        let identifier: string | null = null;
+        let publishedYear: string | null = book.publishedYear || null;
+
         if (book.format === 'pdf') {
-          const pdfMeta = await readFullPdfMetadata(rawBuffer, book.title);
+          // Pass extractCover: false to skip redundant canvas cover generation
+          const pdfMeta = await readFullPdfMetadata(rawBuffer, book.title, { extractCover: false });
+          publisher = pdfMeta.producer || pdfMeta.creator || null;
+          publishedYear = pdfMeta.publishedYear || publishedYear;
           if (isMounted) {
             setExtraMeta({
               ...pdfMeta,
-              publisher: pdfMeta.producer || pdfMeta.creator || null,
+              publisher,
               description: null,
               language: null,
               identifier: null,
@@ -83,11 +124,26 @@ const BookDetailsContent: React.FC<BookDetailsContentProps> = ({ book, onClose }
             });
           }
         } else {
-          const meta = await readFullMetadata(rawBuffer);
+          // Pass extractCover: false to skip redundant ePub cover fetch and resize
+          const meta = await readFullMetadata(rawBuffer, { extractCover: false });
+          publisher = meta.publisher || null;
+          description = meta.description || null;
+          language = meta.language || null;
+          identifier = meta.identifier || null;
+          publishedYear = meta.publishedYear || publishedYear;
           if (isMounted && meta) {
             setExtraMeta(meta);
           }
         }
+
+        // Cache extracted metadata back into Dexie so future dialog openings are 0ms instant!
+        await db.books.update(book.id, {
+          publisher,
+          description,
+          language,
+          identifier,
+          publishedYear,
+        });
       } catch (err) {
         console.warn('Gagal memuat metadata lengkap buku:', err);
       } finally {
@@ -95,14 +151,13 @@ const BookDetailsContent: React.FC<BookDetailsContentProps> = ({ book, onClose }
           setIsLoading(false);
         }
       }
-    }
-
-    loadMetadata();
+    }, 100);
 
     return () => {
       isMounted = false;
+      clearTimeout(timer);
     };
-  }, [book]);
+  }, [book, liveBook.publisher, liveBook.description, liveBook.language, liveBook.identifier]);
 
   const progressPercent = Math.round((book.progress || 0) * 100);
 

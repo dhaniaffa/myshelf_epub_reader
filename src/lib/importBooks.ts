@@ -93,6 +93,10 @@ async function processSingleFile(file: File, ctx: ProcessFileContext): Promise<P
     let cover: Blob | null = null;
     let publishedYear: string | null = null;
     let totalLocations: number | null = null;
+    let publisher: string | null = null;
+    let description: string | null = null;
+    let language: string | null = null;
+    let identifier: string | null = null;
 
     // Read temporary buffer only for metadata & cover extraction
     try {
@@ -110,12 +114,18 @@ async function processSingleFile(file: File, ctx: ProcessFileContext): Promise<P
         cover = pdfMeta.cover;
         publishedYear = pdfMeta.publishedYear;
         totalLocations = pdfMeta.totalPages;
+        publisher = pdfMeta.publisher || null;
+        description = pdfMeta.description || null;
       } else {
         const epubMeta = await readMetadata(buffer.slice(0));
         title = epubMeta.title || title;
         author = epubMeta.author || author;
         cover = epubMeta.cover;
         publishedYear = epubMeta.publishedYear;
+        publisher = epubMeta.publisher || null;
+        description = epubMeta.description || null;
+        language = epubMeta.language || null;
+        identifier = epubMeta.identifier || null;
       }
     } catch (metaErr) {
       console.warn(
@@ -137,6 +147,10 @@ async function processSingleFile(file: File, ctx: ProcessFileContext): Promise<P
       lastReadAt: null,
       totalLocations,
       publishedYear,
+      publisher,
+      description,
+      language,
+      identifier,
       fileSize: file.size,
       format,
       storageMode: ctx.storageMode,

@@ -16,6 +16,10 @@ export interface Book {
   lastReadAt: number | null;
   totalLocations: number | null;
   publishedYear?: string | null;
+  publisher?: string | null;
+  description?: string | null;
+  language?: string | null;
+  identifier?: string | null;
   fileSize?: number;
   format?: BookFormat;
   tags?: string[];
