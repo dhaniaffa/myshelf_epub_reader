@@ -4,19 +4,19 @@ import { READER_EVENTS } from '@/config';
 import { pdfjsLib } from '@/lib/pdf';
 import { resolvePdfDestination } from './pdfUtils';
 
+import type { PdfDocumentProxy, PdfRenderTask, PdfTextLayer } from '@/types/pdfjs';
+
 export interface PdfLinkItem {
   id: string;
   rect: [number, number, number, number];
   url?: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  dest?: any;
+  dest?: unknown;
   title?: string;
 }
 
 export interface PdfPageCanvasProps {
   pageNumber: number;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  pdfDoc: any;
+  pdfDoc: PdfDocumentProxy | null;
   width: number;
   height: number;
   canvasFilterStyle: React.CSSProperties;
@@ -36,10 +36,8 @@ export const PdfPageCanvas: React.FC<PdfPageCanvasProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const textLayerRef = useRef<HTMLDivElement>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const renderTaskRef = useRef<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const textLayerInstanceRef = useRef<any>(null);
+  const renderTaskRef = useRef<PdfRenderTask | null>(null);
+  const textLayerInstanceRef = useRef<PdfTextLayer | null>(null);
   const [linkAnnotations, setLinkAnnotations] = useState<PdfLinkItem[]>([]);
 
   useEffect(() => {
@@ -88,6 +86,7 @@ export const PdfPageCanvas: React.FC<PdfPageCanvasProps> = ({
         const task = page.render({
           canvasContext: ctx,
           viewport,
+          canvas,
         });
         renderTaskRef.current = task;
         await task.promise;
@@ -124,8 +123,9 @@ export const PdfPageCanvas: React.FC<PdfPageCanvasProps> = ({
 
           const links: PdfLinkItem[] = [];
           for (const annot of annotList) {
-            if (annot.subtype === 'Link' && annot.rect) {
-              const [vx1, vy1, vx2, vy2] = viewport.convertToViewportRectangle(annot.rect);
+            if (annot.subtype === 'Link' && Array.isArray(annot.rect) && annot.rect.length >= 4) {
+              const [vx1, vy1] = viewport.convertToViewportPoint(annot.rect[0], annot.rect[1]);
+              const [vx2, vy2] = viewport.convertToViewportPoint(annot.rect[2], annot.rect[3]);
               const left = Math.min(vx1, vx2);
               const top = Math.min(vy1, vy2);
               const w = Math.abs(vx2 - vx1);
@@ -146,8 +146,7 @@ export const PdfPageCanvas: React.FC<PdfPageCanvasProps> = ({
           console.warn('Failed to load PDF annotation links:', annotErr);
         }
       } catch (err: unknown) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if ((err as any)?.name !== 'RenderingCancelledException') {
+        if (!(err instanceof Error && err.name === 'RenderingCancelledException')) {
           console.warn(`Failed to render PDF page ${pageNumber}:`, err);
         }
       }

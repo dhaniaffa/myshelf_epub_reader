@@ -1,5 +1,7 @@
 import ePub from 'epubjs';
 
+import type { ExtendedEpubBook, ExtendedPackagingMetadata } from '@/types/epubjs';
+
 /**
  * Computes SHA-256 hash from ArrayBuffer or Blob/File (optimized for large files to be fast & RAM efficient)
  */
@@ -119,8 +121,8 @@ export interface FullBookMetadata extends ExtractedMetadata {
  * Extracts title, creator, and cover from an EPUB file
  */
 export async function readMetadata(buffer: ArrayBuffer): Promise<ExtractedMetadata> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const book = (ePub as any)(buffer);
+  const createBook = ePub as unknown as (data: ArrayBuffer) => ExtendedEpubBook;
+  const book = createBook(buffer);
 
   try {
     // 5-second timeout for metadata extraction to prevent hanging
@@ -168,8 +170,8 @@ export async function readMetadata(buffer: ArrayBuffer): Promise<ExtractedMetada
     const author = metadata?.creator ? String(metadata.creator).trim() : 'Penulis Tidak Dikenal';
 
     let publishedYear: string | null = null;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const dateRaw = metadata?.pubdate || metadata?.date || (metadata as any)?.published;
+    const metaExt = metadata as ExtendedPackagingMetadata | null;
+    const dateRaw = metaExt?.pubdate || metaExt?.date || metaExt?.published;
     if (dateRaw) {
       const match = String(dateRaw).match(/\b(19\d\d|20\d\d)\b/);
       if (match) {
@@ -196,8 +198,8 @@ export async function readMetadata(buffer: ArrayBuffer): Promise<ExtractedMetada
  * Mengekstrak seluruh metadata lengkap (termasuk deskripsi, penerbit, bahasa, identifier)
  */
 export async function readFullMetadata(buffer: ArrayBuffer): Promise<FullBookMetadata> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const book = (ePub as any)(buffer);
+  const createBook = ePub as unknown as (data: ArrayBuffer) => ExtendedEpubBook;
+  const book = createBook(buffer);
 
   try {
     const metadata = await book.loaded.metadata;
@@ -231,8 +233,8 @@ export async function readFullMetadata(buffer: ArrayBuffer): Promise<FullBookMet
     const author = metadata?.creator ? String(metadata.creator).trim() : 'Penulis Tidak Dikenal';
 
     let publishedYear: string | null = null;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const dateRaw = metadata?.pubdate || metadata?.date || (metadata as any)?.published;
+    const metaExt = metadata as ExtendedPackagingMetadata | null;
+    const dateRaw = metaExt?.pubdate || metaExt?.date || metaExt?.published;
     if (dateRaw) {
       const match = String(dateRaw).match(/\b(19\d\d|20\d\d)\b/);
       if (match) {

@@ -31,28 +31,23 @@ function saveViaAndroidBridge(
   mimeType: string
 ): Promise<SaveFileResult> {
   return new Promise((resolve) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any).__onAndroidSaveResult = (success: boolean) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      delete (window as any).__onAndroidSaveResult;
+    window.__onAndroidSaveResult = (success: boolean) => {
+      delete window.__onAndroidSaveResult;
       resolve(success ? 'saved' : 'cancelled');
     };
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const bridge = (window as any).AndroidBackupBridge;
-      if (typeof bridge.saveFileWithPicker === 'function') {
+      const bridge = window.AndroidBackupBridge;
+      if (bridge && typeof bridge.saveFileWithPicker === 'function') {
         bridge.saveFileWithPicker(filename, content, mimeType);
-      } else if (typeof bridge.saveFile === 'function') {
+      } else if (bridge && typeof bridge.saveFile === 'function') {
         bridge.saveFile(filename, content, mimeType);
       } else {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        delete (window as any).__onAndroidSaveResult;
+        delete window.__onAndroidSaveResult;
         resolve('cancelled');
       }
     } catch (err) {
       console.warn('AndroidBackupBridge failed:', err);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      delete (window as any).__onAndroidSaveResult;
+      delete window.__onAndroidSaveResult;
       resolve('cancelled');
     }
   });
@@ -80,8 +75,7 @@ export async function saveFileWithPicker({
 
   // Tier 1: Android Native App Bridge (Tauri Android / Storage Access Framework)
   // Lets the user browse and select any folder (Internal Storage, SD Card, etc.)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const hasAndroidBridge = typeof window !== 'undefined' && !!(window as any).AndroidBackupBridge;
+  const hasAndroidBridge = typeof window !== 'undefined' && !!window.AndroidBackupBridge;
   if (hasAndroidBridge) {
     return await saveViaAndroidBridge(filename, content, mimeType);
   }
@@ -105,21 +99,22 @@ export async function saveFileWithPicker({
   // Tier 3: File System Access API on Desktop Web (Chrome, Edge, Opera, Brave)
   if (!isMobile && typeof window !== 'undefined' && 'showSaveFilePicker' in window) {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const picker = (window as any).showSaveFilePicker;
-      const handle = await picker({
-        suggestedName: filename,
-        types: [
-          {
-            description,
-            accept: { [mimeType]: [`.${extension}`] },
-          },
-        ],
-      });
-      const writable = await handle.createWritable();
-      await writable.write(content);
-      await writable.close();
-      return 'saved';
+      const picker = window.showSaveFilePicker;
+      if (picker) {
+        const handle = await picker({
+          suggestedName: filename,
+          types: [
+            {
+              description,
+              accept: { [mimeType]: [`.${extension}`] },
+            },
+          ],
+        });
+        const writable = await handle.createWritable();
+        await writable.write(content);
+        await writable.close();
+        return 'saved';
+      }
     } catch (err: unknown) {
       if (err instanceof Error && err.name === 'AbortError') {
         return 'cancelled';

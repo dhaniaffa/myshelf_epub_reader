@@ -5,6 +5,7 @@ import { extractPdfOutline, PDF_CMAP_URL, PDF_STANDARD_FONT_DATA_URL, pdfjsLib }
 
 import type { PdfOutlineItem } from '@/lib/pdf';
 import type { Book, Bookmark, ReaderSettings, ReaderTheme } from '@/types';
+import type { PdfDocumentLoadingTask, PdfDocumentProxy } from '@/types/pdfjs';
 
 export interface UsePdfReaderOptions {
   bookId: string;
@@ -34,12 +35,9 @@ export interface PdfReaderState {
 }
 
 export function usePdfReader({ bookId, settings }: UsePdfReaderOptions) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const pdfDocRef = useRef<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const loadingTaskRef = useRef<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [pdfDoc, setPdfDoc] = useState<any>(null);
+  const pdfDocRef = useRef<PdfDocumentProxy | null>(null);
+  const loadingTaskRef = useRef<PdfDocumentLoadingTask | null>(null);
+  const [pdfDoc, setPdfDoc] = useState<PdfDocumentProxy | null>(null);
   const readingTimerRef = useRef<number | null>(null);
   const saveDebounceRef = useRef<number | null>(null);
 
@@ -391,8 +389,7 @@ export function usePdfReader({ bookId, settings }: UsePdfReaderOptions) {
       for (let i = 1; i <= total; i++) {
         const page = await doc.getPage(i);
         const textContent = await page.getTextContent();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const pageText = textContent.items.map((item: any) => item.str || '').join(' ');
+        const pageText = textContent.items.map((item) => ('str' in item ? item.str : '')).join(' ');
 
         const idx = pageText.toLowerCase().indexOf(qLower);
         if (idx !== -1) {

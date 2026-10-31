@@ -119,8 +119,7 @@ export const App: React.FC = () => {
         // Layer 0: Already at root Library Home with empty stack -> Double-back to exit
         const now = Date.now();
         if (now - lastBackPressTime < 2000) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const bridge = (window as any).AndroidBackupBridge;
+          const bridge = window.AndroidBackupBridge;
           if (bridge && typeof bridge.exitApp === 'function') {
             bridge.exitApp();
             return true;
@@ -155,8 +154,7 @@ export const App: React.FC = () => {
       // Desktop Tauri exit fallback
       const now = Date.now();
       if (now - lastBackPressTime < 2000) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const tauri = (window as any).__TAURI__;
+        const tauri = window.__TAURI__;
         if (tauri?.process?.exit) {
           tauri.process.exit(0);
           return true;
@@ -168,8 +166,7 @@ export const App: React.FC = () => {
     };
 
     // Attach to window for Android WebView evaluateJavascript bridge
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any).__handleAndroidBack = performBack;
+    window.__handleAndroidBack = performBack;
 
     // Attach to Escape key globally (desktop / tablet hardware keyboard)
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -180,8 +177,7 @@ export const App: React.FC = () => {
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      delete (window as any).__handleAndroidBack;
+      delete window.__handleAndroidBack;
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, []);

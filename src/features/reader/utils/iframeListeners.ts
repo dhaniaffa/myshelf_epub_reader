@@ -53,8 +53,7 @@ export function setupIframeListeners({
       if (settingsRef.current.flowMode === 'paginated') {
         contents.document.body.style.touchAction = 'pan-y';
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (contents.document.body.style as any).webkitTouchCallout = 'default';
+      contents.document.body.style.webkitTouchCallout = 'default';
     }
   } catch {
     // ignore

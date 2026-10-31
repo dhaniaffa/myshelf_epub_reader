@@ -2,6 +2,7 @@ import React from 'react';
 
 import type { PdfOutlineItem } from '@/lib/pdf';
 import type { PdfPageColor, ReaderTheme, SearchResult, TocItem } from '@/types';
+import type { PdfDocumentProxy } from '@/types/pdfjs';
 
 /**
  * Maps PDF document outline items recursively to TOC items.
@@ -31,11 +32,13 @@ export function mapPdfSearchResults(
 /**
  * Resolves PDF link destination (internal named destination or reference) to a 1-indexed page number.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function resolvePdfDestination(pdfDoc: any, dest: any): Promise<number | null> {
+export async function resolvePdfDestination(
+  pdfDoc: PdfDocumentProxy | null | undefined,
+  dest: unknown
+): Promise<number | null> {
   if (!pdfDoc || !dest) return null;
   try {
-    let explicitDest = dest;
+    let explicitDest: unknown = dest;
     if (typeof dest === 'string') {
       explicitDest = await pdfDoc.getDestination(dest);
     }
@@ -45,7 +48,7 @@ export async function resolvePdfDestination(pdfDoc: any, dest: any): Promise<num
         return destRef + 1; // 0-indexed to 1-indexed
       }
       if (destRef && typeof destRef === 'object') {
-        const pageIdx = await pdfDoc.getPageIndex(destRef);
+        const pageIdx = await pdfDoc.getPageIndex(destRef as { num: number; gen: number });
         return pageIdx + 1;
       }
     }

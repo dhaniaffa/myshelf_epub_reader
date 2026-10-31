@@ -4,6 +4,7 @@ import { THEME_STYLE_ID } from '@/config';
 import { buildCss } from '@/lib/theme';
 
 import type { ReaderSettings, ReaderTheme } from '@/types';
+import type { ExtendedRendition } from '@/types/epubjs';
 import type { Contents, Rendition } from 'epubjs';
 
 interface UseReaderStylesOptions {
@@ -33,8 +34,8 @@ export function useReaderStyles({
 
     // Inject into active iframe document
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const contentsList: Contents[] = (renditionRef.current as any).getContents();
+      const contentsList: Contents[] =
+        (renditionRef.current as unknown as ExtendedRendition).getContents() || [];
       for (const contents of contentsList) {
         let styleEl = contents.document.getElementById(THEME_STYLE_ID);
         if (!styleEl) {
@@ -62,8 +63,7 @@ export function useReaderStyles({
       settings.spreadMode === 'double' ? 1 : settings.spreadMode === 'single' ? 99999 : 768;
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const rendition = renditionRef.current as any;
+      const rendition = renditionRef.current as unknown as ExtendedRendition;
       rendition.spread(spreadVal, minWidth);
       if (rendition.manager && rendition.manager.isRendered()) {
         rendition.manager.updateLayout();
@@ -82,8 +82,7 @@ export function useReaderStyles({
   useEffect(() => {
     if (!renditionRef.current || !containerRef.current || !isReady) return;
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const rendition = renditionRef.current as any;
+      const rendition = renditionRef.current as unknown as ExtendedRendition;
       if (rendition.manager && rendition.manager.isRendered()) {
         rendition.manager.updateLayout();
       }

@@ -8,6 +8,7 @@ import { PdfPageCanvas } from './PdfPageCanvas';
 import { PdfRunningFooter } from './PdfRunningFooter';
 import { PdfErrorOverlay, PdfLoadingOverlay } from './PdfStateOverlays';
 
+import type { PdfDocumentProxy } from '@/types/pdfjs';
 import type { PdfPinchHandler } from '../../utils/pdfPinchZoom';
 import type { NativeSwipeHandler } from '../../utils/swipePhysics';
 
@@ -23,8 +24,7 @@ export interface PdfStageProps {
   percentage: number;
   currentChapterTitle?: string;
   bookTitle?: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  pdfDoc: any;
+  pdfDoc: PdfDocumentProxy | null;
   canvasFilterStyle: React.CSSProperties;
   targetPageWidth: number;
   targetPageHeight: number;

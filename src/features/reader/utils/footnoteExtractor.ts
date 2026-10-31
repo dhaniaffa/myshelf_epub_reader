@@ -1,4 +1,5 @@
 import type { FootnoteData } from '@/types';
+import type { ExtendedEpubBook, ExtendedSection } from '@/types/epubjs';
 import type { Book, Contents } from 'epubjs';
 
 /**
@@ -156,15 +157,13 @@ export async function extractFootnote(
         : rawTargetFile;
 
       // Look up section in spine
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const spine = (book as any).spine;
+      const spine = (book as unknown as ExtendedEpubBook).spine;
       let item = spine?.get?.(rawTargetFile) || spine?.get?.(resolvedPath);
 
       if (!item && spine?.spineItems) {
         // Fallback: match by filename
         const cleanTarget = rawTargetFile.split('/').pop()?.split('#')[0];
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        item = spine.spineItems.find((s: any) => {
+        item = spine.spineItems.find((s: ExtendedSection) => {
           const sName = s.href?.split('/')?.pop();
           return sName && cleanTarget && sName === cleanTarget;
         });

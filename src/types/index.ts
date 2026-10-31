@@ -296,3 +296,7 @@ export interface AchievementBadge {
     unit: string;
   };
 }
+
+// Re-export extended library engine definitions
+export type * from './epubjs.d.ts';
+export type * from './pdfjs.d.ts';

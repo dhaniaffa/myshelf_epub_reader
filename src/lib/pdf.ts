@@ -1,6 +1,8 @@
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
+import type { PdfDocumentInfo, PdfOutlineNode } from '@/types/pdfjs';
+
 // Initialize PDF.js Worker for Vite/ESM
 if (typeof window !== 'undefined' && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
   pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
@@ -124,16 +126,16 @@ async function internalReadPdfMetadata(
     let publishedYear: string | null = null;
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const meta = (await pdfDoc.getMetadata()) as any;
-      if (meta?.info) {
-        if (meta.info.Title && String(meta.info.Title).trim().length > 0) {
-          title = String(meta.info.Title).trim();
+      const meta = await pdfDoc.getMetadata();
+      const info = meta?.info as PdfDocumentInfo | undefined;
+      if (info) {
+        if (info.Title && String(info.Title).trim().length > 0) {
+          title = String(info.Title).trim();
         }
-        if (meta.info.Author && String(meta.info.Author).trim().length > 0) {
-          author = String(meta.info.Author).trim();
+        if (info.Author && String(info.Author).trim().length > 0) {
+          author = String(info.Author).trim();
         }
-        publishedYear = extractYear(meta.info.CreationDate || meta.info.ModDate);
+        publishedYear = extractYear(info.CreationDate || info.ModDate);
       }
     } catch {
       // Ignore if info metadata is empty
@@ -156,8 +158,11 @@ async function internalReadPdfMetadata(
       if (ctx && canvas.width > 0 && canvas.height > 0) {
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const renderTask = firstPage.render({ canvasContext: ctx, viewport: thumbViewport } as any);
+        const renderTask = firstPage.render({
+          canvasContext: ctx,
+          viewport: thumbViewport,
+          canvas,
+        });
         try {
           const renderTimeout = new Promise<never>((_, reject) => {
             setTimeout(() => reject(new Error('PDF render timeout')), 3500);
@@ -247,9 +252,8 @@ export async function readFullPdfMetadata(
 
   try {
     const pdfDoc = await loadingTask.promise;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const meta = (await pdfDoc.getMetadata()) as any;
-    const info = meta?.info || {};
+    const meta = await pdfDoc.getMetadata();
+    const info = (meta?.info || {}) as PdfDocumentInfo;
 
     return {
       ...basic,
@@ -285,8 +289,7 @@ export async function extractPdfOutline(
   pdfDoc: pdfjsLib.PDFDocumentProxy
 ): Promise<PdfOutlineItem[]> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const outline = await (pdfDoc as any).getOutline();
+    const outline = (await pdfDoc.getOutline()) as PdfOutlineNode[] | null;
     if (!outline || !Array.isArray(outline) || outline.length === 0) {
       return [];
     }
@@ -295,8 +298,7 @@ export async function extractPdfOutline(
     let totalItemsProcessed = 0;
     const MAX_ITEMS = 300; // Cap limit so documents with thousands of pages do not block UI
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const resolveItems = async (items: any[], depth = 0): Promise<PdfOutlineItem[]> => {
+    const resolveItems = async (items: PdfOutlineNode[], depth = 0): Promise<PdfOutlineItem[]> => {
       if (depth > 3 || totalItemsProcessed >= MAX_ITEMS) return [];
       const result: PdfOutlineItem[] = [];
 
@@ -314,13 +316,13 @@ export async function extractPdfOutline(
             } else {
               const dest = await pdfDoc.getDestination(item.dest);
               if (dest && dest[0]) {
-                const pageIdx = await pdfDoc.getPageIndex(dest[0]);
+                const pageIdx = await pdfDoc.getPageIndex(dest[0] as { num: number; gen: number });
                 pageNumber = pageIdx + 1;
                 destCache.set(item.dest, pageNumber);
               }
             }
           } else if (Array.isArray(item.dest) && item.dest[0]) {
-            const pageIdx = await pdfDoc.getPageIndex(item.dest[0]);
+            const pageIdx = await pdfDoc.getPageIndex(item.dest[0] as { num: number; gen: number });
             pageNumber = pageIdx + 1;
           }
         } catch {

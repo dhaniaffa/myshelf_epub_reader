@@ -20,6 +20,7 @@ import type {
   ReaderTheme,
   TocItem,
 } from '@/types';
+import type { ExtendedEpubBook, ExtendedRendition, ExtendedSection } from '@/types/epubjs';
 import type { Contents, Book as EpubBook, Rendition } from 'epubjs';
 
 interface UseReaderOptions {
@@ -186,18 +187,19 @@ export function useReader({ bookId, settings, resolvedTheme }: UseReaderOptions)
           : fileRecord.buffer;
       if (!isMounted) return;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      bookInstance = (ePub as any)(rawData);
+      const createBook = ePub as unknown as (data: ArrayBuffer) => EpubBook;
+      bookInstance = createBook(rawData);
       bookRef.current = bookInstance;
 
       // Sanitize self-closing XHTML tags unsupported by HTML5 parser
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (bookInstance as any).spine?.hooks?.serialize?.register((_output: string, section: any) => {
-          if (section && typeof section.output === 'string') {
-            section.output = fixSelfClosingHtmlTags(section.output);
+        (bookInstance as unknown as ExtendedEpubBook).spine?.hooks?.serialize?.register(
+          (_output: string, section: ExtendedSection) => {
+            if (section && typeof section.output === 'string') {
+              section.output = fixSelfClosingHtmlTags(section.output);
+            }
           }
-        });
+        );
       } catch {
         // ignore
       }
@@ -282,8 +284,7 @@ export function useReader({ bookId, settings, resolvedTheme }: UseReaderOptions)
       await renditionInstance.display(targetCfi);
 
       if (settings.flowMode === 'paginated') {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (renditionInstance as any).spread(initialSpread, minSpread);
+        (renditionInstance as unknown as ExtendedRendition).spread(initialSpread, minSpread);
       }
 
       if (!isMounted) return;
@@ -455,14 +456,24 @@ export function useReader({ bookId, settings, resolvedTheme }: UseReaderOptions)
             let cfiRange = '';
             try {
               if (renditionRef.current) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const contentsList: any[] = (renditionRef.current as any).getContents?.() || [];
+                const extRendition = renditionRef.current as unknown as ExtendedRendition;
+                const contentsList = extRendition.getContents?.() || [];
                 for (const c of contentsList) {
-                  if (c.document === doc || c.window === win || iframes.length === 1) {
-                    if (typeof c.cfiFromRange === 'function') {
-                      cfiRange = c.cfiFromRange(range);
-                    } else if (c.section?.cfiFromRange) {
-                      cfiRange = c.section.cfiFromRange(range);
+                  const contentObj = c as unknown as {
+                    document?: Document;
+                    window?: Window;
+                    cfiFromRange?: (range: Range) => string;
+                    section?: { cfiFromRange?: (range: Range) => string };
+                  };
+                  if (
+                    contentObj.document === doc ||
+                    contentObj.window === win ||
+                    iframes.length === 1
+                  ) {
+                    if (typeof contentObj.cfiFromRange === 'function') {
+                      cfiRange = contentObj.cfiFromRange(range);
+                    } else if (contentObj.section?.cfiFromRange) {
+                      cfiRange = contentObj.section.cfiFromRange(range);
                     }
                     break;
                   }
@@ -474,8 +485,9 @@ export function useReader({ bookId, settings, resolvedTheme }: UseReaderOptions)
 
             if (!cfiRange && renditionRef.current) {
               try {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const loc = (renditionRef.current as any).currentLocation?.();
+                const loc = (
+                  renditionRef.current as unknown as ExtendedRendition
+                ).currentLocation?.();
                 if (loc?.start?.cfi) {
                   cfiRange = loc.start.cfi;
                 }

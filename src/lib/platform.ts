@@ -10,8 +10,7 @@ import { isTauri } from '@tauri-apps/api/core';
  */
 export function isAndroidNative(): boolean {
   if (typeof window === 'undefined') return false;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  if ((window as any).AndroidBackupBridge) return true;
+  if (window.AndroidBackupBridge) return true;
   return isTauri() && typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent);
 }
 

@@ -1,3 +1,4 @@
+import type { ExtendedRendition } from '@/types/epubjs';
 import type { Rendition } from 'epubjs';
 
 /**
@@ -11,21 +12,23 @@ export function getCurrentPageText(
 
   // 1. Primary priority: Extract via rendition CFI range
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const r = rendition as any;
-    const loc = r.location || r.currentLocation?.();
+    const r = rendition as unknown as ExtendedRendition;
+    const loc =
+      r.location || (typeof r.currentLocation === 'function' ? r.currentLocation() : null);
     if (loc?.start?.cfi && loc?.end?.cfi) {
       const startRange = r.getRange(loc.start.cfi);
       const endRange = r.getRange(loc.end.cfi);
       if (startRange && endRange) {
         if (startRange.startContainer?.ownerDocument === endRange.endContainer?.ownerDocument) {
           const doc = startRange.startContainer.ownerDocument;
-          const range = doc.createRange();
-          range.setStart(startRange.startContainer, startRange.startOffset);
-          range.setEnd(endRange.endContainer, endRange.endOffset);
-          const text = range.toString().trim();
-          if (text.length > 0) {
-            return text;
+          if (doc) {
+            const range = doc.createRange();
+            range.setStart(startRange.startContainer, startRange.startOffset);
+            range.setEnd(endRange.endContainer, endRange.endOffset);
+            const text = range.toString().trim();
+            if (text.length > 0) {
+              return text;
+            }
           }
         } else {
           const t1 = startRange.toString().trim();

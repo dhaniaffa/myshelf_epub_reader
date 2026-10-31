@@ -1,6 +1,7 @@
 import { useCallback, useRef } from 'react';
 
 import type { SearchResult } from '@/types';
+import type { ExtendedEpubBook, ExtendedSection } from '@/types/epubjs';
 import type { Book as EpubBook } from 'epubjs';
 
 interface UseReaderSearchOptions {
@@ -23,16 +24,14 @@ export function useReaderSearch({ bookRef }: UseReaderSearchOptions) {
       searchAbortRef.current = controller;
 
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const spine = (book as any).spine;
+        const spine = (book as unknown as ExtendedEpubBook).spine;
         if (!spine || !spine.spineItems) {
           onComplete();
           return;
         }
 
         let totalFound = 0;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        for (const item of spine.spineItems as any[]) {
+        for (const item of spine.spineItems as ExtendedSection[]) {
           if (controller.signal.aborted || totalFound >= 250) break;
 
           await item.load(book.load.bind(book));

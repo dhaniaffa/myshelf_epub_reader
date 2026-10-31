@@ -237,8 +237,7 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
   const stopAllPlayback = useCallback(() => {
     activeUtteranceRef.current = null;
     if (typeof window !== 'undefined') {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      delete (window as any).__activeUtterance;
+      delete window.__activeUtterance;
     }
     if (hasNativeSpeech) {
       try {
@@ -269,8 +268,7 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
 
     const url = getAudioTtsUrl(textToSpeak, languageRef.current);
     audio.setAttribute('referrerpolicy', 'no-referrer');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (audio as any).referrerPolicy = 'no-referrer';
+    audio.referrerPolicy = 'no-referrer';
     audio.src = url;
     audio.playbackRate = rateRef.current;
 
@@ -307,8 +305,7 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
       }
       const preloader = preloadAudioRef.current;
       preloader.setAttribute('referrerpolicy', 'no-referrer');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (preloader as any).referrerPolicy = 'no-referrer';
+      preloader.referrerPolicy = 'no-referrer';
       preloader.src = nextUrl;
       preloader.preload = 'auto';
     }
@@ -368,8 +365,7 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
         const utterance = new SpeechSynthesisUtterance(textToSpeak);
         activeUtteranceRef.current = utterance;
         if (typeof window !== 'undefined') {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (window as any).__activeUtterance = utterance;
+          window.__activeUtterance = utterance;
         }
 
         utterance.rate = rateRef.current;
@@ -388,8 +384,7 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
           hasEnded = true;
           activeUtteranceRef.current = null;
           if (typeof window !== 'undefined') {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            delete (window as any).__activeUtterance;
+            delete window.__activeUtterance;
           }
         };
 
@@ -419,8 +414,7 @@ export function useTTS({ onPageNext }: UseTTSOptions = {}): UseTTSReturn {
       } catch (err) {
         activeUtteranceRef.current = null;
         if (typeof window !== 'undefined') {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          delete (window as any).__activeUtterance;
+          delete window.__activeUtterance;
         }
         console.warn('Failed to start native SpeechSynthesis, using Audio fallback:', err);
         playWithAudioFallback(textToSpeak, index);
