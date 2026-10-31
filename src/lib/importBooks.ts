@@ -100,6 +100,8 @@ async function processSingleFile(file: File, ctx: ProcessFileContext): Promise<P
 
     // Read temporary buffer only for metadata & cover extraction
     try {
+      await yieldToMain();
+
       const buffer = await Promise.race([
         file.arrayBuffer(),
         new Promise<ArrayBuffer>((_, reject) =>
@@ -127,6 +129,8 @@ async function processSingleFile(file: File, ctx: ProcessFileContext): Promise<P
         language = epubMeta.language || null;
         identifier = epubMeta.identifier || null;
       }
+
+      await yieldToMain();
     } catch (metaErr) {
       console.warn(
         `Gagal membaca metadata spesifik untuk ${file.name}, menggunakan nama berkas:`,

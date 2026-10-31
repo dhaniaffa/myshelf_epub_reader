@@ -1,6 +1,8 @@
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
+import { yieldToMain } from '@/lib/asyncPool';
+
 import type { PdfDocumentInfo, PdfOutlineNode } from '@/types/pdfjs';
 
 // Initialize PDF.js Worker for Vite/ESM
@@ -99,6 +101,8 @@ async function internalReadPdfMetadata(
   buffer: ArrayBuffer,
   fileName?: string
 ): Promise<PdfExtractedMetadata> {
+  await yieldToMain();
+
   const loadingTask = pdfjsLib.getDocument({
     data: new Uint8Array(buffer),
     cMapUrl: PDF_CMAP_URL,
@@ -154,6 +158,7 @@ async function internalReadPdfMetadata(
     // Render first page as thumbnail cover
     let coverBlob: Blob | null = null;
     try {
+      await yieldToMain();
       const firstPage = await pdfDoc.getPage(1);
       const viewport = firstPage.getViewport({ scale: 1 });
       const targetWidth = 360;
@@ -189,6 +194,8 @@ async function internalReadPdfMetadata(
             }),
             new Promise<Blob | null>((resolve) => setTimeout(() => resolve(null), 2500)),
           ]);
+
+          await yieldToMain();
         } catch {
           try {
             renderTask.cancel();
@@ -266,6 +273,7 @@ export async function readFullPdfMetadata(
       };
 
   const bufferCopy = buffer.slice(0);
+  await yieldToMain();
   const loadingTask = pdfjsLib.getDocument({
     data: new Uint8Array(bufferCopy),
     cMapUrl: PDF_CMAP_URL,

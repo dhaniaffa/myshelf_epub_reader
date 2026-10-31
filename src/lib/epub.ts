@@ -1,4 +1,7 @@
 import ePub from 'epubjs';
+import JSZip from 'jszip';
+
+import { yieldToMain } from '@/lib/asyncPool';
 
 import type { ExtendedEpubBook, ExtendedPackagingMetadata } from '@/types/epubjs';
 
@@ -64,21 +67,47 @@ export async function hashBuffer(input: ArrayBuffer | Blob): Promise<string> {
  * Resizes cover image URL into a JPEG Blob scaled to max 360px width
  */
 async function resizeCoverBlob(coverBlob: Blob, maxWidth = 360): Promise<Blob> {
+  if (typeof window === 'undefined' || typeof Image === 'undefined') {
+    return coverBlob;
+  }
+
   return new Promise((resolve) => {
-    const img = new Image();
+    let settled = false;
     const url = URL.createObjectURL(coverBlob);
+
+    const finish = (result: Blob) => {
+      if (!settled) {
+        settled = true;
+        try {
+          URL.revokeObjectURL(url);
+        } catch {
+          // ignore
+        }
+        resolve(result);
+      }
+    };
+
+    // Safety fallback: if image loading takes longer than 2.5s, return original blob
+    const timer = setTimeout(() => {
+      finish(coverBlob);
+    }, 2500);
+
+    const img = new Image();
+
     img.onload = () => {
-      URL.revokeObjectURL(url);
-      const scale = Math.min(1, maxWidth / img.width);
-      const targetWidth = Math.round(img.width * scale);
-      const targetHeight = Math.round(img.height * scale);
+      clearTimeout(timer);
+      const imgWidth = Math.max(1, img.width || 300);
+      const imgHeight = Math.max(1, img.height || 450);
+      const scale = Math.min(1, maxWidth / imgWidth);
+      const targetWidth = Math.round(imgWidth * scale);
+      const targetHeight = Math.round(imgHeight * scale);
 
       const canvas = document.createElement('canvas');
       canvas.width = targetWidth;
       canvas.height = targetHeight;
       const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        resolve(coverBlob);
+      if (!ctx || typeof canvas.toBlob !== 'function') {
+        finish(coverBlob);
         return;
       }
 
@@ -88,16 +117,18 @@ async function resizeCoverBlob(coverBlob: Blob, maxWidth = 360): Promise<Blob> {
 
       canvas.toBlob(
         (blob) => {
-          resolve(blob || coverBlob);
+          finish(blob || coverBlob);
         },
         'image/jpeg',
         0.85
       );
     };
+
     img.onerror = () => {
-      URL.revokeObjectURL(url);
-      resolve(coverBlob);
+      clearTimeout(timer);
+      finish(coverBlob);
     };
+
     img.src = url;
   });
 }
@@ -122,9 +153,215 @@ export interface FullBookMetadata extends ExtractedMetadata {
 }
 
 /**
- * Extracts title, creator, and cover from an EPUB file
+ * Resolves relative path inside EPUB zip archive
+ */
+function resolveZipPath(basePath: string, relativePath: string): string {
+  if (relativePath.startsWith('/')) {
+    return relativePath.slice(1);
+  }
+  const baseDir = basePath.includes('/')
+    ? basePath.substring(0, basePath.lastIndexOf('/') + 1)
+    : '';
+  const combined = baseDir + relativePath;
+  const parts = combined.split('/');
+  const resolved: string[] = [];
+  for (const part of parts) {
+    if (part === '.' || part === '') continue;
+    if (part === '..') {
+      resolved.pop();
+    } else {
+      resolved.push(part);
+    }
+  }
+  return decodeURIComponent(resolved.join('/'));
+}
+
+/**
+ * Robust XML text extractor handling namespace prefixes, default namespaces, and local names
+ */
+function getXmlText(
+  doc: Document,
+  tag: string,
+  ns = 'http://purl.org/dc/elements/1.1/'
+): string | null {
+  const byNs = doc.getElementsByTagNameNS(ns, tag);
+  if (byNs.length > 0 && byNs[0].textContent) {
+    const val = byNs[0].textContent.trim();
+    if (val) return val;
+  }
+  const byPrefixed = doc.getElementsByTagName(`dc:${tag}`);
+  if (byPrefixed.length > 0 && byPrefixed[0].textContent) {
+    const val = byPrefixed[0].textContent.trim();
+    if (val) return val;
+  }
+  const byLocal = doc.getElementsByTagName(tag);
+  if (byLocal.length > 0 && byLocal[0].textContent) {
+    const val = byLocal[0].textContent.trim();
+    if (val) return val;
+  }
+  return null;
+}
+
+/**
+ * Finds cover image href in OPF manifest (EPUB 3 properties, EPUB 2 meta, or fallback)
+ */
+function findCoverItemHref(doc: Document): string | null {
+  const items = Array.from(doc.getElementsByTagName('item'));
+
+  // 1. EPUB 3: item with properties="cover-image"
+  const epub3Cover = items.find((item) => {
+    const props = item.getAttribute('properties') || '';
+    return props.split(/\s+/).includes('cover-image');
+  });
+  if (epub3Cover) {
+    const href = epub3Cover.getAttribute('href');
+    if (href) return href;
+  }
+
+  // 2. EPUB 2: <meta name="cover" content="item-id">
+  const metaElements = Array.from(doc.getElementsByTagName('meta'));
+  const coverMeta = metaElements.find((m) => m.getAttribute('name')?.toLowerCase() === 'cover');
+  if (coverMeta) {
+    const coverId = coverMeta.getAttribute('content');
+    if (coverId) {
+      const coverItem = items.find((item) => item.getAttribute('id') === coverId);
+      if (coverItem) {
+        const href = coverItem.getAttribute('href');
+        if (href) return href;
+      }
+    }
+  }
+
+  // 3. Fallback: item in manifest with media-type starting with "image/" whose id or href contains "cover"
+  const fallbackCover = items.find((item) => {
+    const mediaType = (item.getAttribute('media-type') || '').toLowerCase();
+    if (!mediaType.startsWith('image/')) return false;
+    const id = (item.getAttribute('id') || '').toLowerCase();
+    const href = (item.getAttribute('href') || '').toLowerCase();
+    return id.includes('cover') || href.includes('cover');
+  });
+  if (fallbackCover) {
+    return fallbackCover.getAttribute('href') || null;
+  }
+
+  return null;
+}
+
+/**
+ * Ultra-fast targeted EPUB metadata extraction by parsing ONLY container.xml, content.opf,
+ * and the single cover image directly from ZIP central directory headers without decompressing
+ * book chapters, fonts, or SVGs (prevents main thread freezing on large EPUBs).
+ */
+export async function readFastEpubMetadata(
+  buffer: ArrayBuffer,
+  options?: { extractCover?: boolean }
+): Promise<FullBookMetadata | null> {
+  const shouldExtractCover = options?.extractCover ?? true;
+
+  try {
+    await yieldToMain();
+
+    const zip = await JSZip.loadAsync(buffer);
+
+    // 1. Locate and parse META-INF/container.xml
+    const containerEntry =
+      zip.file('META-INF/container.xml') ||
+      zip.file('meta-inf/container.xml') ||
+      zip.file(/meta-inf\/container\.xml$/i)[0];
+
+    if (!containerEntry) return null;
+
+    const containerXml = await containerEntry.async('string');
+    const containerDoc = new DOMParser().parseFromString(containerXml, 'application/xml');
+    const rootfile = containerDoc.querySelector('rootfile');
+    const opfPath = rootfile?.getAttribute('full-path');
+    if (!opfPath) return null;
+
+    // 2. Locate and parse the package OPF file
+    const opfEntry =
+      zip.file(opfPath) ||
+      zip.file(decodeURIComponent(opfPath)) ||
+      zip.file(new RegExp(opfPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i'))[0];
+
+    if (!opfEntry) return null;
+
+    const opfXml = await opfEntry.async('string');
+    const opfDoc = new DOMParser().parseFromString(opfXml, 'application/xml');
+
+    // 3. Extract core metadata
+    const title = getXmlText(opfDoc, 'title') || 'Tanpa Judul';
+    const author = getXmlText(opfDoc, 'creator') || 'Penulis Tidak Dikenal';
+    const publisher = getXmlText(opfDoc, 'publisher');
+    const description = getXmlText(opfDoc, 'description');
+    const language = getXmlText(opfDoc, 'language');
+    const identifier = getXmlText(opfDoc, 'identifier');
+    const rights = getXmlText(opfDoc, 'rights');
+
+    let publishedYear: string | null = null;
+    const dateRaw = getXmlText(opfDoc, 'date');
+    if (dateRaw) {
+      const match = String(dateRaw).match(/\b(19\d\d|20\d\d)\b/);
+      if (match) {
+        publishedYear = match[1];
+      }
+    }
+
+    // 4. Extract and resize cover image (if requested)
+    let coverBlob: Blob | null = null;
+    if (shouldExtractCover) {
+      const coverHref = findCoverItemHref(opfDoc);
+      if (coverHref) {
+        const fullCoverPath = resolveZipPath(opfPath, coverHref);
+        const coverEntry =
+          zip.file(fullCoverPath) ||
+          zip.file(decodeURIComponent(fullCoverPath)) ||
+          zip.file(new RegExp(fullCoverPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i'))[0];
+
+        if (coverEntry) {
+          const rawBlob = await coverEntry.async('blob');
+          if (rawBlob) {
+            await yieldToMain();
+            coverBlob = await resizeCoverBlob(rawBlob, 360);
+          }
+        }
+      }
+    }
+
+    await yieldToMain();
+
+    return {
+      title,
+      author,
+      cover: coverBlob,
+      publishedYear,
+      publisher,
+      description,
+      language,
+      identifier,
+      rights,
+    };
+  } catch (err) {
+    console.warn('[EPUB Fast Parser] Fallback ke engine ePub.js:', err);
+    return null;
+  }
+}
+
+/**
+ * Extracts title, creator, and cover from an EPUB file.
+ * Prioritizes fast targeted zip header extraction with fallback to ePub.js.
  */
 export async function readMetadata(buffer: ArrayBuffer): Promise<ExtractedMetadata> {
+  try {
+    const fast = await readFastEpubMetadata(buffer, { extractCover: true });
+    if (fast) return fast;
+  } catch {
+    // Fall through to legacy engine
+  }
+
+  return readLegacyMetadata(buffer);
+}
+
+async function readLegacyMetadata(buffer: ArrayBuffer): Promise<ExtractedMetadata> {
   const createBook = ePub as unknown as (data: ArrayBuffer) => ExtendedEpubBook;
   const book = createBook(buffer);
 
@@ -211,6 +448,20 @@ export async function readMetadata(buffer: ArrayBuffer): Promise<ExtractedMetada
  * Mengekstrak seluruh metadata lengkap (termasuk deskripsi, penerbit, bahasa, identifier)
  */
 export async function readFullMetadata(
+  buffer: ArrayBuffer,
+  options?: { extractCover?: boolean }
+): Promise<FullBookMetadata> {
+  try {
+    const fast = await readFastEpubMetadata(buffer, options);
+    if (fast) return fast;
+  } catch {
+    // Fall through to legacy engine
+  }
+
+  return readLegacyFullMetadata(buffer, options);
+}
+
+async function readLegacyFullMetadata(
   buffer: ArrayBuffer,
   options?: { extractCover?: boolean }
 ): Promise<FullBookMetadata> {
