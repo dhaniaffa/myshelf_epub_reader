@@ -11,14 +11,30 @@
   --sar: env(safe-area-inset-right, 0px);
 }
 
-/* Eliminate WebView browser overscroll glow, rubber-band stretch, and synthetic pull-to-refresh */
-html,
-body,
-#root {
-  overscroll-behavior-y: none;
-  overscroll-behavior-x: none;
+/* Eliminate WebView browser overscroll glow, rubber-band stretch, and synthetic pull-to-refresh on mobile */
+@media (hover: none) and (pointer: coarse) {
+  html,
+  body,
+  #root {
+    overscroll-behavior-y: none;
+    overscroll-behavior-x: none;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+html {
   -webkit-tap-highlight-color: transparent;
-  -webkit-overflow-scrolling: touch;
+  height: 100%;
+}
+
+body {
+  -webkit-tap-highlight-color: transparent;
+  min-height: 100%;
+  overflow-y: auto;
+}
+
+#root {
+  min-height: 100%;
 }
 
 /* Hide scrollbars on mobile (< 1024px); content remains touch-scrollable */

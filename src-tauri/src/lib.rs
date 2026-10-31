@@ -266,6 +266,20 @@ fn check_file_exists(file_path: String) -> Result<bool, String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    #[cfg(target_os = "linux")]
+    {
+        // Fix WebKitGTK broken wheel scrolling, hardware acceleration, and overlay scrollbar interception on Linux
+        // SAFETY: set_var is called here right at the program entry before threads are spawned by Tauri.
+        unsafe {
+            if std::env::var("WEBKIT_DISABLE_DMABUF_RENDERER").is_err() {
+                std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+            }
+            if std::env::var("GTK_OVERLAY_SCROLLING").is_err() {
+                std::env::set_var("GTK_OVERLAY_SCROLLING", "0");
+            }
+        }
+    }
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_process::init())

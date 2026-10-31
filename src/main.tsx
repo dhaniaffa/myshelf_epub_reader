@@ -8,6 +8,10 @@ import '@/styles/app.css';
 
 import { App } from '@/App';
 import { GlobalErrorBoundary } from '@/components/GlobalErrorBoundary';
+import { initDesktopScrollFix } from '@/lib/desktopScrollFix';
+
+// Ensure smooth mouse wheel scrolling in desktop Tauri / WebKitGTK Linux environments
+initDesktopScrollFix();
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
