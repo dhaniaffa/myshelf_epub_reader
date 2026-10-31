@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { importBookFiles } from './importBooks';
+import { importBookFiles, importNativePickedBooks } from './importBooks';
 
 import type { Book, BookFile } from '@/types';
 
@@ -51,7 +51,11 @@ vi.mock('./pdf', () => ({
   }),
 }));
 
-describe('Import Engine Storage Modes (src/lib/importBooks.ts)', () => {
+vi.mock('./nativeFiles', () => ({
+  readNativeBookBinary: vi.fn().mockResolvedValue(new ArrayBuffer(100)),
+}));
+
+describe('Import Engine Storage Modes & Concurrency (src/lib/importBooks.ts)', () => {
   beforeEach(() => {
     booksMap.clear();
     filesMap.clear();
@@ -101,5 +105,54 @@ describe('Import Engine Storage Modes (src/lib/importBooks.ts)', () => {
     const savedFile = filesMap.get('hash-vault_novel.epub');
     expect(savedFile).toBeDefined();
     expect(savedFile?.buffer).toBeDefined();
+  });
+
+  it('imports multiple files concurrently and reports progress', async () => {
+    const files = [
+      new File(['1'], 'book1.epub', { type: 'application/epub+zip' }),
+      new File(['2'], 'book2.epub', { type: 'application/epub+zip' }),
+      new File(['3'], 'book3.epub', { type: 'application/epub+zip' }),
+      new File(['4'], 'book4.epub', { type: 'application/epub+zip' }),
+    ];
+
+    const progressCalls: number[] = [];
+    const result = await importBookFiles(files, {
+      storageMode: 'linked',
+      concurrency: 2,
+      onProgress: (current, total) => {
+        expect(total).toBe(4);
+        progressCalls.push(current);
+      },
+    });
+
+    expect(result.total).toBe(4);
+    expect(result.imported).toBe(4);
+    expect(result.duplicates).toBe(0);
+    expect(progressCalls.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it('detects duplicates fast and skips duplicate processing', async () => {
+    const file1 = new File(['content-same'], 'same.epub', { type: 'application/epub+zip' });
+    const file2 = new File(['content-same'], 'same.epub', { type: 'application/epub+zip' });
+
+    // First import
+    await importBookFiles([file1], { storageMode: 'linked' });
+
+    // Second import with identical file
+    const result = await importBookFiles([file2], { storageMode: 'linked' });
+    expect(result.imported).toBe(0);
+    expect(result.duplicates).toBe(1);
+  });
+
+  it('imports picked native books with streaming concurrency', async () => {
+    const picked = [
+      { name: 'native1.epub', path: '/path/native1.epub', size: 1000 },
+      { name: 'native2.pdf', path: '/path/native2.pdf', size: 2000 },
+    ];
+
+    const result = await importNativePickedBooks(picked, 'linked');
+    expect(result.total).toBe(2);
+    expect(result.imported).toBe(2);
+    expect(result.duplicates).toBe(0);
   });
 });
