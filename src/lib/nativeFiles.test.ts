@@ -214,6 +214,12 @@ describe('Native Files Abstraction (src/lib/nativeFiles.ts)', () => {
         filePath: '/home/user/buku.epub',
       });
       expect(new Uint8Array(buffer)).toEqual(new Uint8Array(fakeBytes));
+
+      // Test with raw Uint8Array/ArrayBuffer binary IPC response
+      const rawBinary = new Uint8Array([80, 68, 70]);
+      mockInvoke.mockResolvedValue(rawBinary);
+      const binaryBuffer = await readNativeBookBinary(dummyBook);
+      expect(new Uint8Array(binaryBuffer)).toEqual(rawBinary);
     });
 
     it('throws FILE_NOT_FOUND when filePath is missing on Desktop Tauri', async () => {

@@ -211,7 +211,11 @@ export async function readNativeBookBinary(book: Book): Promise<ArrayBuffer> {
     }
 
     try {
-      const bytes = await invoke<number[]>('read_book_file', { filePath: book.filePath });
+      const bytes = await invoke<ArrayBuffer | Uint8Array | number[]>('read_book_file', {
+        filePath: book.filePath,
+      });
+      if (bytes instanceof ArrayBuffer) return bytes;
+      if (bytes instanceof Uint8Array) return bytes.buffer as ArrayBuffer;
       return Uint8Array.from(bytes).buffer as ArrayBuffer;
     } catch (err) {
       throw new Error(`FILE_NOT_FOUND: ${err instanceof Error ? err.message : String(err)}`, {

@@ -40,10 +40,11 @@ import {
   connectLocalFolder,
   getLocalFolder,
   isFileSystemAccessSupported,
+  isFolderSyncRunning,
   syncLocalFolder,
 } from '@/lib/fileSystemSync';
 import { importEpubFiles, importNativePickedBooks } from '@/lib/importBooks';
-import { pickAndScanNativeFolder, pickNativeBookFiles } from '@/lib/nativeFiles';
+import { pickNativeBookFiles } from '@/lib/nativeFiles';
 import { isWebBrowser } from '@/lib/platform';
 import { navigate } from '@/lib/route';
 import { useProgressiveBatch } from '@/lib/useProgressiveBatch';
@@ -52,6 +53,10 @@ import { useSyncStore } from '@/store/sync';
 import { toast } from '@/store/toast';
 
 import type { Book, BookStatus, BookViewMode } from '@/types';
+
+// Global module-level session flag to ensure launch auto-sync only runs ONCE per app session
+let hasAppSessionAutoSynced = false;
+const AUTO_SYNC_COOLDOWN_MS = 5 * 60 * 1000;
 
 export const LibraryPage: React.FC = () => {
   const rawBooks = useLiveQuery(() => db.books.toArray(), []);
@@ -85,11 +90,16 @@ export const LibraryPage: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [importChoiceOpen, setImportChoiceOpen] = useState(false);
 
-  // Auto-sync on launch if enabled on connected folder
-  const hasAutoSyncedRef = useRef(false);
+  // Auto-sync on launch if enabled on connected folder (runs once per session with cooldown)
   useEffect(() => {
-    if (hasAutoSyncedRef.current || !syncFolder || !syncFolder.autoSyncOnLaunch) return;
-    hasAutoSyncedRef.current = true;
+    if (hasAppSessionAutoSynced || !syncFolder || !syncFolder.autoSyncOnLaunch) return;
+
+    if (syncFolder.lastSyncedAt && Date.now() - syncFolder.lastSyncedAt < AUTO_SYNC_COOLDOWN_MS) {
+      hasAppSessionAutoSynced = true;
+      return;
+    }
+
+    hasAppSessionAutoSynced = true;
     syncLocalFolder(undefined, undefined, true)
       .then((res) => {
         if (res.success && res.imported > 0) {
@@ -194,49 +204,35 @@ export const LibraryPage: React.FC = () => {
 
   const handleScanFolderClick = async () => {
     setImportChoiceOpen(false);
-    setIsImporting(true);
-    setImportProgress({ current: 0, total: 0, fileName: 'Membuka pemilih folder...' });
+
+    if (isFolderSyncRunning()) {
+      toast.info('Sinkronisasi folder sedang berlangsung di latar belakang...');
+      return;
+    }
 
     try {
-      const picked = await pickAndScanNativeFolder();
-      if (!picked) {
-        setIsImporting(false);
-        setImportProgress(null);
+      const folder = await connectLocalFolder();
+      toast.info(`Folder "${folder.name}" terhubung. Memulai pemindaian di latar belakang...`);
+
+      const res = await syncLocalFolder();
+      if (!res.success) {
+        if (res.error && !res.error.includes('dibatalkan')) {
+          toast.error(res.error);
+        }
         return;
       }
-
-      if (picked.length === 0) {
-        toast.info('Tidak ditemukan berkas .epub atau .pdf di dalam folder tersebut');
-        setIsImporting(false);
-        setImportProgress(null);
-        return;
-      }
-
-      setImportProgress({ current: 0, total: picked.length, fileName: 'Memulai impor buku...' });
-      const mode = useSettingsStore.getState().importStorageMode || 'linked';
-      const res = await importNativePickedBooks(picked, mode, (curr, tot, fileName) => {
-        setImportProgress({ current: curr, total: tot, fileName });
-      });
 
       if (res.imported > 0) {
-        toast.success(
-          mode === 'linked'
-            ? `Berhasil memindai dan menautkan ${res.imported} buku baru`
-            : `Berhasil memindai dan menyalin ${res.imported} buku baru`
+        toast.success(`Pemindaian selesai: ${res.imported} buku baru berhasil ditambahkan`);
+      } else {
+        toast.info(
+          `Folder "${folder.name}" up-to-date (${res.totalFound} berkas diperiksa, tidak ada buku baru)`
         );
       }
-      if (res.duplicates > 0) {
-        toast.warning(`${res.duplicates} buku sudah ada di perpustakaan (duplikat dilewati)`);
-      }
-      if (res.failed > 0) {
-        toast.error(`${res.failed} berkas gagal dibaca sebagai buku valid`);
-      }
-    } catch (err) {
-      console.error('Gagal memindai folder native:', err);
-      toast.error('Terjadi kesalahan saat memindai folder koleksi');
-    } finally {
-      setIsImporting(false);
-      setImportProgress(null);
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') return;
+      console.warn('Gagal memindai folder koleksi:', err);
+      toast.error('Gagal menghubungkan folder koleksi');
     }
   };
 

@@ -255,8 +255,10 @@ fn scan_directory_books(folder_path: String) -> Result<Vec<String>, String> {
 }
 
 #[tauri::command]
-fn read_book_file(file_path: String) -> Result<Vec<u8>, String> {
-    std::fs::read(&file_path).map_err(|e| format!("Gagal membaca berkas di '{}': {}", file_path, e))
+fn read_book_file(file_path: String) -> Result<tauri::ipc::Response, String> {
+    let bytes = std::fs::read(&file_path)
+        .map_err(|e| format!("Gagal membaca berkas di '{}': {}", file_path, e))?;
+    Ok(tauri::ipc::Response::new(bytes))
 }
 
 #[tauri::command]
