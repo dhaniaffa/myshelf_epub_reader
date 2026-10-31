@@ -15,7 +15,7 @@ const TAURI_CONF_PATH = path.join(rootDir, 'src-tauri', 'tauri.conf.json');
 const CARGO_TOML_PATH = path.join(rootDir, 'src-tauri', 'Cargo.toml');
 const CARGO_LOCK_PATH = path.join(rootDir, 'src-tauri', 'Cargo.lock');
 
-function parseSemVer(ver) {
+export function parseSemVer(ver) {
   const match = ver
     .trim()
     .replace(/^v/, '')
@@ -33,7 +33,7 @@ function parseSemVer(ver) {
   };
 }
 
-function calculateNextVersion(currentVer, bumpType) {
+export function calculateNextVersion(currentVer, bumpType) {
   const parsed = parseSemVer(currentVer);
   switch (bumpType.toLowerCase()) {
     case 'patch':
@@ -171,4 +171,11 @@ Penggunaan Script Versioning MyShelf:
   console.log(`\n🎉 Selesai! Versi sekarang adalah v${nextVersion}.\n`);
 }
 
-main();
+if (
+  process.argv[1] &&
+  (process.argv[1] === fileURLToPath(import.meta.url) ||
+    process.argv[1].endsWith('bump-version.js')) &&
+  !process.env.VITEST
+) {
+  main();
+}

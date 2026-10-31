@@ -236,14 +236,14 @@ export async function importBackupJson(file: File): Promise<{
 }
 
 /**
- * Exports highlights & notes of a book to Markdown format
- * Allows user to pick destination directory/folder on Desktop and Android
+ * Pure generator: converts book annotations into a structured Markdown document.
  */
-export async function exportAnnotationsMarkdown(
+export function generateAnnotationsMarkdown(
   book: Book,
-  annotations: Annotation[]
-): Promise<SaveFileResult> {
-  const dateStr = new Date().toLocaleDateString('id-ID', {
+  annotations: Annotation[],
+  now: Date = new Date()
+): string {
+  const dateStr = now.toLocaleDateString('id-ID', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -283,6 +283,18 @@ export async function exportAnnotationsMarkdown(
     }
   }
 
+  return md;
+}
+
+/**
+ * Exports highlights & notes of a book to Markdown format
+ * Allows user to pick destination directory/folder on Desktop and Android
+ */
+export async function exportAnnotationsMarkdown(
+  book: Book,
+  annotations: Annotation[]
+): Promise<SaveFileResult> {
+  const md = generateAnnotationsMarkdown(book, annotations);
   const safeTitle = book.title.replace(/[\\/:*?"<>|]/g, '').slice(0, 40);
   const filename = `${safeTitle} - Catatan.md`;
 

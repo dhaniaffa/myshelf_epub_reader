@@ -41,7 +41,7 @@ export function isFootnoteLink(link: HTMLAnchorElement): boolean {
 /**
  * Normalizes and resolves a relative path against a base path.
  */
-function resolvePath(base: string, relative: string): string {
+export function resolvePath(base: string, relative: string): string {
   const stack = base.split('/').slice(0, -1);
   const parts = relative.split('/');
 
@@ -60,7 +60,7 @@ function resolvePath(base: string, relative: string): string {
 /**
  * Cleans extracted footnote HTML by removing backlink arrows, scripts, and dangerous attributes.
  */
-function cleanFootnoteElement(el: HTMLElement): string {
+export function cleanFootnoteElement(el: HTMLElement): string {
   const clone = el.cloneNode(true) as HTMLElement;
 
   // 1. Remove backlink anchors (e.g. ↩, ↑, [back], role="doc-backlink")

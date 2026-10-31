@@ -63,6 +63,7 @@ export function parseOpdsXml(xmlString: string, baseUrl: string): OpdsFeedResult
     } else if (rel === 'search' && href) {
       searchUrl = href;
     } else if (
+      rel !== 'self' &&
       (rel === 'subsection' ||
         type.includes('application/atom+xml') ||
         type.includes('opds-catalog')) &&

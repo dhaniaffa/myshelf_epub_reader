@@ -12,7 +12,10 @@ export type AppRoute =
 
 export function parseRoute(hash: string): AppRoute {
   // Strip any combination of leading '#' and '/'
-  const clean = hash.replace(/^[#/]+/, '').trim();
+  const clean = hash
+    .trim()
+    .replace(/^[#/]+/, '')
+    .trim();
 
   if (clean.startsWith('read/')) {
     const bookId = clean.replace('read/', '').trim();
@@ -69,7 +72,10 @@ export function isMainTabRoute(route: AppRoute): boolean {
 }
 
 export function normalizePath(path: string): string {
-  return path.replace(/^[#/]+/, '').trim();
+  return path
+    .trim()
+    .replace(/^[#/]+/, '')
+    .trim();
 }
 
 function dispatchHashChange(): void {
