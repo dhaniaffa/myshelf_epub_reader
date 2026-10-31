@@ -135,16 +135,15 @@ export async function pickAndScanNativeFolder(): Promise<NativePickedBook[] | nu
         }
       }, 120000);
 
-      window.__onAndroidPickFolderResult = (results) => {
+      window.__onAndroidPickFolderResult = (results, folderUri, folderName) => {
         if (!resolved) {
           resolved = true;
           clearTimeout(timer);
           cleanup();
-          if (!results || results.length === 0) {
-            resolve([]);
-          } else {
-            resolve(results);
-          }
+          const list = results || [];
+          if (folderUri) (list as unknown as Record<string, unknown>).folderUri = folderUri;
+          if (folderName) (list as unknown as Record<string, unknown>).folderName = folderName;
+          resolve(list);
         }
       };
 
@@ -153,6 +152,53 @@ export async function pickAndScanNativeFolder(): Promise<NativePickedBook[] | nu
   }
 
   return null;
+}
+
+/**
+ * Silently scans a previously connected Android folder using its granted Tree URI.
+ * Does NOT open any native picker UI or interrupt the user.
+ */
+export async function scanNativeFolderByUri(uriString: string): Promise<NativePickedBook[] | null> {
+  if (!isAndroidNative() || !window.AndroidBackupBridge?.scanFolderByUri) {
+    return null;
+  }
+
+  return new Promise((resolve) => {
+    let resolved = false;
+
+    const cleanup = () => {
+      window.__onAndroidScanFolderResult = null;
+    };
+
+    const timer = setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        cleanup();
+        resolve(null);
+      }
+    }, 60000);
+
+    window.__onAndroidScanFolderResult = (results) => {
+      if (!resolved) {
+        resolved = true;
+        clearTimeout(timer);
+        cleanup();
+        resolve(results || []);
+      }
+    };
+
+    try {
+      window.AndroidBackupBridge?.scanFolderByUri?.(uriString);
+    } catch (err) {
+      if (!resolved) {
+        resolved = true;
+        clearTimeout(timer);
+        cleanup();
+        console.warn('Gagal memindai folder Android berdasarkan URI:', err);
+        resolve(null);
+      }
+    }
+  });
 }
 
 /**

@@ -5,6 +5,7 @@ import {
   pickAndScanNativeFolder,
   pickNativeBookFiles,
   readNativeBookBinary,
+  scanNativeFolderByUri,
 } from './nativeFiles';
 import * as platform from './platform';
 
@@ -150,6 +151,36 @@ describe('Native Files Abstraction (src/lib/nativeFiles.ts)', () => {
         { uri: 'content://tree/doc/1', name: 'stoic.epub', size: 2048 },
         { uri: 'content://tree/doc/2', name: 'manual.pdf', size: 4096 },
       ]);
+    });
+  });
+
+  describe('scanNativeFolderByUri', () => {
+    it('returns null on non-Android platform', async () => {
+      vi.spyOn(platform, 'isAndroidNative').mockReturnValue(false);
+      const res = await scanNativeFolderByUri('content://some/tree/uri');
+      expect(res).toBeNull();
+    });
+
+    it('scans silently via AndroidBackupBridge.scanFolderByUri on Android', async () => {
+      vi.spyOn(platform, 'isAndroidNative').mockReturnValue(true);
+
+      const scanFolderByUriMock = vi.fn(() => {
+        setTimeout(() => {
+          if (window.__onAndroidScanFolderResult) {
+            window.__onAndroidScanFolderResult([
+              { uri: 'content://tree/doc/3', name: 'silent.epub', size: 1024 },
+            ]);
+          }
+        }, 10);
+      });
+
+      window.AndroidBackupBridge = {
+        scanFolderByUri: scanFolderByUriMock,
+      };
+
+      const result = await scanNativeFolderByUri('content://granted/tree/uri');
+      expect(scanFolderByUriMock).toHaveBeenCalledWith('content://granted/tree/uri');
+      expect(result).toEqual([{ uri: 'content://tree/doc/3', name: 'silent.epub', size: 1024 }]);
     });
   });
 

@@ -4,6 +4,7 @@ interface AndroidBackupBridge {
   exitApp?: () => void;
   pickBooks?: () => void;
   pickFolder?: () => void;
+  scanFolderByUri?: (uriString: string) => void;
   readBookBinaryBase64?: (uriString: string) => string | null;
   checkUriValid?: (uriString: string) => boolean;
 }
@@ -43,6 +44,13 @@ declare global {
     __onAndroidPickBooksResult?:
       ((results: Array<{ uri: string; name: string; size: number }>) => void) | null;
     __onAndroidPickFolderResult?:
+      | ((
+          results: Array<{ uri: string; name: string; size: number }>,
+          folderUri?: string,
+          folderName?: string
+        ) => void)
+      | null;
+    __onAndroidScanFolderResult?:
       ((results: Array<{ uri: string; name: string; size: number }>) => void) | null;
     __handleAndroidBack?: (() => boolean) | null;
     AndroidBackupBridge?: AndroidBackupBridge;

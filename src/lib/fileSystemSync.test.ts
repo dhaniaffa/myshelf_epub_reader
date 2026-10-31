@@ -6,6 +6,7 @@ import {
   getLocalFolder,
   isFolderSyncSupported,
   PRIMARY_SYNC_FOLDER_ID,
+  syncLocalFolder,
   updateFolderOptions,
 } from './fileSystemSync';
 import * as platform from './platform';
@@ -125,6 +126,25 @@ describe('Local Folder Synchronization (src/lib/fileSystemSync.ts)', () => {
       await disconnectLocalFolder();
       const current = syncFoldersMap.get(PRIMARY_SYNC_FOLDER_ID);
       expect(current).toBeUndefined();
+    });
+
+    it('skips auto-sync on Android if folder has no URI to prevent popping up interactive picker', async () => {
+      vi.spyOn(platform, 'isAndroidNative').mockReturnValue(true);
+      vi.spyOn(platform, 'isDesktopTauri').mockReturnValue(false);
+
+      syncFoldersMap.set(PRIMARY_SYNC_FOLDER_ID, {
+        id: PRIMARY_SYNC_FOLDER_ID,
+        name: 'Android Books',
+        handle: null,
+        connectedAt: Date.now(),
+        lastSyncedAt: null,
+        bookCount: 0,
+        autoSyncOnLaunch: true,
+      });
+
+      const res = await syncLocalFolder(undefined, undefined, true);
+      expect(res.success).toBe(false);
+      expect(res.error).toContain('Auto-sync dilewati');
     });
   });
 });

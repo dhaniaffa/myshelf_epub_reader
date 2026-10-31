@@ -3,7 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { generateBackupJsonString } from '@/lib/backup';
 import { db } from '@/lib/db';
 import { importBookFiles, importNativePickedBooks } from '@/lib/importBooks';
-import { pickAndScanNativeFolder } from '@/lib/nativeFiles';
+import { pickAndScanNativeFolder, scanNativeFolderByUri } from '@/lib/nativeFiles';
 import { isAndroidNative, isDesktopTauri } from '@/lib/platform';
 import { useSettingsStore } from '@/store/settings';
 import { useSyncStore } from '@/store/sync';
@@ -273,10 +273,15 @@ export async function connectLocalFolder(options?: {
       throw abortErr;
     }
 
+    const uri = (picked as unknown as { folderUri?: string }).folderUri;
+    const folderName =
+      (picked as unknown as { folderName?: string }).folderName || 'Folder Buku Android';
+
     const existing = await db.sync_folders.get(PRIMARY_SYNC_FOLDER_ID);
     const folder: LocalSyncFolder = {
       id: PRIMARY_SYNC_FOLDER_ID,
-      name: 'Folder Buku Android',
+      name: folderName,
+      uri: uri || existing?.uri,
       handle: null,
       connectedAt: Date.now(),
       lastSyncedAt: null,
@@ -441,16 +446,61 @@ export async function syncLocalFolder(
 
     // 2. Android Native (SAF)
     if (isAndroidNative()) {
-      syncStore.updateProgress({ phase: 'scanning', foundCount: 0 });
-      const picked = await pickAndScanNativeFolder();
-      if (!picked || isAborted()) {
+      let picked: NativePickedBook[] | null = null;
+
+      // Prefer silent background scan if folder has a stored persistable URI
+      if (folder.uri) {
+        syncStore.updateProgress({ phase: 'scanning', foundCount: 0 });
+        picked = await scanNativeFolderByUri(folder.uri);
+      }
+
+      // If silent scan was not possible or returned null:
+      if (!picked) {
+        // CRITICAL GUARD: If this is an auto-sync (on app launch or background),
+        // NEVER launch the interactive picker without user action!
+        if (isAutoSync) {
+          console.warn(
+            'Auto-sync Android dilewati: Tidak dapat memindai folder di latar belakang tanpa URI tersimpan.'
+          );
+          return {
+            success: false,
+            totalFound: 0,
+            imported: 0,
+            duplicates: 0,
+            failed: 0,
+            error: 'Auto-sync dilewati (URI folder belum tersimpan)',
+          };
+        }
+
+        // Only open the interactive picker if the user explicitly triggered manual sync
+        syncStore.updateProgress({ phase: 'scanning', foundCount: 0 });
+        picked = await pickAndScanNativeFolder();
+        if (!picked || isAborted()) {
+          return {
+            success: false,
+            totalFound: 0,
+            imported: 0,
+            duplicates: 0,
+            failed: 0,
+            error: isAborted() ? 'Sinkronisasi dibatalkan' : 'Gagal memindai folder Android',
+          };
+        }
+
+        // Backfill folder.uri if returned
+        const newUri = (picked as unknown as { folderUri?: string }).folderUri;
+        if (newUri) {
+          await db.sync_folders.update(PRIMARY_SYNC_FOLDER_ID, { uri: newUri });
+        }
+      }
+
+      if (isAborted()) {
         return {
           success: false,
           totalFound: 0,
           imported: 0,
           duplicates: 0,
           failed: 0,
-          error: isAborted() ? 'Sinkronisasi dibatalkan' : 'Gagal memindai folder Android',
+          error: 'Sinkronisasi dibatalkan',
         };
       }
 

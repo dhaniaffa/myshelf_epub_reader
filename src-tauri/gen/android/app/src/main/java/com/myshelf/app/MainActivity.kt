@@ -16,7 +16,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.documentfile.provider.DocumentFile
 
 class MainActivity : TauriActivity() {
-  private var mAppWebView: WebView? = null
+  internal var mAppWebView: WebView? = null
   private var pendingContent: String? = null
   private lateinit var createDocLauncher: ActivityResultLauncher<Intent>
   private lateinit var openDocsLauncher: ActivityResultLauncher<Array<String>>
@@ -73,9 +73,11 @@ class MainActivity : TauriActivity() {
         }
 
         val jsonArray = "[" + results.joinToString(",") + "]"
+        val safeTreeUri = treeUri.toString().replace("\"", "\\\"")
+        val safeFolderName = (rootDoc?.name ?: "Folder Buku Android").replace("\"", "\\\"")
         mAppWebView?.post {
           mAppWebView?.evaluateJavascript(
-            "window.__onAndroidPickFolderResult && window.__onAndroidPickFolderResult($jsonArray)",
+            "window.__onAndroidPickFolderResult && window.__onAndroidPickFolderResult($jsonArray, \"$safeTreeUri\", \"$safeFolderName\")",
             null
           )
         }
@@ -196,6 +198,12 @@ class MainActivity : TauriActivity() {
   fun launchOpenDocumentTree() {
     openTreeLauncher.launch(null)
   }
+
+  fun evalJs(script: String) {
+    runOnUiThread {
+      mAppWebView?.evaluateJavascript(script, null)
+    }
+  }
 }
 
 class AndroidBackupBridge(private val activity: MainActivity) {
@@ -204,6 +212,46 @@ class AndroidBackupBridge(private val activity: MainActivity) {
     activity.runOnUiThread {
       activity.launchOpenDocumentTree()
     }
+  }
+
+  @JavascriptInterface
+  fun scanFolderByUri(uriString: String) {
+    Thread {
+      val results = mutableListOf<String>()
+      try {
+        val treeUri = Uri.parse(uriString)
+        val rootDoc = androidx.documentfile.provider.DocumentFile.fromTreeUri(activity.applicationContext, treeUri)
+        if (rootDoc != null) {
+          val queue = java.util.ArrayDeque<androidx.documentfile.provider.DocumentFile>()
+          queue.add(rootDoc)
+          while (!queue.isEmpty()) {
+            val dir = queue.poll() ?: continue
+            for (file in dir.listFiles()) {
+              if (file.isDirectory) {
+                val dName = file.name ?: ""
+                if (!dName.startsWith(".") && dName != "node_modules") {
+                  queue.add(file)
+                }
+              } else {
+                val fName = file.name ?: ""
+                val fNameLower = fName.lowercase()
+                if (fNameLower.endsWith(".epub") || fNameLower.endsWith(".pdf")) {
+                  val safeUri = file.uri.toString().replace("\"", "\\\"")
+                  val safeName = fName.replace("\"", "\\\"")
+                  val fSize = file.length()
+                  results.add("{\"uri\":\"$safeUri\",\"name\":\"$safeName\",\"size\":$fSize}")
+                }
+              }
+            }
+          }
+        }
+      } catch (e: Exception) {
+        e.printStackTrace()
+      }
+
+      val jsonArray = "[" + results.joinToString(",") + "]"
+      activity.evalJs("window.__onAndroidScanFolderResult && window.__onAndroidScanFolderResult($jsonArray)")
+    }.start()
   }
 
   @JavascriptInterface
