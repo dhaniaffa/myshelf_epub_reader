@@ -152,6 +152,79 @@ body {
   }
 }
 
+/* ==========================================================================
+   View Transitions API (Transisi Halaman Mulus & Native Morphs)
+   ========================================================================== */
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+/* E-Ink Mode: suppress all transitions for instant zero-latency screen refresh */
+html.eink-mode::view-transition-group(*),
+html.eink-mode::view-transition-old(*),
+html.eink-mode::view-transition-new(*) {
+  animation: none !important;
+}
+
+/* Root page transition keyframes (compositor-only: opacity and subtle transform) */
+@keyframes vtPageFadeOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.992);
+  }
+}
+
+@keyframes vtPageFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(1.008);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+::view-transition-old(root) {
+  animation: 0.18s cubic-bezier(0.4, 0, 1, 1) both vtPageFadeOut;
+}
+
+::view-transition-new(root) {
+  animation: 0.22s cubic-bezier(0, 0, 0.2, 1) both vtPageFadeIn;
+}
+
+/* Persistent UI elements across page transitions (remain anchored without flicker) */
+.vt-app-sidebar {
+  view-transition-name: app-sidebar;
+}
+
+.vt-app-bottom-bar {
+  view-transition-name: app-bottom-bar;
+}
+
+::view-transition-old(app-sidebar),
+::view-transition-new(app-sidebar),
+::view-transition-old(app-bottom-bar),
+::view-transition-new(app-bottom-bar) {
+  /* Prevent stretching or layout shift during tab switching */
+  height: 100%;
+}
+
+/* Fallback handling: when View Transitions API is active, disable competing keyframe animations */
+html.has-view-transitions .animate-page-enter {
+  animation: none;
+}
+
 /* E-Ink High Contrast Mode & Zero Latency Optimizations */
 .eink-mode,
 .eink-mode * {

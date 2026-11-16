@@ -89,7 +89,10 @@ export const AppShell: React.FC<AppShellProps> = ({ currentRoute, children }) =>
   return (
     <div className="bg-surface text-on-surface flex min-h-screen flex-col lg:flex-row">
       {/* DESKTOP SIDEBAR (>= 1024px) */}
-      <aside className="bg-surface-container border-outline-variant/30 fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r select-none lg:flex">
+      <aside
+        style={{ viewTransitionName: 'app-sidebar' }}
+        className="vt-app-sidebar bg-surface-container border-outline-variant/30 fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r select-none lg:flex"
+      >
         {/* Header / Brand */}
         <div className="border-outline-variant/20 flex items-center gap-3 border-b p-6 pb-5">
           <div className="bg-primary text-on-primary flex h-10 w-10 items-center justify-center rounded-2xl shadow-sm">
@@ -166,15 +169,22 @@ export const AppShell: React.FC<AppShellProps> = ({ currentRoute, children }) =>
       </aside>
 
       {/* MAIN CONTENT AREA */}
-      <div className="flex min-w-0 flex-1 flex-col pb-20 lg:pb-0 lg:pl-64">{children}</div>
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="flex min-w-0 flex-1 flex-col pb-20 focus:outline-none lg:pb-0 lg:pl-64"
+      >
+        {children}
+      </main>
 
       {/* MOBILE BOTTOM NAVIGATION BAR (< 1024px) */}
       <nav
         style={{
           height: 'calc(4.25rem + env(safe-area-inset-bottom, 0px))',
           paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          viewTransitionName: 'app-bottom-bar',
         }}
-        className="bg-surface-container/95 border-outline-variant/30 fixed inset-x-0 bottom-0 z-40 flex items-center justify-around border-t px-2 backdrop-blur-lg select-none lg:hidden"
+        className="vt-app-bottom-bar bg-surface-container/95 border-outline-variant/30 fixed inset-x-0 bottom-0 z-40 flex items-center justify-around border-t px-2 backdrop-blur-lg select-none lg:hidden"
       >
         {navItems.map((item) => (
           <button

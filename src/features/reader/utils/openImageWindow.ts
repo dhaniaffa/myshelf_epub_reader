@@ -15,6 +15,11 @@ function escapeHtml(str: string): string {
  */
 export function openImageInNewWindow(image: ImageViewData): boolean {
   try {
+    // In Tauri desktop apps, window.open without Tauri WebviewWindow plugin crashes or terminates the app.
+    if (typeof window !== 'undefined' && (window as unknown as { __TAURI__?: unknown }).__TAURI__) {
+      return false;
+    }
+
     const screenW = typeof window !== 'undefined' ? window.screen.availWidth || 1280 : 1280;
     const screenH = typeof window !== 'undefined' ? window.screen.availHeight || 800 : 800;
 

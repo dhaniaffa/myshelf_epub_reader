@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 
 import { isAndroidNative } from '@/lib/platform';
 
@@ -219,12 +220,96 @@ export function navigateBack(fallbackPath: string = ''): void {
   }
 }
 
+/**
+ * Checks whether two route objects represent identical views and parameters.
+ */
+export function isSameRoute(a: AppRoute, b: AppRoute): boolean {
+  if (a.type !== b.type) return false;
+  if (a.type === 'reader' && b.type === 'reader') return a.bookId === b.bookId;
+  if (a.type === 'collections' && b.type === 'collections')
+    return a.collectionId === b.collectionId;
+  if (a.type === 'catalog' && b.type === 'catalog') return a.sourceId === b.sourceId;
+  return true;
+}
+
+/**
+ * Programmatically routes focus to the active landmark container or primary heading
+ * after a view transition completes to preserve screen reader and keyboard context (WCAG 2.4.3).
+ */
+export function routeAccessibilityFocus(): void {
+  if (typeof document === 'undefined') return;
+
+  const target =
+    (document.querySelector('main h1, [role="main"] h1, h1') as HTMLElement | null) ||
+    (document.querySelector('main, [role="main"], #main-content') as HTMLElement | null);
+
+  if (target) {
+    if (!target.hasAttribute('tabindex')) {
+      target.setAttribute('tabindex', '-1');
+    }
+    target.focus({ preventScroll: true });
+  }
+}
+
 export function useHashRoute(): AppRoute {
   const [route, setRoute] = useState<AppRoute>(() => parseRoute(window.location.hash));
+  const prevRouteRef = useRef<AppRoute>(route);
 
   useEffect(() => {
+    if (typeof document !== 'undefined' && 'startViewTransition' in document) {
+      document.documentElement.classList.add('has-view-transitions');
+    }
+
     const handleHashChange = () => {
-      setRoute(parseRoute(window.location.hash));
+      const nextRoute = parseRoute(window.location.hash);
+      const prevRoute = prevRouteRef.current;
+
+      if (isSameRoute(prevRoute, nextRoute)) {
+        return;
+      }
+
+      prevRouteRef.current = nextRoute;
+
+      // Reader transitions must NEVER use View Transitions API or flushSync because:
+      // 1. Reader renders sandboxed iframes (EPUB) and WebGL/Canvas (PDF) which crash WebKitGTK/Tauri compositors.
+      // 2. ReaderPage is lazy-loaded with React Suspense, which throws an uncatchable fatal error inside ReactDOM.flushSync.
+      // 3. Reader manages its own keyboard/volume key navigation and should not have focus hijacked.
+      if (nextRoute.type === 'reader' || prevRoute.type === 'reader') {
+        setRoute(nextRoute);
+        return;
+      }
+
+      const prefersReducedMotion =
+        typeof window !== 'undefined' &&
+        typeof window.matchMedia === 'function' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      const isEink =
+        typeof document !== 'undefined' && document.documentElement.classList.contains('eink-mode');
+
+      // Progressive enhancement: fall back to synchronous update if View Transitions API
+      // is unavailable, prefers-reduced-motion is active, or e-ink high contrast mode is on
+      if (!document.startViewTransition || prefersReducedMotion || isEink) {
+        setRoute(nextRoute);
+        routeAccessibilityFocus();
+        return;
+      }
+
+      try {
+        const transition = document.startViewTransition(() => {
+          flushSync(() => {
+            setRoute(nextRoute);
+          });
+        });
+
+        transition.finished.finally(() => {
+          routeAccessibilityFocus();
+        });
+      } catch {
+        // Safe fallback in case startViewTransition throws synchronously in some environments
+        setRoute(nextRoute);
+        routeAccessibilityFocus();
+      }
     };
 
     window.addEventListener('hashchange', handleHashChange);
