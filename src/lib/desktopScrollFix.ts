@@ -31,13 +31,13 @@ export function initDesktopScrollFix(): void {
       let el = target;
       while (el && el !== document.body && el !== document.documentElement) {
         if (el instanceof Element) {
-          const style = window.getComputedStyle(el);
-          if (
-            (style.overflowY === 'auto' || style.overflowY === 'scroll') &&
-            el.scrollHeight > el.clientHeight
-          ) {
-            // Let internal scroll container handle its own scrolling
-            return;
+          // Check scrollHeight first to avoid costly getComputedStyle reflow
+          if (el.scrollHeight > el.clientHeight + 2) {
+            const style = window.getComputedStyle(el);
+            if (style.overflowY === 'auto' || style.overflowY === 'scroll') {
+              // Let internal scroll container handle its own scrolling
+              return;
+            }
           }
         }
         el = el.parentElement;

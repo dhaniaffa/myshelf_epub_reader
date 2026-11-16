@@ -28,13 +28,10 @@ import { AppLogo } from '@/components/icons/AppLogo';
 import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
 import { APP_NAME, APP_SUBTITLE } from '@/config';
-import { BookCard } from '@/features/library/BookCard';
-import { BookCompactCard } from '@/features/library/BookCompactCard';
-import { BookCoverCard } from '@/features/library/BookCoverCard';
 import { BookDetailsDialog } from '@/features/library/BookDetailsDialog';
-import { BookListItem } from '@/features/library/BookListItem';
 import { HeroCard } from '@/features/library/HeroCard';
 import { ManageCollectionsDialog } from '@/features/library/ManageCollectionsDialog';
+import { VirtualizedBookGrid } from '@/features/library/VirtualizedBookGrid';
 import { db, deleteBook, deleteBooks } from '@/lib/db';
 import {
   connectLocalFolder,
@@ -47,7 +44,6 @@ import { importEpubFiles, importNativePickedBooks } from '@/lib/importBooks';
 import { pickNativeBookFiles } from '@/lib/nativeFiles';
 import { isWebBrowser } from '@/lib/platform';
 import { navigate } from '@/lib/route';
-import { useProgressiveBatch } from '@/lib/useProgressiveBatch';
 import { useSettingsStore } from '@/store/settings';
 import { useSyncStore } from '@/store/sync';
 import { toast } from '@/store/toast';
@@ -163,16 +159,6 @@ export const LibraryPage: React.FC = () => {
         return b.addedAt - a.addedAt;
       });
   }, [books, searchQuery, statusFilter, selectedCollection, sortBy]);
-
-  // Progressive batch rendering to prevent DOM overload with large libraries
-  const {
-    displayedItems: displayedBooks,
-    hasMore: hasMoreBooks,
-    sentinelRef: bookSentinelRef,
-  } = useProgressiveBatch(filteredBooks, {
-    initialBatchSize: 48,
-    batchIncrement: 36,
-  });
 
   const handleFiles = async (files: FileList | File[]) => {
     if (!files || files.length === 0) return;
@@ -947,92 +933,16 @@ export const LibraryPage: React.FC = () => {
             <p className="text-xs">Coba ganti kata kunci pencarian atau ubah filter status.</p>
           </div>
         ) : (
-          /* Book List Render based on viewMode */
-          <>
-            {viewMode === 'compact' && (
-              <div className="animate-fade-in grid grid-cols-3 gap-2.5 sm:grid-cols-4 sm:gap-3.5 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8">
-                {displayedBooks.map((book) => (
-                  <BookCompactCard
-                    key={book.id}
-                    book={book}
-                    onDeleteRequest={setBookToDelete}
-                    onShowDetails={setSelectedBookForDetails}
-                    isSelectionMode={isDeleteMode}
-                    isSelected={selectedBookIds.has(book.id)}
-                    onToggleSelect={toggleSelectBook}
-                  />
-                ))}
-              </div>
-            )}
-
-            {viewMode === 'comfortable' && (
-              <div className="animate-fade-in grid grid-cols-2 gap-3.5 sm:grid-cols-3 sm:gap-5 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                {displayedBooks.map((book) => (
-                  <BookCard
-                    key={book.id}
-                    book={book}
-                    onDeleteRequest={setBookToDelete}
-                    onShowDetails={setSelectedBookForDetails}
-                    isSelectionMode={isDeleteMode}
-                    isSelected={selectedBookIds.has(book.id)}
-                    onToggleSelect={toggleSelectBook}
-                  />
-                ))}
-              </div>
-            )}
-
-            {viewMode === 'cover-only' && (
-              <div className="animate-fade-in grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-5">
-                {displayedBooks.map((book) => (
-                  <BookCoverCard
-                    key={book.id}
-                    book={book}
-                    onDeleteRequest={setBookToDelete}
-                    onShowDetails={setSelectedBookForDetails}
-                    isSelectionMode={isDeleteMode}
-                    isSelected={selectedBookIds.has(book.id)}
-                    onToggleSelect={toggleSelectBook}
-                  />
-                ))}
-              </div>
-            )}
-
-            {viewMode === 'list' && (
-              <div className="animate-fade-in flex flex-col gap-3">
-                {displayedBooks.map((book) => (
-                  <BookListItem
-                    key={book.id}
-                    book={book}
-                    onDeleteRequest={setBookToDelete}
-                    onShowDetails={setSelectedBookForDetails}
-                    isSelectionMode={isDeleteMode}
-                    isSelected={selectedBookIds.has(book.id)}
-                    onToggleSelect={toggleSelectBook}
-                  />
-                ))}
-              </div>
-            )}
-
-            {/* Infinite Scroll Sentinel & Loading Indicator */}
-            {hasMoreBooks && (
-              <div ref={bookSentinelRef} className="flex items-center justify-center pt-6 pb-8">
-                <div className="bg-surface-container-low border-outline-variant/30 text-on-surface-variant flex items-center gap-2.5 rounded-full border px-4 py-2 shadow-2xs">
-                  <Loader2 size={16} className="text-primary animate-spin" />
-                  <span className="text-xs font-medium">
-                    Memuat lebih banyak buku ({displayedBooks.length} dari {filteredBooks.length}
-                    )...
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {/* End of library indicator when there are many books */}
-            {!hasMoreBooks && filteredBooks.length > 48 && (
-              <div className="text-on-surface-variant/50 py-8 text-center text-xs">
-                Semua {filteredBooks.length} buku telah ditampilkan
-              </div>
-            )}
-          </>
+          /* Virtualized Book Grid/List with TanStack Virtual */
+          <VirtualizedBookGrid
+            books={filteredBooks}
+            viewMode={viewMode}
+            isDeleteMode={isDeleteMode}
+            selectedBookIds={selectedBookIds}
+            onDeleteRequest={setBookToDelete}
+            onShowDetails={setSelectedBookForDetails}
+            onToggleSelect={toggleSelectBook}
+          />
         )}
       </main>
 
