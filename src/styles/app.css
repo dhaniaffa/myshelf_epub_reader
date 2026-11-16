@@ -172,11 +172,37 @@ body {
 }
 
 .select-text,
-.select-text *,
 .epub-container,
 .epub-view,
 .epub-view iframe {
   -webkit-user-select: text !important;
   user-select: text !important;
+}
+
+/* Isolate touch callouts: allow text selection magnifier while suppressing link/media browser sheet */
+.select-text p,
+.select-text span,
+.select-text div,
+.select-text li,
+.select-text blockquote,
+.select-text h1,
+.select-text h2,
+.select-text h3,
+.select-text h4,
+.select-text h5,
+.select-text h6 {
   -webkit-touch-callout: default !important;
+}
+
+.select-text a,
+.select-text img,
+.select-text svg,
+.select-text image,
+.select-text picture,
+.select-text figure,
+.select-text button,
+.select-text [role='button'] {
+  -webkit-touch-callout: none !important;
+  -webkit-user-drag: none !important;
+  user-drag: none !important;
 }

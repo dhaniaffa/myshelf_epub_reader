@@ -189,29 +189,32 @@ body {
 
 * {
   caret-color: transparent !important;
-  -webkit-user-select: text !important;
-  user-select: text !important;
-  -webkit-touch-callout: default !important;
 }
 
 p,
 span,
 div,
 li,
-a,
+blockquote,
 h1,
 h2,
 h3,
 h4,
 h5,
 h6,
-blockquote {
+dt,
+dd,
+td,
+th {
   color: var(--reader-fg) !important;
   font-family: var(--reader-content-font-family, inherit) !important;
   line-height: var(--reader-line-height) !important;
   text-align: var(--reader-text-align) !important;
   hyphens: var(--reader-hyphens, manual);
   font-weight: var(--reader-font-weight, inherit);
+  -webkit-user-select: text !important;
+  user-select: text !important;
+  -webkit-touch-callout: default !important;
 }
 
 h1,
@@ -247,6 +250,15 @@ a[data-startref] {
   cursor: inherit !important;
   opacity: 1 !important;
   color: inherit !important;
+  -webkit-touch-callout: none !important;
+  -webkit-user-drag: none !important;
+  user-drag: none !important;
+}
+
+a {
+  -webkit-touch-callout: none !important;
+  -webkit-user-drag: none !important;
+  user-drag: none !important;
 }
 
 a[epub\:type~='noteref'],
@@ -259,6 +271,7 @@ a sup {
   font-weight: 600 !important;
   text-decoration: none !important;
   opacity: 1 !important;
+  -webkit-touch-callout: none !important;
 }
 
 img,
@@ -274,6 +287,7 @@ image {
   box-sizing: border-box !important;
   pointer-events: auto !important;
   touch-action: manipulation !important;
+  -webkit-touch-callout: none !important;
   -webkit-user-drag: none !important;
   user-drag: none !important;
   -webkit-user-select: none !important;

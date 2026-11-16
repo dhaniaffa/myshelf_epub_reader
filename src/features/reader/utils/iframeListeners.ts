@@ -228,6 +228,23 @@ export function setupIframeListeners({
     { passive: false }
   );
 
+  // 2c. Suppress Chrome native text/image drag-and-drop ghosting
+  contents.document.addEventListener('dragstart', (e: DragEvent) => {
+    e.preventDefault();
+  });
+
+  // 2d. Isolate Chrome context menu: suppress on media, links, and background to prioritize reader custom dialogs
+  contents.document.addEventListener('contextmenu', (e: MouseEvent) => {
+    const targetEl = e.target as Element | null;
+    const isImageOrLink = Boolean(targetEl?.closest('img, image, svg, picture, a'));
+    const sel = contents.window?.getSelection();
+    const hasTextSelection = Boolean(sel && sel.toString().trim().length > 0);
+
+    if (isImageOrLink || !hasTextSelection) {
+      e.preventDefault();
+    }
+  });
+
   // 3. Footnote click interception & follow link handler
   contents.document.addEventListener(
     'click',
@@ -457,6 +474,7 @@ export function setupIframeListeners({
     (e: TouchEvent) => {
       const sel = getSelectionObj();
       if (sel && sel.toString().trim().length > 0) {
+        lastSelectionTime = Date.now();
         handleSelection();
         return;
       }
@@ -468,6 +486,7 @@ export function setupIframeListeners({
   contents.document.addEventListener(
     'touchcancel',
     () => {
+      touchStartTime = 0;
       swipeHandler.handleTouchCancel();
     },
     { passive: true }
@@ -509,14 +528,18 @@ export function setupIframeListeners({
       return;
     }
 
-    // If user held touch down for > 300ms (selection / long-press gesture on mobile/touchscreen),
-    // this click is a synthetic event from finger release, NOT an intentional dismiss tap!
-    if (touchStartTime > 0 && Date.now() - touchStartTime > 300) {
+    // If user held touch down for > 280ms (selection / long-press gesture on mobile/touchscreen),
+    // this click is a synthetic event from finger release in Chrome, NOT an intentional dismiss tap!
+    if (touchStartTime > 0 && Date.now() - touchStartTime > 280) {
+      e.preventDefault();
+      e.stopPropagation();
       return;
     }
 
-    // If selection was made very recently (e.g. within 500ms), do not clear
-    if (Date.now() - lastSelectionTime < 500) {
+    // If selection was made very recently (e.g. within 600ms), do not clear or toggle bars
+    if (Date.now() - lastSelectionTime < 600) {
+      e.preventDefault();
+      e.stopPropagation();
       return;
     }
 
