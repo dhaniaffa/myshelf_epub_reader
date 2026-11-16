@@ -263,7 +263,8 @@ a sup {
 
 img,
 svg,
-picture {
+picture,
+image {
   max-width: 100% !important;
   height: auto !important;
   border-radius: 8px !important;
@@ -271,6 +272,12 @@ picture {
   display: block !important;
   cursor: zoom-in !important;
   box-sizing: border-box !important;
+  pointer-events: auto !important;
+  touch-action: manipulation !important;
+  -webkit-user-drag: none !important;
+  user-drag: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
   background-color: var(--reader-img-bg, transparent) !important;
   padding: var(--reader-img-padding, 0) !important;
   border: var(--reader-img-border, none) !important;

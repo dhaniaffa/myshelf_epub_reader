@@ -3,6 +3,7 @@ import { EpubCFI } from 'epubjs';
 import { READER_EVENTS, THEME_STYLE_ID } from '@/config';
 import { buildCss } from '@/lib/theme';
 import { extractFootnote } from './footnoteExtractor';
+import { extractReaderImageInfo } from './imageExtractor';
 import { createNativeSwipeHandler } from './swipePhysics';
 
 import type { ReaderSettings, ReaderTheme } from '@/types';
@@ -18,6 +19,135 @@ export interface SetupIframeListenersOptions {
   checkIsSelectionActive?: () => boolean;
   onClearSelection: () => void;
   onSelectText?: (selection: { cfiRange: string; text: string }) => void;
+}
+
+let lastOpenImageTime = 0;
+
+/**
+ * Dispatches the openImage custom event if the target contains image metadata.
+ * Debounced with a 250ms window to prevent double execution from pointerup + click events.
+ */
+export function dispatchOpenImage(target: EventTarget | null): boolean {
+  const imgInfo = extractReaderImageInfo(target);
+  if (imgInfo && imgInfo.src) {
+    const now = Date.now();
+    if (now - lastOpenImageTime < 250) {
+      return true;
+    }
+    lastOpenImageTime = now;
+
+    const detail = imgInfo;
+    const eventName = READER_EVENTS.openImage;
+
+    // Dispatch across parent window, top window, and current document defaultView
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent(eventName, { detail }));
+      if (window.top && window.top !== window) {
+        try {
+          window.top.dispatchEvent(new CustomEvent(eventName, { detail }));
+        } catch {
+          // ignore
+        }
+      }
+    }
+    const docView = (target as Node)?.ownerDocument?.defaultView;
+    if (docView && docView !== window && docView !== window.top) {
+      try {
+        docView.dispatchEvent(new CustomEvent(eventName, { detail }));
+      } catch {
+        // ignore
+      }
+    }
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Ensures all images in a document are interactive, non-draggable (to prevent ghost-drag canceling clicks),
+ * and directly bound to the image viewer trigger with both click and pointerup fallback.
+ */
+export function initDocumentImages(doc: Document): void {
+  try {
+    const bindElement = (imgEl: Element) => {
+      imgEl.setAttribute('draggable', 'false');
+      if (imgEl instanceof HTMLElement) {
+        imgEl.style.cursor = 'zoom-in';
+        imgEl.style.pointerEvents = 'auto';
+      }
+
+      let downX = 0;
+      let downY = 0;
+      let downTime = 0;
+
+      imgEl.addEventListener(
+        'pointerdown',
+        (e: Event) => {
+          const pe = e as PointerEvent;
+          downX = pe.clientX;
+          downY = pe.clientY;
+          downTime = Date.now();
+        },
+        true
+      );
+
+      imgEl.addEventListener(
+        'pointerup',
+        (e: Event) => {
+          const pe = e as PointerEvent;
+          const dt = Date.now() - downTime;
+          const dist = Math.hypot(pe.clientX - downX, pe.clientY - downY);
+          if (dist < 10 && dt < 450 && dt > 0) {
+            if (dispatchOpenImage(e.currentTarget || e.target)) {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          }
+        },
+        true
+      );
+
+      imgEl.addEventListener(
+        'click',
+        (e: Event) => {
+          if (dispatchOpenImage(e.currentTarget || e.target)) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        },
+        true
+      );
+    };
+
+    doc.querySelectorAll('img, image, svg, picture, figure').forEach(bindElement);
+
+    // Dynamic MutationObserver to catch any deferred or dynamically inserted images in EPUB.js
+    const observer = new MutationObserver((mutations) => {
+      for (const m of mutations) {
+        for (const node of Array.from(m.addedNodes)) {
+          if (node instanceof Element) {
+            if (node.matches('img, image, svg, picture, figure')) {
+              bindElement(node);
+            }
+            node.querySelectorAll('img, image, svg, picture, figure').forEach(bindElement);
+          }
+        }
+      }
+    });
+
+    if (doc.body) {
+      observer.observe(doc.body, { childList: true, subtree: true });
+    } else {
+      doc.addEventListener('DOMContentLoaded', () => {
+        if (doc.body) {
+          doc.querySelectorAll('img, image, svg, picture, figure').forEach(bindElement);
+          observer.observe(doc.body, { childList: true, subtree: true });
+        }
+      });
+    }
+  } catch {
+    // ignore
+  }
 }
 
 /**
@@ -59,22 +189,27 @@ export function setupIframeListeners({
     // ignore
   }
 
-  // 2. Image click handler (image viewer lightbox)
+  // 2. Image click & pointerup handler (image viewer lightbox)
+  initDocumentImages(contents.document);
+
+  contents.document.addEventListener(
+    'pointerup',
+    (e: PointerEvent) => {
+      // In WebKitGTK where drag-suppression might cancel standard click
+      if (e.button === 0 && dispatchOpenImage(e.target)) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    },
+    true
+  );
+
   contents.document.addEventListener(
     'click',
     (e: MouseEvent) => {
-      const img = (e.target as HTMLElement)?.closest('img');
-      if (img && img.src) {
+      if (dispatchOpenImage(e.target)) {
         e.preventDefault();
         e.stopPropagation();
-        window.dispatchEvent(
-          new CustomEvent(READER_EVENTS.openImage, {
-            detail: {
-              src: img.src,
-              alt: img.getAttribute('alt') || '',
-            },
-          })
-        );
       }
     },
     true
@@ -85,18 +220,8 @@ export function setupIframeListeners({
     'touchstart',
     (e: TouchEvent) => {
       if (e.touches.length === 2) {
-        const target = e.target as HTMLElement;
-        const img = target?.closest('img');
-        if (img && img.src) {
+        if (dispatchOpenImage(e.target)) {
           e.preventDefault();
-          window.dispatchEvent(
-            new CustomEvent(READER_EVENTS.openImage, {
-              detail: {
-                src: img.src,
-                alt: img.getAttribute('alt') || '',
-              },
-            })
-          );
         }
       }
     },
@@ -160,11 +285,10 @@ export function setupIframeListeners({
   );
 
   // 4. Automatically detect and handle text selection (supporting both Desktop and Touch)
-  let selTimeout: number | undefined;
   let hasActiveSelection = false;
   let lastSelectionTime = 0;
-  let mouseDownX = 0;
-  let mouseDownY = 0;
+  let mouseDownDocX = 0;
+  let mouseDownDocY = 0;
   let isMouseDragging = false;
 
   const getSelectionObj = () => {
@@ -233,51 +357,28 @@ export function setupIframeListeners({
     }
   };
 
-  // Track mouse gestures inside book iframe
+  // Track mouse gestures inside book iframe using intra-document coordinates
   contents.document.addEventListener('mousedown', (e: MouseEvent) => {
-    mouseDownX = e.clientX;
-    mouseDownY = e.clientY;
+    mouseDownDocX = e.clientX;
+    mouseDownDocY = e.clientY;
     isMouseDragging = false;
   });
 
   contents.document.addEventListener('mousemove', (e: MouseEvent) => {
     if (e.buttons > 0) {
-      const deltaX = Math.abs(e.clientX - mouseDownX);
-      const deltaY = Math.abs(e.clientY - mouseDownY);
-      if (deltaX > 4 || deltaY > 4) {
+      const deltaX = Math.abs(e.clientX - mouseDownDocX);
+      const deltaY = Math.abs(e.clientY - mouseDownDocY);
+      if (deltaX > 6 || deltaY > 6) {
         isMouseDragging = true;
       }
     }
-  });
-
-  const onWindowMouseMove = (e: MouseEvent) => {
-    if (e.buttons > 0 && (mouseDownX > 0 || mouseDownY > 0)) {
-      const deltaX = Math.abs(e.clientX - mouseDownX);
-      const deltaY = Math.abs(e.clientY - mouseDownY);
-      if (deltaX > 4 || deltaY > 4) {
-        isMouseDragging = true;
-      }
-    }
-  };
-  window.addEventListener('mousemove', onWindowMouseMove);
-
-  // Selectionchange listener: only handle selection when text is selected;
-  // NEVER clear selection here to prevent premature dismiss on iframe blur/focus events.
-  contents.document.addEventListener('selectionchange', () => {
-    window.clearTimeout(selTimeout);
-    selTimeout = window.setTimeout(() => {
-      const sel = getSelectionObj();
-      if (sel) {
-        handleSelection();
-      }
-    }, 120);
   });
 
   // Desktop mouse and keyboard selection handlers
   const onDocMouseUp = (e: MouseEvent) => {
-    const deltaX = Math.abs(e.clientX - mouseDownX);
-    const deltaY = Math.abs(e.clientY - mouseDownY);
-    if (deltaX > 4 || deltaY > 4) {
+    const deltaX = Math.abs(e.clientX - mouseDownDocX);
+    const deltaY = Math.abs(e.clientY - mouseDownDocY);
+    if (deltaX > 6 || deltaY > 6) {
       isMouseDragging = true;
     }
     handleSelection();
@@ -289,23 +390,16 @@ export function setupIframeListeners({
   contents.window?.addEventListener('mouseup', onDocMouseUp);
   contents.window?.addEventListener('pointerup', onDocMouseUp);
 
-  const onWindowMouseUp = (e: MouseEvent) => {
-    const deltaX = Math.abs(e.clientX - mouseDownX);
-    const deltaY = Math.abs(e.clientY - mouseDownY);
-    if (deltaX > 4 || deltaY > 4) {
-      isMouseDragging = true;
-    }
+  const onWindowMouseUp = () => {
     handleSelection();
     setTimeout(handleSelection, 25);
-    setTimeout(handleSelection, 100);
   };
   window.addEventListener('mouseup', onWindowMouseUp);
   window.addEventListener('pointerup', onWindowMouseUp);
 
-  contents.window.addEventListener('unload', () => {
+  contents.window?.addEventListener('unload', () => {
     window.removeEventListener('mouseup', onWindowMouseUp);
     window.removeEventListener('pointerup', onWindowMouseUp);
-    window.removeEventListener('mousemove', onWindowMouseMove);
   });
 
   contents.document.addEventListener('keyup', (e: KeyboardEvent) => {
@@ -381,6 +475,14 @@ export function setupIframeListeners({
 
   // 6. Click handler for navigation and toggling control bars from within iframe
   contents.document.addEventListener('click', (e: MouseEvent) => {
+    // Always prioritize image clicks over navigation and gesture handlers
+    if (dispatchOpenImage(e.target)) {
+      isMouseDragging = false;
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+
     if (swipeHandler.wasSwipeGesture()) {
       e.preventDefault();
       e.stopPropagation();
@@ -428,7 +530,7 @@ export function setupIframeListeners({
     }
 
     const target = e.target as HTMLElement;
-    if (target.closest('a') || target.closest('img')) return;
+    if (target.closest('a') || extractReaderImageInfo(target)) return;
 
     // Clicking inside the book content iframe toggles control bars; it NEVER flips pages.
     // Page flipping by click is strictly reserved for the blank spaces outside the book content.

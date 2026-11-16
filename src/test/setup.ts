@@ -33,8 +33,14 @@ if (typeof window !== 'undefined' && !window.ResizeObserver) {
 
 // Mock HTMLImageElement image loading in JSDOM
 if (typeof window !== 'undefined') {
+  const imgValueMap = new WeakMap<HTMLImageElement, string>();
   Object.defineProperty(globalThis.Image.prototype, 'src', {
-    set(this: HTMLImageElement) {
+    get(this: HTMLImageElement) {
+      return imgValueMap.get(this) || this.getAttribute('src') || '';
+    },
+    set(this: HTMLImageElement, val: string) {
+      imgValueMap.set(this, val);
+      this.setAttribute('src', val);
       setTimeout(() => {
         Object.defineProperty(this, 'width', { value: 300, configurable: true });
         Object.defineProperty(this, 'height', { value: 450, configurable: true });
@@ -43,5 +49,6 @@ if (typeof window !== 'undefined') {
         }
       }, 0);
     },
+    configurable: true,
   });
 }

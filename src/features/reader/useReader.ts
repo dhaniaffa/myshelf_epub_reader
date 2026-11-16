@@ -6,7 +6,11 @@ import { useReaderSearch } from '@/features/reader/hooks/useReaderSearch';
 import { useReaderStyles } from '@/features/reader/hooks/useReaderStyles';
 import { useReadingTracker } from '@/features/reader/hooks/useReadingTracker';
 import { fixSelfClosingHtmlTags } from '@/features/reader/utils/epubHtml';
-import { setupIframeListeners } from '@/features/reader/utils/iframeListeners';
+import {
+  dispatchOpenImage,
+  initDocumentImages,
+  setupIframeListeners,
+} from '@/features/reader/utils/iframeListeners';
 import { calculatePageLocation, mapToc } from '@/features/reader/utils/readerLocation';
 import { getCurrentPageText as extractPageText } from '@/features/reader/utils/readerText';
 import { db } from '@/lib/db';
@@ -342,6 +346,14 @@ export function useReader({ bookId, settings, resolvedTheme }: UseReaderOptions)
         });
       });
 
+      // Intercept image clicks from rendition event bus
+      renditionInstance.on('click', (e: MouseEvent) => {
+        if (dispatchOpenImage(e.target)) {
+          e.preventDefault?.();
+          e.stopPropagation?.();
+        }
+      });
+
       // Text selection event
       renditionInstance.on('selected', (cfiRange: string, contents: Contents) => {
         if (!isMounted) return;
@@ -597,18 +609,37 @@ export function useReader({ bookId, settings, resolvedTheme }: UseReaderOptions)
       setTimeout(checkGlobalSelection, 10);
     };
 
+    const handleIframeClick = (e: MouseEvent | PointerEvent) => {
+      if (dispatchOpenImage(e.target)) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+
     // Helper to attach event listeners to an iframe
     const attachIframeListeners = (iframe: HTMLIFrameElement) => {
       try {
+        const bindDoc = () => {
+          try {
+            const doc = iframe.contentDocument;
+            if (doc) {
+              initDocumentImages(doc);
+              doc.addEventListener('click', handleIframeClick, true);
+              doc.addEventListener('pointerup', handleIframeClick, true);
+              doc.addEventListener('pointerdown', handleIframePointerDown, true);
+              doc.addEventListener('mouseup', handleMouseUp, true);
+              doc.addEventListener('selectionchange', handleSelectionChange, true);
+              doc.addEventListener('keyup', handleKeyUp, true);
+            }
+          } catch {
+            // ignore
+          }
+        };
+
+        bindDoc();
+        iframe.addEventListener('load', bindDoc);
+
         const win = iframe.contentWindow;
-        const doc = iframe.contentDocument;
-        if (doc) {
-          doc.addEventListener('pointerdown', handleIframePointerDown, true);
-          doc.addEventListener('mouseup', handleMouseUp, true);
-          doc.addEventListener('pointerup', handleMouseUp, true);
-          doc.addEventListener('selectionchange', handleSelectionChange, true);
-          doc.addEventListener('keyup', handleKeyUp, true);
-        }
         if (win) {
           win.addEventListener('pointerdown', handleIframePointerDown, true);
           win.addEventListener('mouseup', handleMouseUp, true);
@@ -654,6 +685,7 @@ export function useReader({ bookId, settings, resolvedTheme }: UseReaderOptions)
       const currentIframes = Array.from(currentContainer?.querySelectorAll('iframe') || []);
       currentIframes.forEach((iframe) => {
         try {
+          iframe.contentDocument?.removeEventListener('click', handleIframeClick, true);
           iframe.contentDocument?.removeEventListener('pointerdown', handleIframePointerDown, true);
           iframe.contentDocument?.removeEventListener('mouseup', handleMouseUp, true);
           iframe.contentDocument?.removeEventListener('pointerup', handleMouseUp, true);

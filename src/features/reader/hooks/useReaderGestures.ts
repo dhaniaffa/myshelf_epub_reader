@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 
+import { dispatchOpenImage } from '../utils/iframeListeners';
 import { createNativeSwipeHandler } from '../utils/swipePhysics';
 
 import type { FollowLinkData, ReaderFlowMode } from '@/types';
@@ -104,6 +105,13 @@ export function useReaderGestures({
   };
 
   const handleStageClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Intercept image clicks directly from the reading stage
+    if (dispatchOpenImage(e.target)) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+
     // If a horizontal swipe drag just occurred, suppress click event completely
     if (swipeHandlerRef.current?.wasSwipeGesture()) {
       return;

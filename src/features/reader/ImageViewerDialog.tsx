@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Contrast, RotateCcw, RotateCw, X, ZoomIn, ZoomOut } from 'lucide-react';
+import { Contrast, ExternalLink, RotateCcw, RotateCw, X, ZoomIn, ZoomOut } from 'lucide-react';
 import { createPortal } from 'react-dom';
 
+import { openImageInNewWindow } from './utils/openImageWindow';
 import { triggerHaptic } from './utils/swipePhysics';
 
 import type { ImageViewData } from '@/types';
@@ -236,16 +237,30 @@ const ImageViewerModal: React.FC<{
       onTouchEnd={handleTouchEnd}
       onTouchCancel={handleTouchEnd}
     >
-      {/* Close Button in Top Corner */}
-      <button
-        type="button"
-        onClick={onClose}
-        className="absolute top-4 right-4 z-50 cursor-pointer rounded-full bg-black/50 p-2.5 text-white/90 transition-colors hover:bg-black/75 hover:text-white active:scale-95"
-        title="Tutup (Esc)"
-        aria-label="Tutup"
-      >
-        <X size={22} />
-      </button>
+      {/* Action Buttons in Top Corner */}
+      <div className="absolute top-4 right-4 z-50 flex items-center gap-2.5">
+        <button
+          type="button"
+          onClick={() => {
+            const opened = openImageInNewWindow(image);
+            if (opened) onClose();
+          }}
+          className="cursor-pointer rounded-full bg-black/50 p-2.5 text-white/90 transition-colors hover:bg-black/75 hover:text-white active:scale-95"
+          title="Buka di Jendela Baru"
+          aria-label="Buka di Jendela Baru"
+        >
+          <ExternalLink size={20} />
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="cursor-pointer rounded-full bg-black/50 p-2.5 text-white/90 transition-colors hover:bg-black/75 hover:text-white active:scale-95"
+          title="Tutup (Esc)"
+          aria-label="Tutup"
+        >
+          <X size={22} />
+        </button>
+      </div>
 
       {/* Interactive Image Container */}
       <div

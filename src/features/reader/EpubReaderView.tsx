@@ -13,6 +13,8 @@ import { SelectionBar } from '@/features/reader/SelectionBar';
 import { TTSPlayerBar } from '@/features/reader/TTSPlayerBar';
 import { useReader } from '@/features/reader/useReader';
 import { splitIntoSentences, useTTS } from '@/features/reader/useTTS';
+import { dispatchOpenImage } from '@/features/reader/utils/iframeListeners';
+import { openImageInNewWindow } from '@/features/reader/utils/openImageWindow';
 import { db } from '@/lib/db';
 import { isDarkTheme, THEME_PALETTES } from '@/lib/theme';
 import { useSettingsStore } from '@/store/settings';
@@ -275,7 +277,16 @@ export const EpubReaderView: React.FC<EpubReaderViewProps> = ({ bookId }) => {
     const handleOpenImage = (e: Event) => {
       const customEvent = e as CustomEvent<ImageViewData>;
       if (customEvent.detail) {
-        setActiveImage(customEvent.detail);
+        const isDesktop =
+          typeof navigator !== 'undefined' &&
+          !/android|iphone|ipad|ipod/i.test(navigator.userAgent);
+        let openedInNewWindow = false;
+        if (isDesktop) {
+          openedInNewWindow = openImageInNewWindow(customEvent.detail);
+        }
+        if (!openedInNewWindow) {
+          setActiveImage(customEvent.detail);
+        }
       }
     };
     const handleFollowLink = (e: Event) => {
@@ -422,6 +433,12 @@ export const EpubReaderView: React.FC<EpubReaderViewProps> = ({ bookId }) => {
 
         <div
           ref={containerRef}
+          onClick={(e) => {
+            if (dispatchOpenImage(e.target)) {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          }}
           style={{
             touchAction: settings.flowMode === 'paginated' ? 'pan-y' : 'auto',
           }}
