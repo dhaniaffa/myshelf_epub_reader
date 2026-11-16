@@ -36,6 +36,7 @@ export const CatalogBookCard: React.FC<CatalogBookCardProps> = ({
             src={book.coverUrl}
             alt={book.title}
             loading="lazy"
+            decoding="async"
             onError={() => setImgError(true)}
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-102"
           />

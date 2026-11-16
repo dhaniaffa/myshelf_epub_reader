@@ -40,7 +40,12 @@ export const HeroCard: React.FC<HeroCardProps> = ({ book }) => {
         {/* Cover thumbnail */}
         <div className="border-outline-variant/30 bg-surface-container-high relative aspect-2/3 w-13 shrink-0 overflow-hidden rounded-xl border shadow-sm">
           {coverUrl ? (
-            <img src={coverUrl} alt={book.title} className="h-full w-full object-cover" />
+            <img
+              src={coverUrl}
+              alt={book.title}
+              className="h-full w-full object-cover"
+              decoding="async"
+            />
           ) : (
             <div className="bg-primary/20 text-primary flex h-full w-full items-center justify-center">
               <BookOpen size={16} />
@@ -178,7 +183,12 @@ export const HeroCard: React.FC<HeroCardProps> = ({ book }) => {
         >
           <div className="border-outline-variant/30 bg-surface-container-high relative aspect-2/3 w-32 transform overflow-hidden rounded-2xl border shadow-xl transition-all duration-300 group-hover/cover:scale-104 group-hover/cover:rotate-0 sm:w-36 sm:-rotate-2">
             {coverUrl ? (
-              <img src={coverUrl} alt={book.title} className="h-full w-full object-cover" />
+              <img
+                src={coverUrl}
+                alt={book.title}
+                className="h-full w-full object-cover"
+                decoding="async"
+              />
             ) : (
               <div className="from-primary/20 via-secondary/15 to-tertiary/20 text-on-surface flex h-full w-full flex-col justify-between bg-linear-to-br p-3">
                 <div className="bg-primary/20 text-primary flex h-8 w-8 items-center justify-center rounded-full">

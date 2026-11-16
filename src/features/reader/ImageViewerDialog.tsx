@@ -258,6 +258,7 @@ const ImageViewerModal: React.FC<{
           ref={imageRef}
           src={image.src}
           alt={image.alt || 'Gambar Buku'}
+          decoding="async"
           draggable={false}
           style={{
             transform: `translate(${position.x}px, ${position.y}px) scale(${scale}) rotate(${rotation}deg)`,

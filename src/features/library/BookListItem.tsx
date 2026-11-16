@@ -106,6 +106,7 @@ export const BookListItem: React.FC<BookListItemProps> = React.memo(
               alt={book.title}
               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
               loading="lazy"
+              decoding="async"
             />
           ) : (
             <div className="from-primary/15 via-secondary/10 to-tertiary/20 text-on-surface flex h-full w-full flex-col justify-between bg-linear-to-br p-2">

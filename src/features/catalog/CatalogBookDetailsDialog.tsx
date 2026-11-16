@@ -38,6 +38,7 @@ export const CatalogBookDetailsDialog: React.FC<CatalogBookDetailsDialogProps> =
               <img
                 src={book.coverUrl}
                 alt={book.title}
+                decoding="async"
                 onError={() => setImgError(true)}
                 className="h-full w-full object-cover"
               />

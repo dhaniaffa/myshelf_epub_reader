@@ -96,6 +96,7 @@ export const BookCompactRow: React.FC<BookCompactRowProps> = ({
             alt={book.title}
             className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
             loading="lazy"
+            decoding="async"
           />
         ) : (
           <div className="from-primary/20 to-secondary/20 text-primary flex h-full w-full items-center justify-center bg-linear-to-br">

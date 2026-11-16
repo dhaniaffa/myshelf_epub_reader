@@ -242,7 +242,12 @@ const BookDetailsContent: React.FC<BookDetailsContentProps> = ({ book, onClose }
           {/* Book Cover (2:3) */}
           <div className="bg-surface-container-high border-outline-variant/30 relative mx-auto aspect-2/3 w-28 shrink-0 overflow-hidden rounded-2xl border shadow-lg sm:mx-0 sm:w-36">
             {coverUrl ? (
-              <img src={coverUrl} alt={book.title} className="h-full w-full object-cover" />
+              <img
+                src={coverUrl}
+                alt={book.title}
+                className="h-full w-full object-cover"
+                decoding="async"
+              />
             ) : (
               <div className="from-primary/20 to-secondary/20 text-primary flex h-full w-full flex-col items-center justify-center bg-linear-to-br p-2 text-center">
                 <BookOpen size={28} className="mb-2" />

@@ -126,6 +126,7 @@ export const BookCoverCard: React.FC<BookCoverCardProps> = React.memo(
               alt={book.title}
               className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
               loading="lazy"
+              decoding="async"
             />
           ) : (
             <div className="from-primary/20 via-secondary/15 to-tertiary/25 text-on-surface flex h-full w-full flex-col justify-between bg-linear-to-br p-4 sm:p-5">
