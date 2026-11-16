@@ -15,7 +15,7 @@ export const IconButton: React.FC<IconButtonProps> = ({
   ...props
 }) => {
   const base =
-    'inline-flex items-center justify-center rounded-full transition-all duration-150 select-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 active:scale-95';
+    'inline-flex items-center justify-center rounded-full transition-all duration-150 select-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 active:scale-95 touch-manipulation';
 
   const sizeClasses = {
     sm: 'w-8 h-8 text-sm',

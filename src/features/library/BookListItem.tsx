@@ -90,7 +90,7 @@ export const BookListItem: React.FC<BookListItemProps> = React.memo(
     return (
       <div
         onClick={handleItemClick}
-        className={`group bg-surface-container-low hover:bg-surface-container flex cursor-pointer items-center gap-3.5 rounded-2xl border p-3 transition-all duration-200 select-none hover:-translate-y-0.5 hover:shadow-md sm:gap-5 sm:p-4.5 ${
+        className={`group bg-surface-container-low hover:bg-surface-container flex cursor-pointer touch-manipulation items-center gap-3.5 rounded-2xl border p-3 transition-all duration-200 select-none hover:-translate-y-0.5 hover:shadow-md sm:gap-5 sm:p-4.5 ${
           isSelectionMode
             ? isSelected
               ? 'border-rose-500 bg-rose-500/5 ring-2 ring-rose-500'

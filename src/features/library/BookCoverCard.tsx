@@ -110,7 +110,7 @@ export const BookCoverCard: React.FC<BookCoverCardProps> = React.memo(
       <div
         onClick={handleCardClick}
         title={book.title}
-        className={`group relative aspect-2/3 w-full cursor-pointer overflow-hidden rounded-2xl border shadow-lg ring-1 ring-black/5 transition-all duration-300 select-none hover:-translate-y-2 hover:shadow-2xl dark:ring-white/10 ${
+        className={`group relative aspect-2/3 w-full cursor-pointer touch-manipulation overflow-hidden rounded-2xl border shadow-lg ring-1 ring-black/5 transition-all duration-300 select-none hover:-translate-y-2 hover:shadow-2xl dark:ring-white/10 ${
           isSelectionMode
             ? isSelected
               ? 'border-rose-500 ring-4 shadow-rose-500/20 ring-rose-500'

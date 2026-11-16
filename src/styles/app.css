@@ -22,6 +22,19 @@
   }
 }
 
+/* Zero-touch latency & tap responsiveness across all platforms */
+html,
+body,
+button,
+a,
+[role='button'],
+input,
+select,
+textarea,
+.touch-manipulation {
+  touch-action: manipulation;
+}
+
 html {
   -webkit-tap-highlight-color: transparent;
   height: 100%;

@@ -17,7 +17,7 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const base =
-    'inline-flex items-center justify-center gap-2 font-medium rounded-full transition-all duration-150 select-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 active:scale-[0.98]';
+    'inline-flex items-center justify-center gap-2 font-medium rounded-full transition-all duration-150 select-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 active:scale-[0.98] touch-manipulation';
 
   const sizeClasses = {
     sm: 'text-xs px-3.5 py-1.5 min-h-8',

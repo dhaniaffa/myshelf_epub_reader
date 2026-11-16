@@ -86,7 +86,7 @@ export const BookCard: React.FC<BookCardProps> = React.memo(
     return (
       <div
         onClick={handleCardClick}
-        className={`group bg-surface-container-low hover:bg-surface-container relative flex cursor-pointer flex-col rounded-2xl border transition-all duration-200 select-none hover:-translate-y-1 hover:shadow-xl ${
+        className={`group bg-surface-container-low hover:bg-surface-container relative flex cursor-pointer touch-manipulation flex-col rounded-2xl border transition-all duration-200 select-none hover:-translate-y-1 hover:shadow-xl ${
           isSelectionMode
             ? isSelected
               ? 'border-rose-500 bg-rose-500/5 ring-2 ring-rose-500'

@@ -181,7 +181,7 @@ export const AppShell: React.FC<AppShellProps> = ({ currentRoute, children }) =>
             key={item.id}
             type="button"
             onClick={item.onClick}
-            className={`flex h-full flex-1 cursor-pointer flex-col items-center justify-center py-1 transition-colors ${
+            className={`flex h-full flex-1 cursor-pointer touch-manipulation flex-col items-center justify-center py-1 transition-colors ${
               item.active
                 ? 'text-primary font-bold'
                 : 'text-on-surface-variant hover:text-on-surface font-medium'
