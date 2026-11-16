@@ -414,7 +414,7 @@ export const LibraryPage: React.FC = () => {
               type="button"
               onClick={handleQuickSync}
               disabled={isFolderSyncing}
-              className="bg-surface-container-high border-outline-variant/30 text-on-surface hover:bg-surface-container-highest inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-full border px-3 text-xs font-semibold shadow-2xs transition-colors disabled:opacity-50"
+              className="bg-surface-container-high border-outline-variant/30 text-on-surface hover:bg-surface-container-highest inline-flex h-8.5 cursor-pointer items-center gap-1.5 rounded-full border px-3 text-xs font-semibold shadow-2xs transition-colors disabled:opacity-50"
               title={`Sinkronkan dari folder lokal: ${syncFolder.name}`}
             >
               {isFolderSyncing ? (
@@ -422,7 +422,7 @@ export const LibraryPage: React.FC = () => {
               ) : (
                 <FolderSync size={14} className="text-teal-600 dark:text-teal-400" />
               )}
-              <span className="hidden max-w-28 truncate sm:inline">{syncFolder.name}</span>
+              <span className="hidden sm:inline">Sinkronkan</span>
               <span className="sm:hidden">Sinkron</span>
             </button>
           )}
