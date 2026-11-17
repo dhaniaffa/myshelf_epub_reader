@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { flushSync } from 'react-dom';
 
-import { isAndroidNative } from '@/lib/platform';
+import { isAndroidNative, isDesktopTauri } from '@/lib/platform';
 
 export type AppRoute =
   | { type: 'library' }
@@ -251,12 +250,25 @@ export function routeAccessibilityFocus(): void {
   }
 }
 
+/**
+ * Safely checks whether the current environment supports View Transitions API without crashing.
+ * WebKitGTK in Desktop Tauri Linux has a critical C++ compositor bug causing SIGSEGV crashes.
+ * Therefore, View Transitions are safely disabled in Desktop Tauri and enabled in modern web browsers/WebViews.
+ */
+export function isViewTransitionsSupported(): boolean {
+  if (typeof document === 'undefined') return false;
+  if (typeof document.startViewTransition !== 'function') return false;
+  if (isDesktopTauri()) return false;
+  return true;
+}
+
 export function useHashRoute(): AppRoute {
   const [route, setRoute] = useState<AppRoute>(() => parseRoute(window.location.hash));
   const prevRouteRef = useRef<AppRoute>(route);
 
   useEffect(() => {
-    if (typeof document !== 'undefined' && 'startViewTransition' in document) {
+    const canUseTransitions = isViewTransitionsSupported();
+    if (canUseTransitions) {
       document.documentElement.classList.add('has-view-transitions');
     }
 
@@ -270,10 +282,7 @@ export function useHashRoute(): AppRoute {
 
       prevRouteRef.current = nextRoute;
 
-      // Reader transitions must NEVER use View Transitions API or flushSync because:
-      // 1. Reader renders sandboxed iframes (EPUB) and WebGL/Canvas (PDF) which crash WebKitGTK/Tauri compositors.
-      // 2. ReaderPage is lazy-loaded with React Suspense, which throws an uncatchable fatal error inside ReactDOM.flushSync.
-      // 3. Reader manages its own keyboard/volume key navigation and should not have focus hijacked.
+      // Reader transitions must NEVER use View Transitions API
       if (nextRoute.type === 'reader' || prevRoute.type === 'reader') {
         setRoute(nextRoute);
         return;
@@ -287,9 +296,9 @@ export function useHashRoute(): AppRoute {
       const isEink =
         typeof document !== 'undefined' && document.documentElement.classList.contains('eink-mode');
 
-      // Progressive enhancement: fall back to synchronous update if View Transitions API
-      // is unavailable, prefers-reduced-motion is active, or e-ink high contrast mode is on
-      if (!document.startViewTransition || prefersReducedMotion || isEink) {
+      // Fallback for environments where View Transitions API is unsupported,
+      // unsafe (Desktop Tauri WebKitGTK), reduced motion, or E-ink mode
+      if (!canUseTransitions || prefersReducedMotion || isEink) {
         setRoute(nextRoute);
         routeAccessibilityFocus();
         return;
@@ -297,9 +306,7 @@ export function useHashRoute(): AppRoute {
 
       try {
         const transition = document.startViewTransition(() => {
-          flushSync(() => {
-            setRoute(nextRoute);
-          });
+          setRoute(nextRoute);
         });
 
         transition.finished.finally(() => {

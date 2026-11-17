@@ -1,10 +1,12 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import * as platformModule from './platform';
 import {
   getRouteStack,
   isMainTabRoute,
   isSameRoute,
+  isViewTransitionsSupported,
   navigate,
   normalizePath,
   parseRoute,
@@ -276,6 +278,26 @@ describe('Route Utility (src/lib/route.ts)', () => {
 
       expect(startTransitionSpy).not.toHaveBeenCalled();
       expect(result.current).toEqual({ type: 'library' });
+    });
+
+    it('bypasses startViewTransition when running on Desktop Tauri (WebKitGTK crash protection)', () => {
+      vi.spyOn(platformModule, 'isDesktopTauri').mockReturnValue(true);
+      const startTransitionSpy = vi.fn();
+      document.startViewTransition =
+        startTransitionSpy as unknown as typeof document.startViewTransition;
+
+      expect(isViewTransitionsSupported()).toBe(false);
+
+      const { result } = renderHook(() => useHashRoute());
+      expect(document.documentElement.classList.contains('has-view-transitions')).toBe(false);
+
+      act(() => {
+        window.location.hash = '#collections';
+        window.dispatchEvent(new HashChangeEvent('hashchange'));
+      });
+
+      expect(startTransitionSpy).not.toHaveBeenCalled();
+      expect(result.current).toEqual({ type: 'collections' });
     });
   });
 });

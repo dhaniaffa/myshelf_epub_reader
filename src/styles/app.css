@@ -203,12 +203,12 @@ html.eink-mode::view-transition-new(*) {
   animation: 0.22s cubic-bezier(0, 0, 0.2, 1) both vtPageFadeIn;
 }
 
-/* Persistent UI elements across page transitions (remain anchored without flicker) */
-.vt-app-sidebar {
+/* Persistent UI elements across page transitions (active only when View Transitions API is enabled) */
+html.has-view-transitions .vt-app-sidebar {
   view-transition-name: app-sidebar;
 }
 
-.vt-app-bottom-bar {
+html.has-view-transitions .vt-app-bottom-bar {
   view-transition-name: app-bottom-bar;
 }
 
