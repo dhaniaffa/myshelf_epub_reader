@@ -1,8 +1,15 @@
 import { renderHook, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as dbModule from '@/lib/db';
-import { createCoverUrl, getCoverUrlFromCache, revokeCoverCache, useCoverUrl } from './cover';
+import {
+  createCoverUrl,
+  getCoverUrlFromCache,
+  revokeCoverCache,
+  useCoverUrl,
+  useWarmCoverCache,
+  warmCoverCache,
+} from './cover';
 
 describe('Cover Utility & Hook (src/lib/cover.ts)', () => {
   beforeEach(() => {
@@ -140,6 +147,134 @@ describe('Cover Utility & Hook (src/lib/cover.ts)', () => {
     it('revokes all cached cover URLs when called without parameters', () => {
       revokeCoverCache();
       expect(getCoverUrlFromCache('any-book')).toBeNull();
+    });
+  });
+
+  describe('warmCoverCache & useWarmCoverCache (requestIdleCallback)', () => {
+    let originalRic: typeof window.requestIdleCallback | undefined;
+    let originalCic: typeof window.cancelIdleCallback | undefined;
+
+    beforeEach(() => {
+      originalRic = window.requestIdleCallback;
+      originalCic = window.cancelIdleCallback;
+
+      window.requestIdleCallback = vi.fn((cb: IdleRequestCallback) => {
+        return setTimeout(() => {
+          cb({ didTimeout: false, timeRemaining: () => 15 });
+        }, 10) as unknown as number;
+      });
+
+      window.cancelIdleCallback = vi.fn((id: number) => {
+        clearTimeout(id);
+      });
+    });
+
+    afterEach(() => {
+      if (originalRic) {
+        window.requestIdleCallback = originalRic;
+      } else {
+        delete (window as unknown as { requestIdleCallback?: unknown }).requestIdleCallback;
+      }
+      if (originalCic) {
+        window.cancelIdleCallback = originalCic;
+      } else {
+        delete (window as unknown as { cancelIdleCallback?: unknown }).cancelIdleCallback;
+      }
+    });
+
+    it('pre-warms uncached covers during idle callback and adds to coverUrlCache', async () => {
+      const dummyBlob1 = new Blob(['blob1'], { type: 'image/jpeg' });
+      const dummyBlob2 = new Blob(['blob2'], { type: 'image/jpeg' });
+      const bulkMap = new Map<string, Blob>([
+        ['warm-1', dummyBlob1],
+        ['warm-2', dummyBlob2],
+      ]);
+
+      vi.spyOn(dbModule, 'getBookCoversBulk').mockResolvedValue(bulkMap);
+      vi.spyOn(URL, 'createObjectURL').mockImplementation((blob: Blob | MediaSource) =>
+        blob === dummyBlob1 ? 'blob:warmed-1' : 'blob:warmed-2'
+      );
+
+      // Mock requestIdleCallback to capture callback
+      let idleCallback: ((deadline: IdleDeadline) => void) | null = null;
+      vi.spyOn(window, 'requestIdleCallback').mockImplementation((cb: IdleRequestCallback) => {
+        idleCallback = cb;
+        return 123;
+      });
+
+      const cancel = warmCoverCache(['warm-1', 'warm-2']);
+      expect(idleCallback).not.toBeNull();
+
+      // Trigger the idle callback
+      if (idleCallback) {
+        await (idleCallback as (deadline: IdleDeadline) => Promise<void> | void)({
+          didTimeout: false,
+          timeRemaining: () => 15,
+        });
+      }
+
+      expect(getCoverUrlFromCache('warm-1')).toBe('blob:warmed-1');
+      expect(getCoverUrlFromCache('warm-2')).toBe('blob:warmed-2');
+      cancel();
+    });
+
+    it('skips candidates that are already present in coverUrlCache', async () => {
+      vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:already-cached');
+      const dummyBlob = new Blob(['cached'], { type: 'image/jpeg' });
+      vi.spyOn(dbModule, 'getBookCover').mockResolvedValue(dummyBlob);
+
+      // Populate one book in cache first
+      const { result } = renderHook(() => useCoverUrl('pre-cached'));
+      await waitFor(() => {
+        expect(result.current).toBe('blob:already-cached');
+      });
+
+      const bulkSpy = vi.spyOn(dbModule, 'getBookCoversBulk').mockResolvedValue(new Map());
+
+      let idleCallback: ((deadline: IdleDeadline) => void) | null = null;
+      vi.spyOn(window, 'requestIdleCallback').mockImplementation((cb: IdleRequestCallback) => {
+        idleCallback = cb;
+        return 456;
+      });
+
+      warmCoverCache(['pre-cached']);
+      // All items were already cached, so no idle task is scheduled
+      expect(idleCallback).toBeNull();
+      expect(bulkSpy).not.toHaveBeenCalled();
+    });
+
+    it('cancels pending idle task when cancel callback is called', () => {
+      const cancelSpy = vi.spyOn(window, 'cancelIdleCallback');
+      vi.spyOn(window, 'requestIdleCallback').mockReturnValue(789);
+
+      const cancel = warmCoverCache(['book-cancel-1', 'book-cancel-2']);
+      cancel();
+
+      expect(cancelSpy).toHaveBeenCalledWith(789);
+    });
+
+    it('falls back to setTimeout when requestIdleCallback is not available', async () => {
+      delete (window as unknown as { requestIdleCallback?: unknown }).requestIdleCallback;
+
+      const dummyBlob = new Blob(['fallback'], { type: 'image/jpeg' });
+      vi.spyOn(dbModule, 'getBookCoversBulk').mockResolvedValue(new Map([['fb-1', dummyBlob]]));
+      vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:fb-1-url');
+
+      const setTimeoutSpy = vi.spyOn(window, 'setTimeout');
+
+      const cancel = warmCoverCache(['fb-1']);
+      expect(setTimeoutSpy).toHaveBeenCalled();
+      cancel();
+    });
+
+    it('useWarmCoverCache hook schedules and cleans up idle pre-warming', () => {
+      const cancelSpy = vi.spyOn(window, 'cancelIdleCallback');
+      vi.spyOn(window, 'requestIdleCallback').mockReturnValue(999);
+
+      const { unmount } = renderHook(() => useWarmCoverCache(['hook-1', 'hook-2'], true));
+      unmount();
+
+      expect(cancelSpy).toHaveBeenCalledWith(999);
     });
   });
 });

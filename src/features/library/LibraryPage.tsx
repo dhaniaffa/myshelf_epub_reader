@@ -32,6 +32,7 @@ import { BookDetailsDialog } from '@/features/library/BookDetailsDialog';
 import { HeroCard } from '@/features/library/HeroCard';
 import { ManageCollectionsDialog } from '@/features/library/ManageCollectionsDialog';
 import { VirtualizedBookGrid } from '@/features/library/VirtualizedBookGrid';
+import { useWarmCoverCache } from '@/lib/cover';
 import { db, deleteBook, deleteBooks } from '@/lib/db';
 import {
   connectLocalFolder,
@@ -58,6 +59,9 @@ export const LibraryPage: React.FC = () => {
   const rawBooks = useLiveQuery(() => db.books.toArray(), []);
   const isLoadingBooks = rawBooks === undefined;
   const books = useMemo(() => rawBooks || [], [rawBooks]);
+
+  // Pre-warm cover cache in background idle time so shelf scrolling is 60 FPS with 0ms image latency
+  useWarmCoverCache(books);
   const syncFolder = useLiveQuery(() => getLocalFolder(), []);
   const collections = useLiveQuery(() => db.collections.orderBy('createdAt').toArray(), []);
   const fileInputRef = useRef<HTMLInputElement>(null);

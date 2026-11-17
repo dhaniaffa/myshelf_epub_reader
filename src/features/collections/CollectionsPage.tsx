@@ -18,6 +18,7 @@ import { IconButton } from '@/components/ui/IconButton';
 import { BookCard } from '@/features/library/BookCard';
 import { BookDetailsDialog } from '@/features/library/BookDetailsDialog';
 import { registerBackHandler } from '@/lib/backHandler';
+import { useWarmCoverCache } from '@/lib/cover';
 import { createCollection, db, deleteCollection, removeTagFromBook } from '@/lib/db';
 import { navigate, navigateBack } from '@/lib/route';
 import { toast } from '@/store/toast';
@@ -123,6 +124,9 @@ export const CollectionsPage: React.FC<CollectionsPageProps> = ({ collectionId }
       (b) => b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q)
     );
   }, [activeCollectionName, booksByCollection, searchQuery]);
+
+  // Pre-warm covers when browsing an active collection
+  useWarmCoverCache(activeBooks);
 
   return (
     <div className="bg-surface text-on-surface flex min-h-screen flex-col">

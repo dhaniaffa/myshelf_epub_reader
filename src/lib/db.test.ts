@@ -1,6 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { db, deleteBook, deleteBooks, getBookCover, getLocalDateString, setBookCover } from './db';
+import {
+  db,
+  deleteBook,
+  deleteBooks,
+  getBookCover,
+  getBookCoversBulk,
+  getLocalDateString,
+  setBookCover,
+} from './db';
 
 describe('Database Operations (src/lib/db.ts)', () => {
   beforeEach(() => {
@@ -118,5 +126,24 @@ describe('Database Operations (src/lib/db.ts)', () => {
 
     await setBookCover('b-123', dummyBlob);
     expect(putSpy).toHaveBeenCalledWith({ bookId: 'b-123', blob: dummyBlob });
+  });
+
+  it('retrieves bulk cover blobs via getBookCoversBulk', async () => {
+    const blob1 = new Blob(['cover-1'], { type: 'image/jpeg' });
+    const blob2 = new Blob(['cover-2'], { type: 'image/jpeg' });
+    const bulkGetSpy = vi.spyOn(db.covers, 'bulkGet').mockResolvedValue([
+      { bookId: 'b-1', blob: blob1 },
+      { bookId: 'b-2', blob: blob2 },
+    ]);
+
+    const result = await getBookCoversBulk(['b-1', 'b-2']);
+    expect(bulkGetSpy).toHaveBeenCalledWith(['b-1', 'b-2']);
+    expect(result.size).toBe(2);
+    expect(result.get('b-1')).toBe(blob1);
+    expect(result.get('b-2')).toBe(blob2);
+
+    // Empty list returns empty map immediately
+    const emptyResult = await getBookCoversBulk([]);
+    expect(emptyResult.size).toBe(0);
   });
 });

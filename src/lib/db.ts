@@ -193,6 +193,26 @@ export async function getBookCover(bookId: string): Promise<Blob | null> {
 }
 
 /**
+ * Retrieve cover Blobs for multiple books in a single batch transaction from isolated covers table
+ */
+export async function getBookCoversBulk(bookIds: string[]): Promise<Map<string, Blob>> {
+  const result = new Map<string, Blob>();
+  if (!bookIds || bookIds.length === 0) return result;
+
+  try {
+    const records = await db.covers.bulkGet(bookIds);
+    for (const record of records) {
+      if (record && record.blob) {
+        result.set(record.bookId, record.blob);
+      }
+    }
+  } catch (err) {
+    console.warn('Failed to bulkGet covers from IndexedDB:', err);
+  }
+  return result;
+}
+
+/**
  * Store cover Blob for a specific book in isolated covers table
  */
 export async function setBookCover(bookId: string, blob: Blob): Promise<void> {
